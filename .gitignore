@@ -73,3 +73,8 @@ Plugins/**/Intermediate/*
 
 # Cache files for the editor to use
 DerivedDataCache/*
+
+# Extra: newer VS solution format, editor-generated IDE folders, local AI tool settings
+*.slnx
+.vscode/
+.claude/settings.local.json
