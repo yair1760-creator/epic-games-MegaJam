@@ -8,7 +8,7 @@
 
 static TAutoConsoleVariable<bool> CVarDCQuestDebugText(
 	TEXT("DC.Quest.DebugText"),
-	true,
+	false,
 	TEXT("Print quest progress as on-screen debug messages"));
 
 bool UDCQuestSubsystem::DoesSupportWorldType(const EWorldType::Type WorldType) const

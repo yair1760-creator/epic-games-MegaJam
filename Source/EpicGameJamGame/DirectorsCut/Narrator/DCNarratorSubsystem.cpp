@@ -12,7 +12,7 @@
 
 static TAutoConsoleVariable<bool> CVarDCNarratorDebugText(
 	TEXT("DC.Narrator.DebugText"),
-	true,
+	false,
 	TEXT("Print Director lines as on-screen debug messages"));
 
 bool UDCNarratorSubsystem::DoesSupportWorldType(const EWorldType::Type WorldType) const

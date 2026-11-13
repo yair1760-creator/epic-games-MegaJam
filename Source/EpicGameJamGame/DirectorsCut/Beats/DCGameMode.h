@@ -6,6 +6,8 @@
 #include "GameFramework/GameModeBase.h"
 #include "DCGameMode.generated.h"
 
+class UDCHUDWidget;
+
 /**
  *  Game mode for Lvl_DirectorsCut. No team scores, no shooter NPCs.
  *  Level 1: after IntroDelay the Director plays IntroLines, and when the last one ends the hunt quest starts.
@@ -21,6 +23,13 @@ public:
 	ADCGameMode();
 
 protected:
+
+	/** HUD added to the first local player's screen (WBP_DCHUD) */
+	UPROPERTY(EditDefaultsOnly, Category="UI")
+	TSubclassOf<UDCHUDWidget> HUDWidgetClass;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UDCHUDWidget> HUDWidget;
 
 	/** Seconds after BeginPlay before the first intro line */
 	UPROPERTY(EditDefaultsOnly, Category="Level 1|Intro", meta=(ClampMin=0, Units="s"))
