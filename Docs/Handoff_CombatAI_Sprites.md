@@ -197,4 +197,4 @@ Every slot is a normal property (empty = silent / no effect). All of them play t
 
 **Tested in `Lvl_Test_CombatAI`** with `log LogDCCombat Verbose` (each sound logs `SFX 2D/3D <name>`): a sword kill played swing, hit, squeal, aggro, charge and death; an angry boar played bite and the player's hurt sound; the meat played its blip; the boss played shot, hit and defeat.
 
-**Packaging note:** these sounds (like the boar and sword textures) are referenced from C++ defaults. If a packaged build is silent, add `/Game/DirectorsCut/Audio` to Project Settings → Packaging → Additional Asset Directories to Cook (the Narrator folder is already there).
+**Packaging:** these sounds are referenced from C++ defaults, so `/Game/DirectorsCut/Audio` is in Project Settings → Packaging → Directories to Always Cook (`Config/DefaultGame.ini`, next to the Narrator folder). Any new sound or music placed in that folder ships automatically.
