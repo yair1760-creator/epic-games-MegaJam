@@ -71,6 +71,11 @@ void UDCSubtitlesWidget::SkipTypewriter()
 	LineText->SetText(FText::FromString(FullText));
 }
 
+FString UDCSubtitlesWidget::GetSpeakerString() const
+{
+	return SpeakerText ? SpeakerText->GetText().ToString() : FString();
+}
+
 void UDCSubtitlesWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 {
 	Super::NativeTick(MyGeometry, InDeltaTime);

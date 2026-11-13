@@ -43,12 +43,15 @@ void UDCQuestTrackerWidget::Refresh()
 	}
 
 	SetVisibility(ESlateVisibility::HitTestInvisible);
-	TitleText->SetText(Quest->GetActiveQuestTitle());
+	TitleText->SetText(FText::Format(NSLOCTEXT("DirectorsCut", "QuestTitleColon", "{0}:"), Quest->GetActiveQuestTitle()));
 
 	FFormatNamedArguments Args;
 	Args.Add(TEXT("Current"), Quest->GetCurrent());
 	Args.Add(TEXT("Target"), Quest->GetTarget());
 	CountText->SetText(FText::Format(CountFormat, Args));
+	CountText->SetColorAndOpacity(FSlateColor(Quest->IsActiveQuestComplete()
+		? FLinearColor(0.25f, 1.0f, 0.35f, 1.0f)
+		: FLinearColor(1.0f, 0.85f, 0.2f, 1.0f)));
 }
 
 void UDCQuestTrackerWidget::HandleQuestUpdated(FName Id, int32 Current, int32 Target)
@@ -112,4 +115,14 @@ void UDCQuestTrackerWidget::NativeTick(const FGeometry& MyGeometry, float InDelt
 		const bool bOn = BlinkTime <= 0.0f || FMath::Fmod(BlinkTime, 0.25f) > 0.125f;
 		SetRenderOpacity(bOn ? 1.0f : 0.25f);
 	}
+}
+
+FString UDCQuestTrackerWidget::GetDisplayedTitle() const
+{
+	return TitleText ? TitleText->GetText().ToString() : FString();
+}
+
+FString UDCQuestTrackerWidget::GetDisplayedCount() const
+{
+	return CountText ? CountText->GetText().ToString() : FString();
 }

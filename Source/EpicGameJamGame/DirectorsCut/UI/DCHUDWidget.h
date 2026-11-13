@@ -32,4 +32,10 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly, Category="HUD", meta=(BindWidgetOptional))
 	TObjectPtr<UWidget> Crosshair;
+
+public:
+
+	UDCQuestTrackerWidget* GetQuestTracker() const { return QuestTracker; }
+	UDCHealthBarWidget* GetHealthBar() const { return HealthBar; }
+	UDCSubtitlesWidget* GetSubtitles() const { return Subtitles; }
 };

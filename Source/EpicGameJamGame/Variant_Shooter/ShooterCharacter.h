@@ -205,6 +205,14 @@ public:
 	/** Gives a weapon of this class to the owner */
 	virtual void AddWeaponClass(const TSubclassOf<AShooterWeapon>& WeaponClass) override;
 
+	/** Removes all owned weapons and equips a fresh weapon of WeaponClass */
+	UFUNCTION(BlueprintCallable, Category="Weapons")
+	void ReplaceWeaponsWithClass(const TSubclassOf<AShooterWeapon>& WeaponClass);
+
+	/** Returns the currently equipped weapon */
+	UFUNCTION(BlueprintPure, Category="Weapons")
+	AShooterWeapon* GetCurrentWeapon() const { return CurrentWeapon; }
+
 	/** Activates the passed weapon */
 	virtual void OnWeaponActivated(AShooterWeapon* Weapon) override;
 

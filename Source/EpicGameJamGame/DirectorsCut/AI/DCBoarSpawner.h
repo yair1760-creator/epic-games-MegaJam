@@ -77,6 +77,13 @@ public:
 	UFUNCTION(BlueprintCallable, Category="Spawner")
 	void DespawnAll();
 
+	/** Switches between normal spawning (Beats 1-2) and aggressive hyperspawn (Beat 3). */
+	UFUNCTION(BlueprintCallable, Category="Spawner")
+	void SetHyperspawnMode(bool bEnabled);
+
+	UFUNCTION(BlueprintPure, Category="Spawner")
+	bool IsHyperspawnMode() const { return bHyperspawnMode; }
+
 	UFUNCTION(BlueprintPure, Category="Spawner")
 	bool IsSpawning() const { return bSpawning; }
 
@@ -112,5 +119,14 @@ private:
 	TArray<TWeakObjectPtr<ADCBoar>> Living;
 	int32 SpawnedTotal = 0;
 	bool bSpawning = false;
+	bool bHyperspawnMode = false;
+	bool bSavedNormalDefaults = false;
+	int32 NormalMaxAlive = 5;
+	float NormalRespawnDelay = 4.0f;
+	float NormalStaggerDelay = 0.4f;
+	float NormalMinPlayerDistance = 800.0f;
+	float OverrideBoarMaxHP = 0.0f;
+	float OverrideCorpseTime = 0.0f;
+	bool bAutoAggroNewBoars = false;
 	FTimerHandle FillTimer;
 };

@@ -38,7 +38,7 @@ void UDCHealthBarWidget::HandlePawnChanged(APawn* OldPawn, APawn* NewPawn)
 	{
 		Character->OnDamaged.AddUniqueDynamic(this, &UDCHealthBarWidget::HandleDamaged);
 		BoundCharacter = Character;
-		Apply(Character->IsDead() ? 0.0f : 1.0f);
+		Apply(Character->GetHPPercent());
 	}
 }
 

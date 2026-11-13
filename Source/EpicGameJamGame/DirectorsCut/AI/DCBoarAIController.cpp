@@ -32,6 +32,17 @@ void ADCBoarAIController::OnPossess(APawn* InPawn)
 			Health->OnHealthChanged.AddUniqueDynamic(this, &ADCBoarAIController::HandleHealthChanged);
 			Health->OnDied.AddUniqueDynamic(this, &ADCBoarAIController::HandleDied);
 		}
+
+		if (Boar->bAutoAggroPlayer)
+		{
+			if (APawn* Player = UGameplayStatics::GetPlayerPawn(this, 0))
+			{
+				AngerTarget = Player;
+				LastProvokedTime = GetWorld()->GetTimeSeconds();
+				GetWorldTimerManager().SetTimer(StateTimer, this, &ADCBoarAIController::StartCharge, 0.15f, false);
+				return;
+			}
+		}
 	}
 
 	// small random delay so a group of boars doesn't move in lockstep
@@ -129,9 +140,9 @@ void ADCBoarAIController::HandleHealthChanged(UDCHealthComponent* HealthComponen
 		return;
 	}
 
-	// badly hurt: run instead of fighting
+	// badly hurt: run instead of fighting (unless hyperspawning)
 	const ADCBoar* Boar = GetBoar();
-	if (Boar && HealthComponent->GetHPPercent() <= Boar->FleeHPFraction)
+	if (Boar && !Boar->bAutoAggroPlayer && HealthComponent->GetHPPercent() <= Boar->FleeHPFraction)
 	{
 		StartFlee(Attacker);
 	}
@@ -362,8 +373,17 @@ void ADCBoarAIController::ChaseTick()
 	const float Now = GetWorld()->GetTimeSeconds();
 	const float Gap = GapToTarget();
 
-	if (!IsTargetValid() || Gap > Boar->LoseInterestDistance || (Now - LastProvokedTime) > Boar->MaxChaseTime)
+	if (!IsTargetValid() || (!Boar->bAutoAggroPlayer && (Gap > Boar->LoseInterestDistance || (Now - LastProvokedTime) > Boar->MaxChaseTime)))
 	{
+		if (Boar->bAutoAggroPlayer)
+		{
+			if (APawn* NewPlayer = UGameplayStatics::GetPlayerPawn(this, 0))
+			{
+				AngerTarget = NewPlayer;
+				MoveToActor(NewPlayer, FMath::Max(Boar->BiteRange * 0.5f, 10.0f), true, true, false, nullptr, true);
+				return;
+			}
+		}
 		CalmDown();
 		return;
 	}

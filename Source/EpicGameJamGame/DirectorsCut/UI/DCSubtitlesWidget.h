@@ -25,6 +25,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category="Subtitles")
 	void SkipTypewriter();
 
+	UFUNCTION(BlueprintPure, Category="Subtitles")
+	FString GetSpeakerString() const;
+
+	UFUNCTION(BlueprintPure, Category="Subtitles")
+	FString GetLineString() const { return FullText; }
+
 protected:
 
 	UPROPERTY(BlueprintReadOnly, Category="Subtitles", meta=(BindWidget))

@@ -103,6 +103,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Boar|Anger", meta=(ClampMin=0, Units="s"))
 	float MaxChaseTime = 12.0f;
 
+	/** Immediately charges the player on spawn (used during Beat 3 hyperspawn) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Boar|Anger")
+	bool bAutoAggroPlayer = false;
+
 	// ---------------- flee + death (system 6)
 
 	/** When a hit leaves HP at or below this fraction of max, the boar runs away instead of fighting */
@@ -123,6 +127,10 @@ public:
 	/** Seconds the body stays on the ground before it is removed (0 = stays forever) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Boar|Death", meta=(ClampMin=0, Units="s"))
 	float CorpseTime = 4.0f;
+
+	/** Quest event tag reported when this boar dies */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Boar|Death")
+	FName KillEventTag = FName("Kill.Boar");
 
 	// ---------------- debug
 

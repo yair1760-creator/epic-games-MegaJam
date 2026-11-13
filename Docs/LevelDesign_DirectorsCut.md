@@ -45,13 +45,11 @@ Load exactly these sublevels for each beat and unload everything else. Use strea
 
 | Beat | Narrator moment | Load these | What the player sees change |
 |---|---|---|---|
-| 1 | Intro quest: hunt boars (sword) | `DC_Light_Day`, `DC_Set_Hunt` | Sunny fantasy meadow, painted sky backdrop, hay bales, sword rack |
-| 2 | Meat-drop joke | + `DC_Set_NoMeat` | Stall gets "SOLD OUT", empty meat hooks and a spotlit empty plate; a giant red "HA HA HA" sign; a blank scoreboard next to The Set |
-| 3 | Director cut #1: sword → shotgun | `DC_Light_Day`, `DC_Set_Hunt`, `DC_Set_FilmCrew` (unload NoMeat) | Film crew takes over The Set: spotlit weapon pedestal, 4 light stands, director's chair, dolly track and camera, boom mic, "SCENE 3 TAKE 2" clapperboard |
-| 4 | Director cut #2: rated PG | `DC_Light_PG`, `DC_Set_Hunt`, `DC_Set_PG` | Pastel pink light, cardboard flowers, rainbow arch over the main path, a blank pastel billboard, pastel boar pen with a blank sign board |
-| 5 | Escalation | `DC_Light_Storm`, `DC_Set_Hunt`, `DC_Set_Storm`, then the exit sublevels in turn: `DC_Exit_A` → `DC_Exit_B` → `DC_Exit_C` | Grey storm and fog, fallen trees across paths, barricades around The Set, crates, mud, a fake "WIND FX" machine, rain-rig pipes. The red EXIT door jumps: unload one exit sublevel, load the next |
-| 6 | Breaking point | `DC_Light_Broken`, `DC_Set_Broken` | Hunt set unloads, so the **backdrop vanishes** and exposes the scaffolding. Fallen backdrop panels, magenta "missing texture" cubes floating, black void patches, hay frozen mid-fall, a crashed studio light, a giant mouse cursor, "ERROR: SCENE NOT FOUND" and "LOADING..." |
-| 7 | Boss: the Director | `DC_Light_Boss`, `DC_Set_Boss` | Red light. The Set becomes an arena: a curved red wall with 4 entrances, 4 tall and 8 low cover blocks, 3 red spotlight rigs, and the Director's crane perch east of The Set with a "FINAL CUT" sign |
+| 1 | Intro quest: kill 10 boars (sword; interrupted at 7/10) | `DC_Light_Day`, `DC_Set_Hunt` | Sunny fantasy meadow, painted sky backdrop, hay bales, sword rack |
+| 2 | Breakfast / meat-drop joke: collect 5 boar meat | `DC_Light_Day`, `DC_Set_Hunt`, `DC_Set_NoMeat` | Stall gets "SOLD OUT", empty meat hooks and a spotlit empty plate; a giant red "HA HA HA" sign; a blank scoreboard next to The Set |
+| 3 | Director cut #1: too boring! Sword → gun, hyperspawn, kill 100 boars | `DC_Light_Day`, `DC_Set_Hunt`, `DC_Set_FilmCrew` | Film crew takes over The Set: spotlit weapon pedestal, 4 light stands, director's chair, dolly track and camera, boom mic, "SCENE 3 TAKE 2" clapperboard |
+| 4 | Director cut #2: too violent, need romance! Rescue the Princess from the shed guarded by the King Boar | `DC_Light_PG`, `DC_Set_Hunt`, `DC_Set_PG` | Pastel pink light, cardboard flowers, rainbow arch over the main path, romantic shed holding the Princess, guarded by the giant crowned King Boar |
+| 5 | Climax / Boss: the Director gets mad, enters the scene ("bad actor"), fight the Director | `DC_Light_Boss`, `DC_Set_Boss` | Red light. The Set becomes an arena: a curved red wall with 4 entrances, 4 tall and 8 low cover blocks, 3 red spotlight rigs, and the Director's crane perch east of The Set with a "FINAL CUT" sign |
 
 `DC_Light_Day` and `DC_Set_Hunt` are set to **Initially Loaded + Visible**, so beat 1 is live as soon as the map opens. All other sublevels start unloaded.
 
@@ -59,18 +57,16 @@ Load exactly these sublevels for each beat and unload everything else. Use strea
 
 ## Gameplay markers inside the sublevels
 
-These are placed by level design for the programmer to hook into.
+These are placed by level design / spawned by `ADCGameMode` for the full 5-beat flow.
 
-| Actor | Sublevel | Tags | Use |
+| Actor | Sublevel / Owner | Tags | Use |
 |---|---|---|---|
 | `WeaponPickup_Sword` | Set_Hunt | `WeaponPickup`, `Sword` | Beat 1 sword spawn, by the village sword rack |
-| `WeaponPickup_Shotgun` | Set_FilmCrew | `WeaponPickup`, `Shotgun` | Beat 3 shotgun on the pedestal |
-| `Pen_Zone` (TriggerBox) | Set_PG | `BoarPen` | Beat 4: boar enters this box = "shooed in" |
-| `Exit_A/B/C_Trigger` (TriggerBox) | Exit_A/B/C | `Exit`, `Exit_A` / `Exit_B` / `Exit_C` | Beat 5: player touches the exit, and the Director moves it (swap to the next exit sublevel) |
-| `Weather_Rain`, `Weather_Lightning` | Light_Storm | `Weather` + `Rain` / `Lightning` | VFX spawn points |
-| `Weather_Wind` | Set_Storm | `Weather`, `Wind` | Wind VFX/SFX at the wind machine, blowing south |
-| `Boss_DirectorSpawn` | Set_Boss | `Boss` | Director boss perch on the crane platform, about 14 m up |
+| `WeaponPickup_Shotgun` | Set_FilmCrew | `WeaponPickup`, `Shotgun` | Beat 3 weapon pedestal on The Set (player is auto-swapped to gun) |
+| `DCPrincess` + `DCKingBoar` | Beat 4 (`Set_PG` or persistent) | `PrincessSpawn`, `KingBoarSpawn` | Beat 4: Place an `ADCPrincess` directly or a `TargetPoint` tagged `PrincessSpawn` (e.g. inside a shed or tower), and optionally `KingBoarSpawn`. If omitted, `ADCGameMode` spawns them at the default Beat 4 clearing. |
+| `Boss_DirectorSpawn` | Set_Boss | `Boss` | Beat 5: Director boss spawns in front of the crane perch on The Set arena |
 | `BoarSpawn_0..5` | persistent | `BoarSpawn` | Boar spawn points around the edge, facing The Set |
+| `DC_BoarSpawner` | persistent | — | Normal spawning in Beats 1–2 (`MaxAlive=5`), hyperspawn in Beat 3 (`MaxAlive=12`, auto-aggro) |
 
 Editor-only text labels (`LBL_*`) are hidden in game. The `SIGN_*` text actors are real in-game signage.
 
@@ -78,14 +74,14 @@ Editor-only text labels (`LBL_*`) are hidden in game. The `SIGN_*` text actors a
 
 ## Level design notes
 
-- **One weenie:** the Tower is visible from spawn above the backdrop. It stays the "ending" the whole game. In beat 7, the Director attacks from in front of it.
-- **The Set is the stage for every rule change:** the weapon swap (beat 3) and the boss arena (beat 7) both happen on the same central plinth. The player learns that's where the Director acts.
-- **Each beat changes routes, not only looks:**
-  - Beat 5 blocks the direct paths with fallen trees and barricades.
-  - Beat 6 adds tilted slabs that work as ramps and cover.
-  - Beat 7 closes The Set behind a wall with 4 entrances.
-- **The film-set reveal is the punchline:** the backdrop, wind machine, rain rig and scaffolding tell the player the world is fake, and beat 6 makes that obvious.
-- **Lighting carries the mood:** day, then pastel PG, then storm, then glitch magenta, then boss red.
+- **One weenie:** the Tower is visible from spawn above the backdrop. It stays the "ending" the whole game. In beat 5, the Director attacks from in front of it.
+- **The Set is the stage for every rule change:** the weapon swap (beat 3) and the boss arena (beat 5) both happen on the same central plinth. The player learns that's where the Director acts.
+- **Each beat changes mood and rules:**
+  - Beat 2 mocks the meat quest at the butcher stall.
+  - Beat 3 brings in the film crew, swaps the sword for a gun, and triggers boar hyperspawn.
+  - Beat 4 turns the world pastel pink for the romance shed & King Boar fight.
+  - Beat 5 closes The Set behind a red boss arena wall with 4 entrances and cover blocks.
+- **Lighting carries the mood:** sunny day (beats 1–3), then pastel PG romance (beat 4), then boss red (beat 5).
 
 ## Previewing beats in the editor
 

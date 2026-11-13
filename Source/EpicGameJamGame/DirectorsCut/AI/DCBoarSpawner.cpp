@@ -2,6 +2,7 @@
 
 #include "DirectorsCut/AI/DCBoarSpawner.h"
 #include "DirectorsCut/AI/DCBoar.h"
+#include "DirectorsCut/AI/DCBoarAIController.h"
 #include "DirectorsCut/Combat/DCHealthComponent.h"
 #include "Components/BillboardComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -109,6 +110,64 @@ void ADCBoarSpawner::DespawnAll()
 	Living.Reset();
 }
 
+void ADCBoarSpawner::SetHyperspawnMode(bool bEnabled)
+{
+	if (!bSavedNormalDefaults)
+	{
+		bSavedNormalDefaults = true;
+		NormalMaxAlive = MaxAlive;
+		NormalRespawnDelay = RespawnDelay;
+		NormalStaggerDelay = StaggerDelay;
+		NormalMinPlayerDistance = MinPlayerDistance;
+	}
+
+	bHyperspawnMode = bEnabled;
+	if (bEnabled)
+	{
+		MaxAlive = 12;
+		RespawnDelay = 0.25f;
+		StaggerDelay = 0.25f;
+		MinPlayerDistance = 850.0f;
+		bAutoAggroNewBoars = true;
+		OverrideBoarMaxHP = 25.0f;
+		OverrideCorpseTime = 1.0f;
+
+		// Make existing living boars charge immediately too
+		for (const TWeakObjectPtr<ADCBoar>& B : Living)
+		{
+			if (ADCBoar* Boar = B.Get(); Boar && !Boar->IsDead())
+			{
+				Boar->bAutoAggroPlayer = true;
+				Boar->CorpseTime = 1.0f;
+				if (UDCHealthComponent* H = Boar->GetHealth())
+				{
+					H->MaxHP = 25.0f;
+					H->ResetHealth();
+				}
+				if (ADCBoarAIController* AI = Cast<ADCBoarAIController>(Boar->GetController()))
+				{
+					if (APawn* Player = UGameplayStatics::GetPlayerPawn(this, 0))
+					{
+						AI->BecomeAngry(Player);
+					}
+				}
+			}
+		}
+
+		StartSpawning();
+	}
+	else
+	{
+		MaxAlive = NormalMaxAlive;
+		RespawnDelay = NormalRespawnDelay;
+		StaggerDelay = NormalStaggerDelay;
+		MinPlayerDistance = NormalMinPlayerDistance;
+		bAutoAggroNewBoars = false;
+		OverrideBoarMaxHP = 0.0f;
+		OverrideCorpseTime = 0.0f;
+	}
+}
+
 void ADCBoarSpawner::FillUp()
 {
 	if (!CanSpawnMore())
@@ -129,6 +188,7 @@ AActor* ADCBoarSpawner::PickSpawnPoint() const
 	const APawn* Player = UGameplayStatics::GetPlayerPawn(this, 0);
 
 	TArray<AActor*> Good;
+	TArray<AActor*> NotTooClose;
 	for (AActor* P : FoundPoints)
 	{
 		if (!P)
@@ -140,6 +200,7 @@ AActor* ADCBoarSpawner::PickSpawnPoint() const
 		{
 			continue;
 		}
+		NotTooClose.Add(P);
 		bool bOccupied = false;
 		for (const TWeakObjectPtr<ADCBoar>& B : Living)
 		{
@@ -154,7 +215,15 @@ AActor* ADCBoarSpawner::PickSpawnPoint() const
 			Good.Add(P);
 		}
 	}
-	return Good.Num() ? Good[FMath::RandRange(0, Good.Num() - 1)] : nullptr;
+	if (Good.Num() > 0)
+	{
+		return Good[FMath::RandRange(0, Good.Num() - 1)];
+	}
+	if (bHyperspawnMode && NotTooClose.Num() > 0)
+	{
+		return NotTooClose[FMath::RandRange(0, NotTooClose.Num() - 1)];
+	}
+	return nullptr;
 }
 
 ADCBoar* ADCBoarSpawner::SpawnOne()
@@ -165,9 +234,12 @@ ADCBoar* ADCBoarSpawner::SpawnOne()
 		return nullptr;
 	}
 
-	// spawn standing on the point, facing the way the point faces
+	// spawn standing on the point, facing the way the point faces (with jitter in hyperspawn)
 	const float HalfHeight = BoarClass->GetDefaultObject<ADCBoar>()->GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
-	FTransform T(FRotator(0.0f, Point->GetActorRotation().Yaw, 0.0f), Point->GetActorLocation() + FVector(0.0f, 0.0f, HalfHeight + 5.0f));
+	const FVector Jitter = bHyperspawnMode
+		? FVector(FMath::FRandRange(-180.0f, 180.0f), FMath::FRandRange(-180.0f, 180.0f), 0.0f)
+		: FVector::ZeroVector;
+	FTransform T(FRotator(0.0f, Point->GetActorRotation().Yaw, 0.0f), Point->GetActorLocation() + Jitter + FVector(0.0f, 0.0f, HalfHeight + 5.0f));
 
 	ADCBoar* Boar = GetWorld()->SpawnActorDeferred<ADCBoar>(BoarClass, T, this, nullptr, ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButDontSpawnIfColliding);
 	if (!Boar)
@@ -178,10 +250,27 @@ ADCBoar* ADCBoarSpawner::SpawnOne()
 	{
 		Boar->WanderArea = WanderArea;
 	}
+	if (bAutoAggroNewBoars)
+	{
+		Boar->bAutoAggroPlayer = true;
+		Boar->bShowDebugState = false;
+	}
+	if (OverrideCorpseTime > 0.0f)
+	{
+		Boar->CorpseTime = OverrideCorpseTime;
+	}
 	Boar->FinishSpawning(T);
 	if (!IsValid(Boar))
 	{
 		return nullptr;
+	}
+	if (OverrideBoarMaxHP > 0.0f)
+	{
+		if (UDCHealthComponent* H = Boar->GetHealth())
+		{
+			H->MaxHP = OverrideBoarMaxHP;
+			H->ResetHealth();
+		}
 	}
 
 	Boar->OnBoarDied.AddUniqueDynamic(this, &ADCBoarSpawner::HandleBoarDied);
@@ -193,7 +282,7 @@ ADCBoar* ADCBoarSpawner::SpawnOne()
 
 void ADCBoarSpawner::HandleBoarDied(ADCBoar* Boar, APawn* Killer)
 {
-	if (bSpawning && CanSpawnMore())
+	if (bSpawning && CanSpawnMore() && !GetWorldTimerManager().IsTimerActive(FillTimer))
 	{
 		GetWorldTimerManager().SetTimer(FillTimer, this, &ADCBoarSpawner::FillUp, FMath::Max(RespawnDelay, 0.05f), false);
 	}
