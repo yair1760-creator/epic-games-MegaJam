@@ -9,6 +9,7 @@
 class USphereComponent;
 class UDCBillboardSprite;
 class UPointLightComponent;
+class USoundBase;
 
 UCLASS(DisplayName="DC Boar Meat Pickup")
 class EPICGAMEJAMGAME_API ADCBoarMeatPickup : public AActor
@@ -30,6 +31,10 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Pickup", meta=(ClampMin=0))
 	float MagnetSpeed = 520.0f;
+
+	/** 2D blip when the player collects it (empty = silent) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Pickup|Audio")
+	TObjectPtr<USoundBase> PickupSound;
 
 protected:
 

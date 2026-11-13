@@ -24,6 +24,8 @@ ADCKingBoar::ADCKingBoar()
 	WanderRadius = 700.0f;
 	KillEventTag = FName("Kill.KingBoar");
 	CorpseTime = 5.0f;
+	SoundVolume = 1.6f;   // same boar sounds, bigger and deeper
+	SoundPitch = 0.7f;
 
 	// gold boar
 	if (Sprite)

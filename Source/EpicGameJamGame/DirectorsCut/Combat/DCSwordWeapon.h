@@ -11,6 +11,8 @@ class UStaticMeshComponent;
 class UDamageType;
 class UTexture2D;
 class UDCWeaponSpriteWidget;
+class USoundBase;
+class UNiagaraSystem;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FDCOnSwordHit, AActor*, HitActor, float, Damage);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FDCOnSwordSwing);
@@ -91,6 +93,24 @@ public:
 	/** Draw the hit sweep in the world (debugging) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Sword|Debug")
 	bool bDebugDraw = false;
+
+	// ---------------- audio / VFX (empty = silent / nothing; placeholders in /Game/DirectorsCut/Audio/SFX)
+
+	/** Whoosh on every swing (2D, it's the player's own sword) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Sword|Audio")
+	TObjectPtr<USoundBase> SwingSound;
+
+	/** Played at the target for each actor the blade hits */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Sword|Audio")
+	TObjectPtr<USoundBase> HitSound;
+
+	/** Effect at the impact point for each actor hit (NS_HitImpact) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Sword|FX")
+	TObjectPtr<UNiagaraSystem> HitFX;
+
+	/** Effect in front of the camera on each swing (NS_SwordTrail) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Sword|FX")
+	TObjectPtr<UNiagaraSystem> SwingFX;
 
 	/** Fires on every swing (sounds, Director comments...) */
 	UPROPERTY(BlueprintAssignable, Category="Sword")

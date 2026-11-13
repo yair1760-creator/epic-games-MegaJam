@@ -11,6 +11,8 @@ class UStaticMeshComponent;
 class UTextRenderComponent;
 class UDCFloatingHPBar;
 class UDCBillboardSprite;
+class USoundBase;
+class UNiagaraSystem;
 
 /** What the boar is doing. Systems 5-6 add Angry / Charge / Bite / Flee / Dead behaviour. */
 UENUM(BlueprintType)
@@ -138,6 +140,47 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Boar|Look")
 	bool bUseSprite = true;
 
+	// ---------------- audio / VFX (empty = silent / nothing; placeholders in /Game/DirectorsCut/Audio/SFX)
+
+	/** Now and then while calm (Idle / Wander) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Boar|Audio")
+	TObjectPtr<USoundBase> GruntSound;
+
+	/** Seconds between calm grunts (random in this range) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Boar|Audio")
+	FVector2D GruntInterval = FVector2D(4.0f, 10.0f);
+
+	/** When it turns angry (hit, or the King spotting you) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Boar|Audio")
+	TObjectPtr<USoundBase> AngrySound;
+
+	/** When a charge starts */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Boar|Audio")
+	TObjectPtr<USoundBase> ChargeSound;
+
+	/** On each bite */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Boar|Audio")
+	TObjectPtr<USoundBase> BiteSound;
+
+	/** Squeal on every hit that doesn't kill */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Boar|Audio")
+	TObjectPtr<USoundBase> HurtSound;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Boar|Audio")
+	TObjectPtr<USoundBase> DeathSound;
+
+	/** Effect where it dies (NS_BoarDeathPoof) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Boar|FX")
+	TObjectPtr<UNiagaraSystem> DeathFX;
+
+	/** Volume for all of this boar's sounds (the King is louder) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Boar|Audio", meta=(ClampMin=0))
+	float SoundVolume = 1.0f;
+
+	/** Pitch for all of this boar's sounds (the King is deeper) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Boar|Audio", meta=(ClampMin=0.1))
+	float SoundPitch = 1.0f;
+
 	/** Floating state label above the boar (debug only, off for the real game; tick it on a boar to see its AI state) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Boar|Debug")
 	bool bShowDebugState = false;
@@ -219,4 +262,7 @@ private:
 	float DeathAnimTime = -1.0f;
 	FRotator DeathStartRotation = FRotator::ZeroRotator;
 	FTimerHandle CorpseTimer;
+
+	float NextGruntTime = 0.0f;
+	void PlayBoarSound(USoundBase* Sound, float MinInterval = 0.06f);
 };

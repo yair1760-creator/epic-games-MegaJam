@@ -210,7 +210,7 @@ rows = [
   "Editable sound / Niagara slots + playback on the sword (swing, hit, trail), boar (grunt, charge, squeal, death, death poof), player (hurt), boss (attack, hit, defeat). Empty slot = silent, so it works before the files exist.",
   "DirectorsCut/Combat, DirectorsCut/AI, Variant_Shooter", "DirectorsCut/Audio (slots only)",
   "Test map with placeholder sounds: each action plays its sound once, at the right moment, with distance falloff.",
-  "Every event in the list has a slot and plays it; nothing spams.", "13", 2, "Not started"),
+  "Every event in the list has a slot and plays it; nothing spams.", "13", 2, "Done (review)"),
  (19, "P1 SFX + music files", "Audio (shared)",
   "Make S_* sound effects and the 5 music loops (heroic, frantic, pastel romance, boss, victory sting). Sources allowed by the jam: AI tools (fal: ElevenLabs SFX v3, Stable Audio, Sonilo SFX/music, Lyria, ElevenLabs Music) and licensed assets (WeLoveIndies free non-commercial pack, Fab). List every source in the submission.",
   "-", "DirectorsCut/Audio/SFX, DirectorsCut/Audio/Music",
@@ -222,7 +222,7 @@ rows = [
   "Walk around a boar: back/side frames show. Get hit during a CUT! fade: both show.",
   "Correct view per angle; flash never cancels another fade.", "9", 1.5, "Waiting art"),
 ]
-APPROVED = {1: "Approved", 2: "Approved", 3: "Approved", 4: "Approved", 5: "Approved", 6: "Approved", 7: "Approved", 8: "Approved", 9: "Approved", 10: "Approved", 11: "Approved", 13: "Approved", 14: "Approved", 15: "Approved"}   # approvals the user gave in chat (2026-11-13)
+APPROVED = {1: "Approved", 2: "Approved", 3: "Approved", 4: "Approved", 5: "Approved", 6: "Approved", 7: "Approved", 8: "Approved", 9: "Approved", 10: "Approved", 11: "Approved", 13: "Approved", 14: "Approved", 15: "Approved", 18: "Approved"}   # approvals the user gave in chat (2026-11-13)
 r = HR + 1
 for row in rows:
     done = row[10].startswith("Done")
@@ -319,6 +319,7 @@ BACKLOG = [
  (14, "Balance + weapon rules", "Design", "King Boar 900 HP and Director 1500 HP are worked out from rifle damage, not from a real run", "Full Level 1 playtest in the main map (PIE, don't save); tune in DCKingBoar.cpp / DCDirectorBoss.cpp", "High"),
  (14, "Balance + weapon rules", "Design", "A weapon pickup touched during a sword-only beat is used up but gives nothing", "Only matters if the main map keeps template rifle pickups in Beats 1-2", "Low"),
 (15, "King Boar visuals", "Art", "Gold is a tint over the normal (red-brown) boar frames, so it reads orange-gold; the crown is a placeholder drawing", "Designer: a gold King Boar frame set and a crown; swap on Sprite / CrownSprite", "Medium"), (15, "King Boar visuals", "Animation", "Crown is fixed to the head position of the idle/charge frames; it doesn't follow hit/hurt frames", "Fine at 2.5x scale; real art could draw the crown into the frames", "Low"),
+(18, "Audio + VFX hooks", "Audio", "All 13 S_* sounds are synthesized placeholders (beeps, noise, buzz)", "System 19: reimport real files over the same S_* assets", "High"), (18, "Audio + VFX hooks", "VFX", "Hit impact, sword trail, boar death poof and boss defeat Niagara slots are empty (no effects in the project)", "Make NS_HitImpact / NS_BoarDeathPoof (ink splat style) and assign", "Medium"), (18, "Audio + VFX hooks", "Repo", "Sounds are only referenced from C++ defaults; a packaged build may leave them out", "Add /Game/DirectorsCut/Audio to Additional Asset Directories to Cook (shared setting: ask lead)", "High"), (18, "Audio + VFX hooks", "Audio", "The killing blow on the boss also plays a hit sound under the defeat sound", "Cosmetic", "Low"),
 ]
 pol = Sheet("Polish backlog")
 pol.set(1, 1, "Polish backlog: what each system still lacks (art, animation, textures, audio, VFX, UI)", S_TITLE)

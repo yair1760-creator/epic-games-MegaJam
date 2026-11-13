@@ -14,12 +14,15 @@
 #include "TimerManager.h"
 #include "ShooterGameMode.h"
 #include "DirectorsCut/Combat/DCHitFeedbackComponent.h"
+#include "DirectorsCut/Combat/DCFXLibrary.h"
+#include "Sound/SoundBase.h"
 #include "Components/DecalComponent.h"
 #include "Materials/MaterialInterface.h"
 #include "UObject/ConstructorHelpers.h"
 
 AShooterCharacter::AShooterCharacter()
 {
+	DC_DEFAULT_SFX(HurtSound, "S_PlayerHurt");
 	// create the noise emitter component
 	PawnNoiseEmitter = CreateDefaultSubobject<UPawnNoiseEmitterComponent>(TEXT("Pawn Noise Emitter"));
 
@@ -129,7 +132,12 @@ float AShooterCharacter::TakeDamage(float Damage, struct FDamageEvent const& Dam
 	if (CurrentHP <= 0.0f)
 	{
 		CurrentHP = 0.0f;
+		UDCFXLibrary::PlayUISound(this, DeathSound, 1.0f, 0.0f, 0.0f);
 		Die();
+	}
+	else
+	{
+		UDCFXLibrary::PlayUISound(this, HurtSound, 1.0f, 0.06f, 0.25f);   // a swarm bites a lot: one grunt per 0.25 s
 	}
 
 	// update the HUD

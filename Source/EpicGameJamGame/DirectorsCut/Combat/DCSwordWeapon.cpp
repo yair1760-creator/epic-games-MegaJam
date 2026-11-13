@@ -4,6 +4,9 @@
 #include "DirectorsCut/Combat/DCHealthComponent.h"
 #include "DirectorsCut/Combat/DCHitFeedbackComponent.h"
 #include "DirectorsCut/Combat/DCWeaponSpriteWidget.h"
+#include "DirectorsCut/Combat/DCFXLibrary.h"
+#include "Sound/SoundBase.h"
+#include "NiagaraSystem.h"
 #include "Engine/Texture2D.h"
 #include "EpicGameJamGameCharacter.h"
 #include "Camera/CameraComponent.h"
@@ -22,6 +25,8 @@
 
 ADCSwordWeapon::ADCSwordWeapon()
 {
+	DC_DEFAULT_SFX(SwingSound, "S_SwordSwing");
+	DC_DEFAULT_SFX(HitSound, "S_SwordHit");
 	PrimaryActorTick.bCanEverTick = true;
 
 	// a sword has no magazine: firing never needs ammo and reload does nothing
@@ -220,6 +225,14 @@ void ADCSwordWeapon::Fire()
 		UpdateSpriteView(0.0f);   // Windup shows on the input frame itself
 	}
 	OnSwing.Broadcast();
+	UDCFXLibrary::PlayUISound(this, SwingSound);
+	if (SwingFX)
+	{
+		FVector EyeLoc;
+		FRotator EyeRot;
+		PawnOwner->GetActorEyesViewPoint(EyeLoc, EyeRot);
+		UDCFXLibrary::SpawnWorldFX(this, SwingFX, EyeLoc + EyeRot.Vector() * 80.0f, EyeRot);
+	}
 
 	// AI can hear swings too
 	MakeNoise(ShotLoudness, PawnOwner, PawnOwner->GetActorLocation(), ShotNoiseRange, NoiseOwnerTag);
@@ -305,6 +318,11 @@ void ADCSwordWeapon::DoHitSweep()
 
 		UGameplayStatics::ApplyDamage(Target, Damage, Pawn->GetController(), Pawn, DamageTypeClass);
 		OnHit.Broadcast(Target, Damage);
+		{
+			const FVector ImpactAt = Hit.bBlockingHit || !Hit.ImpactPoint.IsNearlyZero() ? FVector(Hit.ImpactPoint) : Target->GetActorLocation();
+			UDCFXLibrary::PlayWorldSound(this, HitSound, ImpactAt);
+			UDCFXLibrary::SpawnWorldFX(this, HitFX, ImpactAt, (ViewLoc - ImpactAt).Rotation());
+		}
 
 		if (Knockback > 0.0f)
 		{

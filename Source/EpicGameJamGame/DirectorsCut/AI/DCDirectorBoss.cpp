@@ -4,6 +4,9 @@
 #include "DirectorsCut/AI/DCDirectorProjectile.h"
 #include "DirectorsCut/Combat/DCHealthComponent.h"
 #include "DirectorsCut/Combat/DCFloatingHPBar.h"
+#include "DirectorsCut/Combat/DCFXLibrary.h"
+#include "Sound/SoundBase.h"
+#include "NiagaraSystem.h"
 #include "Quest/DCQuestSubsystem.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/PointLightComponent.h"
@@ -20,6 +23,9 @@
 
 ADCDirectorBoss::ADCDirectorBoss()
 {
+	DC_DEFAULT_SFX(AttackSound, "S_BossShot");
+	DC_DEFAULT_SFX(HitSound, "S_BossHit");
+	DC_DEFAULT_SFX(DefeatSound, "S_BossDefeat");
 	PrimaryActorTick.bCanEverTick = true;
 
 	GetCapsuleComponent()->InitCapsuleSize(65.0f, 130.0f);
@@ -175,6 +181,7 @@ void ADCDirectorBoss::FireAtPlayer()
 	}
 
 	const FVector TargetLoc = Player->GetActorLocation() + FVector(0.0f, 0.0f, 40.0f);
+	UDCFXLibrary::PlayWorldSound(this, AttackSound, GetActorLocation(), 1.4f);
 	SpawnProjectileTowards(TargetLoc, 0.0f);
 
 	// Enraged phase under 50% HP: 3-shot dramatic fan + flip strafe direction occasionally
@@ -213,6 +220,10 @@ void ADCDirectorBoss::TriggerTaunt()
 
 void ADCDirectorBoss::HandleHealthChanged(UDCHealthComponent* HealthComponent, float CurrentHP, float Delta, AActor* DamageCauser)
 {
+	if (Delta < 0.0f && !HealthComponent->IsDead())
+	{
+		UDCFXLibrary::PlayWorldSound(this, HitSound, GetActorLocation(), 1.2f, 0.08f, 0.15f);
+	}
 	if (!bHalfHPTriggered && Delta < 0.0f && HealthComponent->GetHPPercent() <= 0.5f && !HealthComponent->IsDead())
 	{
 		bHalfHPTriggered = true;
@@ -247,6 +258,9 @@ void ADCDirectorBoss::HandleDied(UDCHealthComponent* HealthComponent, AControlle
 	{
 		Quest->ReportEvent(FName("Kill.Director"));
 	}
+
+	UDCFXLibrary::PlayWorldSound(this, DefeatSound, GetActorLocation(), 1.6f, 0.0f, 0.0f);
+	UDCFXLibrary::SpawnWorldFX(this, DefeatFX, GetActorLocation());
 
 	OnBossDied.Broadcast();
 	SetLifeSpan(5.0f);

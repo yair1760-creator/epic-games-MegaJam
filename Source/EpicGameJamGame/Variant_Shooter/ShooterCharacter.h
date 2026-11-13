@@ -25,6 +25,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FShooterDiedDelegate, AShooterCharac
 
 class UDCHitFeedbackComponent;
 class UDecalComponent;
+class USoundBase;
 
 /**
  *  A player controllable first person shooter character
@@ -77,6 +78,14 @@ protected:
 	/** Max distance to use for aim traces */
 	UPROPERTY(EditAnywhere, Category ="Aim", meta = (ClampMin = 0, ClampMax = 100000, Units = "cm"))
 	float MaxAimDistance = 10000.0f;
+
+	/** Grunt when hurt (2D; empty = silent) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Health|Audio")
+	TObjectPtr<USoundBase> HurtSound;
+
+	/** On death (2D; empty = silent) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Health|Audio")
+	TObjectPtr<USoundBase> DeathSound;
 
 	/** Max HP this character can have */
 	UPROPERTY(EditAnywhere, Category="Health")

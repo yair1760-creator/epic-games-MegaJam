@@ -171,3 +171,30 @@ Why the bosses went up: the rifle does about 250 damage per second, so a 400 HP 
 - To use real art: set the crown's Front Texture, or give the King its own boar frames on `Sprite`.
 - **Fix in `UDCBillboardSprite`:** each sprite now gives its picture a unique name. Before, a second sprite on the same actor replaced the first one's picture, so the boar went invisible and the crown took its place. Any actor can now carry several sprites (useful for the Director boss).
 - Screenshots: `Docs/Screenshots/Sys15_King_Alive.png`, `Sys15_King_Dead.png`.
+
+## 11. Sound + effect slots (system 18)
+
+Every slot is a normal property (empty = silent / no effect). All of them play through `UDCFXLibrary` (Combat), which gives world sounds a shared distance falloff (full volume within 3 m, silent at about 40 m), a little random pitch, and a short per-sound cooldown so a 12-boar swarm can't stack the same sound. Blueprint can call `PlayWorldSound`, `PlayUISound` and `SpawnWorldFX` too.
+
+| Class | Slot | When | Default |
+|---|---|---|---|
+| `DCSwordWeapon` | Swing Sound (2D) / Swing FX | every swing | `S_SwordSwing` / empty (NS_SwordTrail) |
+| | Hit Sound / Hit FX | each actor hit, at the impact point | `S_SwordHit` / empty (NS_HitImpact) |
+| `DCBoar` | Grunt Sound | now and then while calm (Grunt Interval 4-10 s) | `S_BoarGrunt` |
+| | Angry Sound | turns angry | `S_BoarAggro` |
+| | Charge Sound | a charge starts | `S_BoarCharge` |
+| | Bite Sound | each bite | `S_BoarBite` |
+| | Hurt Sound | every hit that doesn't kill | `S_BoarSqueal` |
+| | Death Sound / Death FX | dies | `S_BoarDeath` / empty (NS_BoarDeathPoof) |
+| | Sound Volume / Sound Pitch | all of the boar's sounds | 1 / 1 (King Boar 1.6 / 0.7) |
+| `ShooterCharacter` | Hurt Sound / Death Sound (2D) | takes damage (max every 0.25 s) / dies | `S_PlayerHurt` / empty |
+| `DCDirectorBoss` | Attack / Hit / Defeat Sound, Defeat FX | fires / takes damage (max every 0.15 s) / defeated | `S_BossShot` / `S_BossHit` / `S_BossDefeat` / empty |
+| `DCBoarMeatPickup` | Pickup Sound (2D) | collected | `S_MeatPickup` |
+
+**The 13 `S_*` sounds in `/Game/DirectorsCut/Audio/SFX` are synthesized placeholders** (`Scripts/Make_PlaceholderSFX.py`, sources in `Art/Audio/SFX_Placeholder`). To use real audio, reimport the real file over the same asset (right-click → Reimport with a new file) and every slot picks it up. Or point a slot at a different asset on the Blueprint.
+
+**Niagara slots are empty:** the project has no hit/poof/trail effects yet.
+
+**Tested in `Lvl_Test_CombatAI`** with `log LogDCCombat Verbose` (each sound logs `SFX 2D/3D <name>`): a sword kill played swing, hit, squeal, aggro, charge and death; an angry boar played bite and the player's hurt sound; the meat played its blip; the boss played shot, hit and defeat.
+
+**Packaging note:** these sounds (like the boar and sword textures) are referenced from C++ defaults. If a packaged build is silent, add `/Game/DirectorsCut/Audio` to Project Settings → Packaging → Additional Asset Directories to Cook (the Narrator folder is already there).

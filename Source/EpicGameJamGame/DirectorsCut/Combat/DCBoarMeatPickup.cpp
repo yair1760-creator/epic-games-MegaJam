@@ -5,6 +5,8 @@
 #include "Components/PointLightComponent.h"
 #include "Components/SphereComponent.h"
 #include "DirectorsCut/Rendering/DCBillboardSprite.h"
+#include "DirectorsCut/Combat/DCFXLibrary.h"
+#include "Sound/SoundBase.h"
 #include "Engine/Texture2D.h"
 #include "Engine/World.h"
 #include "GameFramework/Pawn.h"
@@ -13,6 +15,7 @@
 
 ADCBoarMeatPickup::ADCBoarMeatPickup()
 {
+	DC_DEFAULT_SFX(PickupSound, "S_MeatPickup");
 	PrimaryActorTick.bCanEverTick = true;
 
 	CollisionSphere = CreateDefaultSubobject<USphereComponent>(TEXT("Collision Sphere"));
@@ -96,6 +99,7 @@ void ADCBoarMeatPickup::Collect()
 		return;
 	}
 	bCollected = true;
+	UDCFXLibrary::PlayUISound(this, PickupSound, 1.0f, 0.03f, 0.0f);
 
 	if (UDCQuestSubsystem* Quest = GetWorld() ? GetWorld()->GetSubsystem<UDCQuestSubsystem>() : nullptr)
 	{
