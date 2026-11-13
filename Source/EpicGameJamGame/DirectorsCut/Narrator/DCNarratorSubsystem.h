@@ -7,6 +7,7 @@
 #include "Subsystems/WorldSubsystem.h"
 #include "DCNarratorSubsystem.generated.h"
 
+class UAudioComponent;
 class USoundBase;
 
 /** One Director line. Row type of DT_NarratorLines. */
@@ -36,8 +37,10 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FDCOnLineFinished, FName, RowId);
 /**
  *  Plays Director lines from DT_NarratorLines, one at a time, with a queue.
  *  The subtitle widget listens to OnLineStarted / OnLineFinished.
+ *  The table is set in DefaultGame.ini: [/Script/EpicGameJamGame.DCNarratorSubsystem] LinesTable=...
+ *  Console: DC.PlayLine <RowId> [RowId...], DC.InterruptLine
  */
-UCLASS()
+UCLASS(Config=Game)
 class EPICGAMEJAMGAME_API UDCNarratorSubsystem : public UWorldSubsystem
 {
 	GENERATED_BODY()
@@ -52,9 +55,15 @@ public:
 	UFUNCTION(BlueprintCallable, Category="Narrator")
 	void PlaySequence(const TArray<FName>& RowIds);
 
-	/** Cuts off the current line and clears the queue */
+	/** Cuts off the current line and clears the queue. Fires OnLineFinished for the cut-off line. */
 	UFUNCTION(BlueprintCallable, Category="Narrator")
 	void Interrupt();
+
+	UFUNCTION(BlueprintPure, Category="Narrator")
+	bool IsPlaying() const { return !CurrentLineId.IsNone(); }
+
+	UFUNCTION(BlueprintPure, Category="Narrator")
+	FName GetCurrentLineId() const { return CurrentLineId; }
 
 	UPROPERTY(BlueprintAssignable, Category="Narrator")
 	FDCOnLineStarted OnLineStarted;
@@ -65,4 +74,25 @@ public:
 protected:
 
 	virtual bool DoesSupportWorldType(const EWorldType::Type WorldType) const override;
+	virtual void Deinitialize() override;
+
+private:
+
+	const FDCNarratorLine* FindLine(FName RowId);
+	void StartNextLine();
+	void FinishCurrentLine();
+	void StopVoice();
+
+	UPROPERTY(Config)
+	TSoftObjectPtr<UDataTable> LinesTable;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UDataTable> LoadedTable;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UAudioComponent> VoiceComponent;
+
+	TArray<FName> Queue;
+	FName CurrentLineId;
+	FTimerHandle LineTimer;
 };
