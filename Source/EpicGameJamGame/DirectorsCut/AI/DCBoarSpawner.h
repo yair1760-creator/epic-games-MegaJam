@@ -62,6 +62,11 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Spawner")
 	bool bAutoStart = true;
 
+	/** Test convenience: switch DCBoarSubsystem meat drops on when play starts (on in Lvl_Test_CombatAI only;
+	 *  leave off in the main map, where the level flow turns drops on for the meat quest) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Spawner|Meat")
+	bool bEnableMeatDropsOnStart = false;
+
 	/** Area the spawned boars wander in (passed to each boar). Leave empty to use their wander radius only. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Spawner")
 	TObjectPtr<AActor> WanderArea;

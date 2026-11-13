@@ -2,6 +2,7 @@
 
 #include "DirectorsCut/AI/DCBoarSpawner.h"
 #include "DirectorsCut/AI/DCBoar.h"
+#include "DirectorsCut/AI/DCBoarSubsystem.h"
 #include "DirectorsCut/Combat/DCHealthComponent.h"
 #include "Components/BillboardComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -27,6 +28,15 @@ void ADCBoarSpawner::BeginPlay()
 	Super::BeginPlay();
 
 	GatherSpawnPoints();
+
+	if (bEnableMeatDropsOnStart)
+	{
+		if (UDCBoarSubsystem* Boars = GetWorld()->GetSubsystem<UDCBoarSubsystem>())
+		{
+			Boars->SetMeatDropsEnabled(true);
+		}
+	}
+
 	if (bAutoStart)
 	{
 		StartSpawning();
