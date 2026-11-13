@@ -26,7 +26,7 @@ The spawner finds the spawn points by their tag, so nothing else needs editing.
 | Hit feedback | `DCHitFeedbackComponent` on the character: red flash, shake, death fade. |
 | Max HP | `BP_ShooterCharacter` → Health → **Max HP** (100 since system 14; was the template's 500). |
 
-The hit flash uses the camera-fade effect. If the Director's "CUT!" uses a camera fade, a hit during it replaces it. Tell us and we'll move the flash to its own overlay.
+The hit flash and the death tint are a full-screen UMG overlay (`UDCScreenTintWidget`, z -5: above the 2D sword, below the HUD), **not** the camera fade, so the Director can use camera fades ("CUT!", beat transitions) freely: a hit during a fade shows the red flash on top and the fade stays. The overlay is removed with the pawn on respawn. Tested 2026-11-14 (`Docs/Screenshots/Sys20_HitFlashOverlay.png`).
 
 ## 3. Sword (`BP_DC_Sword`, class `ADCSwordWeapon`)
 

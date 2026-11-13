@@ -1,6 +1,7 @@
 // Director's Cut - player hit feedback.
 
 #include "DirectorsCut/Combat/DCHitFeedbackComponent.h"
+#include "DirectorsCut/Combat/DCScreenTintWidget.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Camera/CameraTypes.h"
 #include "GameFramework/Pawn.h"
@@ -44,15 +45,19 @@ bool UDCHitShakeModifier::ModifyCamera(float DeltaTime, FMinimalViewInfo& InOutP
 
 UDCHitFeedbackComponent::UDCHitFeedbackComponent()
 {
-	PrimaryComponentTick.bCanEverTick = false;
+	PrimaryComponentTick.bCanEverTick = true;
+	PrimaryComponentTick.bStartWithTickEnabled = false;   // ticks only while a flash / death tint is showing
 }
 
-void UDCHitFeedbackComponent::BeginPlay()
+void UDCHitFeedbackComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-	Super::BeginPlay();
-
-	// a respawned player is possessed right after spawning: clear the death fade on the next tick
-	GetWorld()->GetTimerManager().SetTimerForNextTick(this, &UDCHitFeedbackComponent::ClearLeftoverFade);
+	// the respawn destroys the dead pawn: its death tint leaves with it
+	if (Overlay)
+	{
+		Overlay->RemoveFromParent();
+		Overlay = nullptr;
+	}
+	Super::EndPlay(EndPlayReason);
 }
 
 APlayerController* UDCHitFeedbackComponent::GetLocalPC() const
@@ -62,11 +67,48 @@ APlayerController* UDCHitFeedbackComponent::GetLocalPC() const
 	return (PC && PC->IsLocalController() && PC->PlayerCameraManager) ? PC : nullptr;
 }
 
-void UDCHitFeedbackComponent::ClearLeftoverFade()
+UDCScreenTintWidget* UDCHitFeedbackComponent::GetOverlay(APlayerController* PC)
 {
-	if (APlayerController* PC = GetLocalPC())
+	if (!Overlay && PC)
 	{
-		PC->PlayerCameraManager->StopCameraFade();
+		Overlay = CreateWidget<UDCScreenTintWidget>(PC, UDCScreenTintWidget::StaticClass());
+		if (Overlay)
+		{
+			Overlay->AddToViewport(OverlayZOrder);
+			Overlay->SetTint(FLinearColor::Transparent);
+		}
+	}
+	return Overlay;
+}
+
+void UDCHitFeedbackComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
+{
+	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+	FlashTime += DeltaTime;
+	if (bDying)
+	{
+		DeathTime += DeltaTime;
+	}
+	UpdateOverlay();
+}
+
+void UDCHitFeedbackComponent::UpdateOverlay()
+{
+	// flash: jumps to its alpha, then fades linearly to clear; death: ramps up and holds
+	const float FlashA = FlashTime < FlashDuration ? FlashStartAlpha * (1.0f - FlashTime / FMath::Max(FlashDuration, 0.01f)) : 0.0f;
+	const float DeathA = bDying ? DeathFadeAlpha * FMath::Clamp(DeathTime / FMath::Max(DeathFadeTime, 0.01f), 0.0f, 1.0f) : 0.0f;
+
+	FLinearColor Tint = DeathA >= FlashA ? DeathColor : FlashColor;
+	Tint.A = FMath::Max(FlashA, DeathA);
+	if (Overlay)
+	{
+		Overlay->SetTint(Tint);
+	}
+
+	// nothing left to animate: stop ticking (the death tint holds without ticking once it is fully in)
+	if (FlashA <= 0.0f && (!bDying || DeathTime >= DeathFadeTime))
+	{
+		SetComponentTickEnabled(false);
 	}
 }
 
@@ -80,9 +122,16 @@ void UDCHitFeedbackComponent::PlayHit(float HPFraction)
 
 	const float Strength = FMath::Clamp(HPFraction / FullStrengthHPFraction, 0.0f, 1.0f);
 
-	// red flash: jump to the alpha, fade back to clear
-	const float Alpha = FMath::Lerp(FlashMinAlpha, FlashMaxAlpha, Strength);
-	PC->PlayerCameraManager->StartCameraFade(Alpha, 0.0f, FlashDuration, FlashColor, false, false);
+	// red flash on the overlay (never touches the camera fade): jump to the alpha, fade back to clear
+	if (GetOverlay(PC))
+	{
+		const float Alpha = FMath::Lerp(FlashMinAlpha, FlashMaxAlpha, Strength);
+		const float StillShowing = FlashTime < FlashDuration ? FlashStartAlpha * (1.0f - FlashTime / FMath::Max(FlashDuration, 0.01f)) : 0.0f;
+		FlashStartAlpha = FMath::Max(Alpha, StillShowing);   // rapid hits don't dim a stronger running flash
+		FlashTime = 0.0f;
+		SetComponentTickEnabled(true);
+		UpdateOverlay();
+	}
 
 	// shake
 	UDCHitShakeModifier* Shake = Cast<UDCHitShakeModifier>(PC->PlayerCameraManager->FindCameraModifierByClass(UDCHitShakeModifier::StaticClass()));
@@ -100,7 +149,13 @@ void UDCHitFeedbackComponent::PlayDeath()
 {
 	if (APlayerController* PC = GetLocalPC())
 	{
-		// fade to dark red and hold until the respawned pawn clears it
-		PC->PlayerCameraManager->StartCameraFade(0.0f, DeathFadeAlpha, DeathFadeTime, DeathColor, false, true);
+		// tint to dark red and hold; the overlay is removed with this pawn when the player respawns
+		if (GetOverlay(PC))
+		{
+			bDying = true;
+			DeathTime = 0.0f;
+			SetComponentTickEnabled(true);
+			UpdateOverlay();
+		}
 	}
 }

@@ -220,7 +220,7 @@ rows = [
   "Plug side/back boar frames into the sprite when Designer 1 delivers them. Move the red hit flash from camera fade to a HUD overlay so a Director 'CUT!' fade can't be overridden.",
   "DirectorsCut/Combat, DirectorsCut/AI", "DirectorsCut/Characters/Boar",
   "Walk around a boar: back/side frames show. Get hit during a CUT! fade: both show.",
-  "Correct view per angle; flash never cancels another fade.", "9", 1.5, "Waiting art"),
+  "Correct view per angle; flash never cancels another fade.", "9", 1.5, "In progress"),
 ]
 APPROVED = {1: "Approved", 2: "Approved", 3: "Approved", 4: "Approved", 5: "Approved", 6: "Approved", 7: "Approved", 8: "Approved", 9: "Approved", 10: "Approved", 11: "Approved", 13: "Approved", 14: "Approved", 15: "Approved", 18: "Approved"}   # approvals the user gave in chat (2026-11-13)
 r = HR + 1
@@ -257,7 +257,7 @@ BACKLOG = [
  (1, "Health component", "Audio", "No hurt / death sounds", "Hook OnHealthChanged / OnDied", "Medium"),
  (1, "Health component", "VFX", "No hit effect on the target (ink blood splat, sparks)", "Hook OnHealthChanged; ink style to match the look", "High"),
  (1, "Health component", "Art", "Training dummy is a plain cylinder with floating text", "Test prop only", "Low"),
- (2, "Player HP + hit feedback", "Code", "Hit flash uses the screen-fade effect; a Director fade (e.g. on CUT!) would be replaced if the player is hit during it", "Switch the flash to its own overlay if the Director team uses fades", "Medium"),
+ (2, "Player HP + hit feedback", "Code", "Done 2026-11-14 (system 20b): hit flash + death tint are a UMG overlay, no longer the camera fade, so Director fades are never replaced", "", "Low"),
  (2, "Player HP + hit feedback", "Audio", "No player hurt grunt, heartbeat or death sound", "", "Medium"),
  (2, "Player HP + hit feedback", "VFX", "No low-HP warning (red vignette / ink cracks at the screen edge)", "", "Medium"),
  (2, "Player HP + hit feedback", "Animation", "Death shows the template third-person ragdoll; no first-person death camera", "Comedy beat opportunity (Director: 'cut!')", "Medium"),
