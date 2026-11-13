@@ -3,7 +3,6 @@
 #include "DirectorsCut/AI/DCBoar.h"
 #include "DirectorsCut/AI/DCBoarAIController.h"
 #include "DirectorsCut/AI/DCBoarSubsystem.h"
-#include "DirectorsCut/AI/DCBoarMeat.h"
 #include "Quest/DCQuestSubsystem.h"
 #include "GameFramework/Controller.h"
 #include "TimerManager.h"
@@ -40,7 +39,6 @@ ADCBoar::ADCBoar()
 	Move->AvoidanceConsiderationRadius = 200.0f;
 
 	Health = CreateDefaultSubobject<UDCHealthComponent>(TEXT("Health"));
-	MeatClass = ADCBoarMeat::StaticClass();   // BP_DC_Boar points this at BP_DC_BoarMeat
 	Health->MaxHP = 60.0f;
 
 	// ---- greybox body
@@ -210,18 +208,8 @@ void ADCBoar::HandleDied(UDCHealthComponent* HealthComponent, AController* Kille
 	if (UDCBoarSubsystem* Boars = GetWorld()->GetSubsystem<UDCBoarSubsystem>())
 	{
 		Boars->NotifyBoarKilled(this, KillerPawn);
-
-		// meat phase of the hunt: drop a pickup that pops away from the killer
-		if (Boars->IsMeatDropsEnabled() && MeatClass && FMath::FRand() <= MeatDropChance)
-		{
-			FActorSpawnParameters Params;
-			Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-			if (ADCBoarMeat* Meat = GetWorld()->SpawnActor<ADCBoarMeat>(MeatClass, GetActorLocation() + FVector(0.0f, 0.0f, 20.0f), FRotator::ZeroRotator, Params))
-			{
-				Meat->Pop(KillerPawn ? KillerPawn->GetActorLocation() : FVector::ZeroVector);
-			}
-		}
 	}
+	// (meat drops are the lead's ADCBoarMeatPickup, spawned by ADCGameMode)
 }
 
 void ADCBoar::Tick(float DeltaSeconds)

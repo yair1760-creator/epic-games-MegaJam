@@ -30,14 +30,6 @@ void ADCBoarSpawner::BeginPlay()
 
 	GatherSpawnPoints();
 
-	if (bEnableMeatDropsOnStart)
-	{
-		if (UDCBoarSubsystem* Boars = GetWorld()->GetSubsystem<UDCBoarSubsystem>())
-		{
-			Boars->SetMeatDropsEnabled(true);
-		}
-	}
-
 	if (bAutoStart)
 	{
 		StartSpawning();

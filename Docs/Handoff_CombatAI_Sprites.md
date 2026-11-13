@@ -83,39 +83,7 @@ The frames live in `/Game/DirectorsCut/Combat/Sword/Sprites/`.
 
 ## 4b. Meat drops (the "collect boar meat for bacon" part of the hunt)
 
-**The switch** (off at level start):
-
-```cpp
-#include "AI/DCBoarSubsystem.h"
-if (UDCBoarSubsystem* Boars = GetWorld()->GetSubsystem<UDCBoarSubsystem>())
-{
-    Boars->SetMeatDropsEnabled(true);   // IsMeatDropsEnabled() to read it
-}
-```
-
-In Blueprint: **Get DCBoarSubsystem → Set Meat Drops Enabled**.
-
-**What happens while the switch is on:**
-- Every boar that dies drops a **`BP_DC_BoarMeat`** (class `ADCBoarMeat`). It pops up and away from the killer, lands on the floor, then bobs gently.
-- Each boar still reports `Kill.Boar` when it dies, as before.
-- When the **player** touches the meat, it reports `ReportEvent("Collect.Meat")` once (guarded by `bCollected`), fires `DCBoarSubsystem.OnMeatCollected(Meat, Collector)`, and disappears.
-- **Who can pick it up:** only the player-controlled Shooter character (or any actor tagged `Player`). Boars walking over the meat don't pick it up.
-
-**Test:** `DC.StartQuest Q_Bacon 5 Collect.Meat Boar meat`, then `DC.BoarMeatDrops 1`, then kill boars and walk over the meat.
-
-**Settings:**
-
-| Where | Setting | Default |
-|---|---|---|
-| `BP_DC_Boar` | Meat Class | `BP_DC_BoarMeat` |
-| `BP_DC_Boar` | Meat Drop Chance | 1.0 |
-| `BP_DC_BoarMeat` | Pickup Delay | 0.4 s |
-| `BP_DC_BoarMeat` | Pop speed | 450 up / 160 out |
-| `BP_DC_BoarMeat` | Bob | 8 cm |
-| `BP_DC_BoarMeat` | Lifetime | 0 = stays until picked up |
-| `BP_DC_BoarMeat` | Quest Event Tag | `Collect.Meat` |
-
-The meat picture is a placeholder ham drawing (`T_DC_BoarMeat_Placeholder`). Swap it on `BP_DC_BoarMeat` → Sprite → Front Texture when the real art exists.
+Boar meat comes from the lead's `ADCBoarMeatPickup` (Combat), which `ADCGameMode` spawns during the bacon beat. Our earlier `ADCBoarMeat` / `SetMeatDropsEnabled` was removed so there is only one meat system. Boars still report `Kill.Boar` when they die.
 
 ## 5. Sprites (`DCBillboardSprite`)
 
@@ -136,7 +104,6 @@ The meat picture is a placeholder ham drawing (`T_DC_BoarMeat_Placeholder`). Swa
 |---|---|
 | `DC.Damage 25` / `DC.Heal 25` / `DC.Kill` | Hits, heals or kills whatever DC Health actor you are looking at |
 | `DC.HurtMe 50` | Damages the player |
-| `DC.BoarMeatDrops 1` / `0` | Boars drop meat on death (on) or not (off) |
 | `DC.StartQuest Q_HuntBoars 10 Kill.Boar Boars killed` | Starts the hunt quest (lead's command) |
 | `DC.ReportEvent Kill.Boar 5` | Fakes kills (lead's command) |
 

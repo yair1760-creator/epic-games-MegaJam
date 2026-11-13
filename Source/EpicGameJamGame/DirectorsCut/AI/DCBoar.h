@@ -11,7 +11,6 @@ class UStaticMeshComponent;
 class UTextRenderComponent;
 class UDCFloatingHPBar;
 class UDCBillboardSprite;
-class ADCBoarMeat;
 
 /** What the boar is doing. Systems 5-6 add Angry / Charge / Bite / Flee / Dead behaviour. */
 UENUM(BlueprintType)
@@ -124,14 +123,6 @@ public:
 	/** Gives up fleeing after this long (then wanders, still hurt) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Boar|Flee", meta=(ClampMin=0, Units="s"))
 	float MaxFleeTime = 6.0f;
-
-	/** Pickup dropped on death while DCBoarSubsystem meat drops are on (BP_DC_BoarMeat) */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Boar|Meat")
-	TSubclassOf<ADCBoarMeat> MeatClass;
-
-	/** Chance (0..1) to drop meat when drops are on */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Boar|Meat", meta=(ClampMin=0, ClampMax=1))
-	float MeatDropChance = 1.0f;
 
 	/** Seconds the body stays on the ground before it is removed (0 = stays forever) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Boar|Death", meta=(ClampMin=0, Units="s"))

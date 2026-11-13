@@ -173,10 +173,6 @@ def z_boar():
         s = EAS.spawn_actor_from_class(spawner_cls, V(cx, cy, 300), R())
         s.set_editor_property("wander_area", area)
         s.set_editor_property("max_alive", 4)
-        try:
-            s.set_editor_property("enable_meat_drops_on_start", True)   # test map only: meat drops on from the start
-        except Exception:
-            pass   # older build without the option
         _finish(s, "B_BoarSpawner")
     else:
         # before the spawner existed (system 4): one hand-placed boar
