@@ -15,6 +15,16 @@ class UPawnNoiseEmitterComponent;
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FBulletCountUpdatedDelegate, int32, MagazineSize, int32, Bullets);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FDamagedDelegate, float, LifePercent);
 
+/** Director's Cut: player HP changed (Delta < 0 = damage). For the HUD team's HP bar. */
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FShooterHealthChangedDelegate, float, CurrentHP, float, MaxHP, float, Delta);
+
+class AShooterCharacter;
+
+/** Director's Cut: player died (respawn follows after RespawnTime). */
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FShooterDiedDelegate, AShooterCharacter*, Character);
+
+class UDCHitFeedbackComponent;
+
 /**
  *  A player controllable first person shooter character
  *  Manages a weapon inventory through the IShooterWeaponHolder interface
@@ -28,6 +38,10 @@ class EPICGAMEJAMGAME_API AShooterCharacter : public AEpicGameJamGameCharacter, 
 	/** AI Noise emitter component */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
 	UPawnNoiseEmitterComponent* PawnNoiseEmitter;
+
+	/** Director's Cut: red flash + camera shake when the player is hit */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UDCHitFeedbackComponent> HitFeedback;
 
 protected:
 
@@ -96,6 +110,24 @@ public:
 
 	/** Damaged delegate */
 	FDamagedDelegate OnDamaged;
+
+	/** Director's Cut: fires on every HP change (damage). Bind the HP bar here. */
+	UPROPERTY(BlueprintAssignable, Category="Health")
+	FShooterHealthChangedDelegate OnHealthChanged;
+
+	/** Director's Cut: fires once when the player dies */
+	UPROPERTY(BlueprintAssignable, Category="Health")
+	FShooterDiedDelegate OnDied;
+
+	UFUNCTION(BlueprintPure, Category="Health")
+	float GetCurrentHP() const { return CurrentHP; }
+
+	UFUNCTION(BlueprintPure, Category="Health")
+	float GetMaxHP() const { return MaxHP; }
+
+	/** 0..1 */
+	UFUNCTION(BlueprintPure, Category="Health")
+	float GetHPPercent() const { return MaxHP > 0.0f ? FMath::Max(0.0f, CurrentHP) / MaxHP : 0.0f; }
 
 public:
 
@@ -202,6 +234,7 @@ protected:
 public:
 
 	/** Returns true if the character is dead */
+	UFUNCTION(BlueprintPure, Category="Health")
 	bool IsDead() const;
 
 	/** Sets the team ID for this character */
