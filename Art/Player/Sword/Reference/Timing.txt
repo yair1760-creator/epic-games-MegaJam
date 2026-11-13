@@ -1,0 +1,3 @@
+Director’s Cut — first-person sword animation
+
+12 FPS timing grid. On attack: Windup (3 ticks, 250 ms) → Swing Smear (1 tick, 83.33 ms) → Follow Through (3 ticks, 250 ms) → Idle. Hold Idle until the next attack. Hard cuts between poses. Total attack duration: 7 ticks, about 583 ms. PNGs are 1920 × 1080 with transparent padding. Keep the same placement for all four. The GIF shows preview timing.

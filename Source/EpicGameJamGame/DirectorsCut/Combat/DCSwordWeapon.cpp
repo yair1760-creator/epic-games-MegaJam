@@ -73,8 +73,8 @@ ADCSwordWeapon::ADCSwordWeapon()
 
 float ADCSwordWeapon::GetHitDelay() const
 {
-	// 2D view: the blade connects in the middle of the slash smear, like in the animation
-	return bUseSpriteView ? WindupTime + SlashTime * 0.5f : HitDelay;
+	// 2D view: the blade connects when the swing smear appears (end of the windup ticks)
+	return bUseSpriteView ? float(WindupTicks) / FMath::Max(AnimFPS, 1.0f) : HitDelay;
 }
 
 void ADCSwordWeapon::RemoveSpriteWidget()
@@ -112,20 +112,33 @@ void ADCSwordWeapon::UpdateSpriteView(float DeltaSeconds)
 	}
 	SpriteWidget->SetVisibility(ESlateVisibility::HitTestInvisible);
 
-	// frame from the swing timeline
+	// pose from the 12 fps tick grid: hard cuts, each pose held for whole ticks
 	UTexture2D* Frame = SpriteIdle;
+	FName Pose = TEXT("Idle");
 	if (SwingTime >= 0.0f)
 	{
-		if (SwingTime < WindupTime)                         Frame = SpriteWindup;
-		else if (SwingTime < WindupTime + SlashTime)        Frame = SpriteSwing;
-		else if (SwingTime < WindupTime + SlashTime + FollowTime) Frame = SpriteFollow;
+		const int32 SmearStart = WindupTicks;
+		const int32 FollowStart = WindupTicks + SmearTicks;
+		const int32 End = FollowStart + FollowTicks;
+		int32 Tick = FMath::FloorToInt(SwingTime * FMath::Max(AnimFPS, 1.0f));
+
+		// a slow frame may jump straight past the smear: show it anyway, it is the attack
+		if (Tick >= FollowStart && !bSmearShown)
+		{
+			Tick = SmearStart;
+		}
+
+		if (Tick < SmearStart)        { Frame = SpriteWindup; Pose = TEXT("Windup"); }
+		else if (Tick < FollowStart)  { Frame = SpriteSwing;  Pose = TEXT("Swing"); bSmearShown = true; }
+		else if (Tick < End)          { Frame = SpriteFollow; Pose = TEXT("Follow"); }
 	}
+	CurrentPose = Pose;
 	SpriteWidget->SetFrame(Frame ? Frame : SpriteIdle.Get());
 
-	// walk bob / idle breathing (calmer while swinging)
+	// walk bob / idle breathing while idle; the attack poses keep the exact drawn placement
 	BobTime += DeltaSeconds;
 	const float Run = FMath::Clamp(Pawn->GetVelocity().Size2D() / 600.0f, 0.0f, 1.0f);
-	const float Calm = SwingTime >= 0.0f ? 0.3f : 1.0f;
+	const float Calm = SwingTime >= 0.0f ? 0.0f : 1.0f;
 	const float Step = BobTime * 2.0f * PI * 1.6f;
 	FVector2D Offset;
 	Offset.X = FMath::Sin(Step) * WalkBobPixels * Run * Calm;
@@ -136,8 +149,8 @@ void ADCSwordWeapon::UpdateSpriteView(float DeltaSeconds)
 
 void ADCSwordWeapon::BeginPlay()
 {
-	// the base class reads these when firing
-	RefireRate = Cooldown;
+	// the base class reads these when firing; in the 2D view one attack plays fully before the next is accepted
+	RefireRate = bUseSpriteView ? FMath::Max(Cooldown, GetAttackDuration()) : Cooldown;
 	bFullAuto = bHoldToSwing;
 
 	Super::BeginPlay();   // attaches the (empty) skeletal meshes to the hand socket
@@ -201,6 +214,11 @@ void ADCSwordWeapon::Fire()
 
 	TimeOfLastShot = GetWorld()->GetTimeSeconds();
 	SwingTime = 0.0f;
+	bSmearShown = false;
+	if (bUseSpriteView)
+	{
+		UpdateSpriteView(0.0f);   // Windup shows on the input frame itself
+	}
 	OnSwing.Broadcast();
 
 	// AI can hear swings too
@@ -339,11 +357,12 @@ void ADCSwordWeapon::Tick(float DeltaSeconds)
 	// 2D view: frames + bob on screen
 	if (bUseSpriteView)
 	{
-		UpdateSpriteView(DeltaSeconds);
-		if (SwingTime >= WindupTime + SlashTime + FollowTime)
+		// attack over -> Idle (only once the smear has been on screen)
+		if (SwingTime >= GetAttackDuration() && bSmearShown)
 		{
 			SwingTime = -1.0f;
 		}
+		UpdateSpriteView(DeltaSeconds);
 		return;
 	}
 

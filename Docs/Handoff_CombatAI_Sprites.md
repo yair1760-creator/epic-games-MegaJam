@@ -30,12 +30,25 @@ The hit flash uses the camera-fade effect. If the Director's "CUT!" uses a camer
 
 ## 3. Sword (`BP_DC_Sword`, class `ADCSwordWeapon`)
 
-**Look in first person:** the sword is drawn as **2D hand + sword frames on screen**, like Forgive Me Father 2 / Doom. They were cut from the designer's attack video (`Art/Player/Sword/Reference_SwordAttack.mp4`).
-- **Frames:** `T_Sword_Idle` → `T_Sword_Windup` (0.24 s) → `T_Sword_Swing` smear (0.08 s) → `T_Sword_Follow` (0.24 s) → idle. They live in `/Game/DirectorsCut/Combat/Sword/Sprites/`.
-- **Hit timing:** the hit lands in the middle of the smear, **0.28 s after the click**.
-- **Movement:** the hand bobs while walking and sways slightly when standing still.
+**Look in first person:** the sword is drawn as **2D hand + sword frames on screen**, like Forgive Me Father 2 / Doom. They are the designer's 4 poses, exported from `Hand_Sword.psd`: transparent PNGs on the full 1920×1080 canvas, all with the same anchor. Source art and the `Dream 14.gif` reference are in `Art/Player/Sword/`.
+
+**Timing:** a **12 fps grid** with hard cuts and no in-betweens.
+
+| Pose | Starts at | Held for |
+|---|---|---|
+| `T_Sword_Windup` | 0 ms, on the click frame itself | 3 ticks |
+| `T_Sword_Swing` (smear) | 250 ms | 1 tick |
+| `T_Sword_Follow` | 333 ms | 3 ticks |
+| `T_Sword_Idle` | 583 ms | Until the next attack |
+
+The frames live in `/Game/DirectorsCut/Combat/Sword/Sprites/`.
+- **One attack per press:** clicks during an attack are ignored.
+- **The smear tick can't be skipped,** even at very low frame rates.
+- **Hit timing:** the hit lands when the smear appears, **250 ms after the click**.
+- **Movement:** the hand bobs while walking and sways slightly when standing still. The attack poses keep their exact drawn placement (no bob).
 - **Layering:** the screen layer (`UDCWeaponSpriteWidget`, built in C++) sits **under** the HUD (viewport Z -10).
-- **Settings** on `BP_DC_Sword` → **Sword | 2D View**: `bUseSpriteView` (off brings back the 3D Meshy sword), the 4 frame textures, Windup / Slash / Follow times, Screen Scale (1 = a frame fills the screen height), and walk bob / idle sway in pixels.
+- **Settings** on `BP_DC_Sword` → **Sword | 2D View**: `bUseSpriteView` (off brings back the 3D Meshy sword), the 4 frame textures, Anim FPS, Windup / Smear / Follow ticks, Screen Scale (1 = the 1920×1080 frame fills the screen height), and walk bob / idle sway.
+- **For tests / UI:** `GetSpritePose()` returns Idle / Windup / Swing / Follow, plus `GetAttackElapsed()` and `GetAttackDuration()`.
 - **Template ammo counter:** it is hidden while a melee weapon is held (`ShooterPlayerController`), so it doesn't overlap the HUD.
 
 | Setting | Default | Plan |

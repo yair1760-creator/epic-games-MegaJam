@@ -46,7 +46,7 @@ public:
 
 	/** Seconds between swings */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Sword", meta=(ClampMin=0.05, ClampMax=5, Units="s"))
-	float Cooldown = 0.55f;
+	float Cooldown = 0.5834f;
 
 	/** Seconds after the swing starts when the hit lands (lets the animation lead in) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Sword", meta=(ClampMin=0, ClampMax=1, Units="s"))
@@ -121,15 +121,31 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Sword|2D View")
 	TObjectPtr<UTexture2D> SpriteFollow;
 
-	/** Frame timing from the reference video (25 fps: 6 / 2 / 6 frames) */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Sword|2D View", meta=(ClampMin=0.01, Units="s"))
-	float WindupTime = 0.24f;
+	/** Animation timing grid (the designer's spec: 12 fps, hard cuts, no in-betweens) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Sword|2D View", meta=(ClampMin=1, ClampMax=60))
+	float AnimFPS = 12.0f;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Sword|2D View", meta=(ClampMin=0.01, Units="s"))
-	float SlashTime = 0.08f;
+	/** Ticks each pose is held: Windup 3 (250 ms) -> Swing Smear 1 (83 ms) -> Follow Through 3 (250 ms) -> Idle */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Sword|2D View", meta=(ClampMin=1))
+	int32 WindupTicks = 3;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Sword|2D View", meta=(ClampMin=0.01, Units="s"))
-	float FollowTime = 0.24f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Sword|2D View", meta=(ClampMin=1))
+	int32 SmearTicks = 1;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Sword|2D View", meta=(ClampMin=1))
+	int32 FollowTicks = 3;
+
+	/** Current pose for UI / tests: Idle, Windup, Swing, Follow */
+	UFUNCTION(BlueprintPure, Category="Sword|2D View")
+	FName GetSpritePose() const { return CurrentPose; }
+
+	/** Seconds since the current attack started (-1 when idle) */
+	UFUNCTION(BlueprintPure, Category="Sword|2D View")
+	float GetAttackElapsed() const { return SwingTime; }
+
+	/** Length of one attack in seconds ((Windup + Smear + Follow) ticks / AnimFPS) */
+	UFUNCTION(BlueprintPure, Category="Sword|2D View")
+	float GetAttackDuration() const { return float(WindupTicks + SmearTicks + FollowTicks) / FMath::Max(AnimFPS, 1.0f); }
 
 	/** Frame size on screen (1 = a frame fills the screen height) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Sword|2D View", meta=(ClampMin=0.2, ClampMax=2))
@@ -185,5 +201,7 @@ private:
 
 	float SwingTime = -1.0f;   // < 0 when not swinging
 	float BobTime = 0.0f;
+	bool bSmearShown = false;  // the smear tick is never skipped, even on a slow frame
+	FName CurrentPose = TEXT("Idle");
 	FTimerHandle HitTimer;
 };
