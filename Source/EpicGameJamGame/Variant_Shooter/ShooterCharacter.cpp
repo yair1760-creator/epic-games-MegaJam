@@ -13,11 +13,15 @@
 #include "Camera/CameraComponent.h"
 #include "TimerManager.h"
 #include "ShooterGameMode.h"
+#include "DirectorsCut/Combat/DCHitFeedbackComponent.h"
 
 AShooterCharacter::AShooterCharacter()
 {
 	// create the noise emitter component
 	PawnNoiseEmitter = CreateDefaultSubobject<UPawnNoiseEmitterComponent>(TEXT("Pawn Noise Emitter"));
+
+	// Director's Cut: hit feedback (red flash + camera shake), plays only for the local player
+	HitFeedback = CreateDefaultSubobject<UDCHitFeedbackComponent>(TEXT("Hit Feedback"));
 
 	// configure movement
 	GetCharacterMovement()->RotationRate = FRotator(0.0f, 600.0f, 0.0f);
@@ -80,19 +84,34 @@ float AShooterCharacter::TakeDamage(float Damage, struct FDamageEvent const& Dam
 		return 0.0f;
 	}
 
-	// Reduce HP
-	CurrentHP -= Damage;
+	// ignore non-positive damage
+	if (Damage <= 0.0f)
+	{
+		return 0.0f;
+	}
+
+	// Reduce HP (never below 0)
+	const float Applied = FMath::Min(Damage, CurrentHP);
+	CurrentHP -= Applied;
+
+	// Director's Cut: HP event for the HUD + hit feedback
+	OnHealthChanged.Broadcast(CurrentHP, MaxHP, -Applied);
+	if (HitFeedback)
+	{
+		HitFeedback->PlayHit(Applied / FMath::Max(MaxHP, 1.0f));
+	}
 
 	// Have we depleted HP?
 	if (CurrentHP <= 0.0f)
 	{
+		CurrentHP = 0.0f;
 		Die();
 	}
 
 	// update the HUD
 	OnDamaged.Broadcast(FMath::Max(0.0f, CurrentHP / MaxHP));
 
-	return Damage;
+	return Applied;
 }
 
 void AShooterCharacter::DoAim(float Yaw, float Pitch)
@@ -344,6 +363,13 @@ void AShooterCharacter::Die()
 
 	// call the BP handler
 	BP_OnDeath();
+
+	// Director's Cut: death event + death feedback
+	OnDied.Broadcast(this);
+	if (HitFeedback)
+	{
+		HitFeedback->PlayDeath();
+	}
 
 	// destroy all owned weapons
 	for (AShooterWeapon* Current : OwnedWeapons)
