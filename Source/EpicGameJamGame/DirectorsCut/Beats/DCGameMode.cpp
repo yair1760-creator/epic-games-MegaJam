@@ -3,6 +3,7 @@
 #include "Beats/DCGameMode.h"
 #include "Engine/World.h"
 #include "TimerManager.h"
+#include "UI/DCHUDWidget.h"
 #include "Narrator/DCNarratorSubsystem.h"
 #include "Quest/DCQuestSubsystem.h"
 #include "EpicGameJamGame.h"
@@ -16,6 +17,14 @@ ADCGameMode::ADCGameMode()
 void ADCGameMode::BeginPlay()
 {
 	Super::BeginPlay();
+
+	if (HUDWidgetClass)
+	{
+		if ((HUDWidget = CreateWidget<UDCHUDWidget>(GetWorld()->GetFirstPlayerController(), HUDWidgetClass)))
+		{
+			HUDWidget->AddToViewport(0);
+		}
+	}
 
 	GetWorldTimerManager().SetTimer(IntroTimer, this, &ADCGameMode::StartIntro, FMath::Max(IntroDelay, 0.01f), false);
 }
