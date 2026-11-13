@@ -174,9 +174,9 @@ rows = [
  (10, "Integration pass + handoff notes", "A, B, F",
   "Full loop in the test map: start with sword, boars spawn, fight, flee, die, kill events. Short handoff doc for the team (classes, events, tags) so they can drop it into the main map.",
   "-", "Docs", "Play zones A and B start to finish.",
-  "Everything works together; doc in Docs/; nothing saved in the main map.", "1-9", 1.5, "Not started"),
+  "Everything works together; doc in Docs/; nothing saved in the main map.", "1-9", 1.5, "Done (review)"),
 ]
-APPROVED = {1: "Approved", 2: "Approved", 3: "Approved", 4: "Approved", 5: "Approved", 6: "Approved", 7: "Approved", 8: "Approved", 9: "Approved"}   # approvals the user gave in chat (2026-11-13)
+APPROVED = {1: "Approved", 2: "Approved", 3: "Approved", 4: "Approved", 5: "Approved", 6: "Approved", 7: "Approved", 8: "Approved", 9: "Approved", 10: "Approved"}   # approvals the user gave in chat (2026-11-13)
 r = HR + 1
 for row in rows:
     done = row[10].startswith("Done")
@@ -258,6 +258,11 @@ BACKLOG = [
  (5, "Boar: angry, charge, bite", "Balance", "Team plan numbers differ from ours: player 100 HP, sword 25 dmg, boar bite 10 dmg / 1.2 s, max 5 boars, flee under 25%", "Ours: player 500 (template), sword 35, bite 40 / 1.0 s, spawner 4, flee 35%. Align with the lead", "High"),
  (9, "Camera-facing sprite", "Lighting", "Sprites are unlit: they don't darken in the storm or turn red in the boss beat", "Lit two-sided version, or tint per beat from the Director's lighting sublevels", "Medium"),
  (9, "Camera-facing sprite", "Code", "Three views (front / side / back); no 8-direction sprites", "Enough for boars; 8 directions only if the art exists", "Low"),
+ (9, "Camera-facing sprite", "Art", "Sprite gallery actors in the test map (DCSpriteActor) still show the placeholder boar drawing", "Test map only; point them at T_Boar_* if useful", "Low"),
+ (10, "Integration", "Integration", "Boars spawn during the Director's ~34 s intro and kills before the quest starts don't count", "Lead: spawner Auto Start off + SetActive(true) in ADCGameMode::StartHuntQuest (handoff doc section 1)", "High"),
+ (10, "Integration", "Balance", "Sword 35 vs boar 60 HP = 2 hits, so fleeing is almost never seen", "With the plan's 25 damage the 2nd hit leaves 17% and the boar flees; align numbers", "High"),
+ (10, "Integration", "Integration", "Main map has no spawner / wander area yet; BP_DCBoarSpawner (max 5) is ready for the lead to place", "Handoff doc section 1", "High"),
+ (10, "Integration", "UX", "Standing right on top of a boar, its card fills the bottom of the screen", "Expected for 2.5D; could push the player back on bite", "Low"),
  (9, "Camera-facing sprite", "Art", "Same component can draw the missing sword hand (system 3) and the Director", "Needs the art", "Medium"),
 ]
 pol = Sheet("Polish backlog")

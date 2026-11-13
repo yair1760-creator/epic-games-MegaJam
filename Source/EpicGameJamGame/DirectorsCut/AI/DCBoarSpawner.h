@@ -80,6 +80,10 @@ public:
 	UFUNCTION(BlueprintPure, Category="Spawner")
 	bool IsSpawning() const { return bSpawning; }
 
+	/** The level flow's on/off switch (Level1_Plan "bActive"): true = StartSpawning, false = StopSpawning (boars stay) */
+	UFUNCTION(BlueprintCallable, Category="Spawner")
+	void SetActive(bool bNewActive) { bNewActive ? StartSpawning() : StopSpawning(false); }
+
 	UFUNCTION(BlueprintPure, Category="Spawner")
 	int32 GetAliveCount() const;
 
