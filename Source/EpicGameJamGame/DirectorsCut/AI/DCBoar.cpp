@@ -9,6 +9,10 @@
 #include "DirectorsCut/Combat/DCHealthComponent.h"
 #include "DirectorsCut/Combat/DCFloatingHPBar.h"
 #include "DirectorsCut/Rendering/DCBillboardSprite.h"
+#include "DirectorsCut/Combat/DCFXLibrary.h"
+#include "Kismet/GameplayStatics.h"
+#include "Sound/SoundBase.h"
+#include "NiagaraSystem.h"
 #include "Engine/Texture2D.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -22,6 +26,12 @@
 
 ADCBoar::ADCBoar()
 {
+	DC_DEFAULT_SFX(GruntSound, "S_BoarGrunt");
+	DC_DEFAULT_SFX(AngrySound, "S_BoarAggro");
+	DC_DEFAULT_SFX(ChargeSound, "S_BoarCharge");
+	DC_DEFAULT_SFX(BiteSound, "S_BoarBite");
+	DC_DEFAULT_SFX(HurtSound, "S_BoarSqueal");
+	DC_DEFAULT_SFX(DeathSound, "S_BoarDeath");
 	PrimaryActorTick.bCanEverTick = true;
 
 	// low, wide capsule
@@ -152,6 +162,14 @@ void ADCBoar::BeginPlay()
 	{
 		Boars->RegisterBoar(this);
 	}
+
+	NextGruntTime = GetWorld()->GetTimeSeconds() + FMath::FRandRange(1.0f, GruntInterval.Y);
+}
+
+void ADCBoar::PlayBoarSound(USoundBase* Sound, float MinInterval)
+{
+	// per-boar volume / pitch (the King is louder and deeper); the library adds jitter and stops a swarm stacking one sound
+	UDCFXLibrary::PlayWorldSound(this, Sound, GetActorLocation(), SoundVolume, 0.08f, MinInterval, SoundPitch);
 }
 
 void ADCBoar::HandleDied(UDCHealthComponent* HealthComponent, AController* Killer, AActor* DamageCauser)
@@ -173,6 +191,8 @@ void ADCBoar::HandleDied(UDCHealthComponent* HealthComponent, AController* Kille
 	}
 
 	SetBoarState(EDCBoarState::Dead);
+	PlayBoarSound(DeathSound);
+	UDCFXLibrary::SpawnWorldFX(this, DeathFX, GetActorLocation(), FRotator::ZeroRotator, GetActorScale3D().X);
 
 	// sprite: wobble and fall over (the frames hold on the last one)
 	if (bUseSprite && Sprite)
@@ -209,6 +229,7 @@ void ADCBoar::HandleDied(UDCHealthComponent* HealthComponent, AController* Kille
 	{
 		Boars->NotifyBoarKilled(this, KillerPawn);
 	}
+	// (meat drops are the lead's ADCBoarMeatPickup, spawned by ADCGameMode)
 }
 
 void ADCBoar::Tick(float DeltaSeconds)
@@ -216,6 +237,13 @@ void ADCBoar::Tick(float DeltaSeconds)
 	Super::Tick(DeltaSeconds);
 
 	UpdateSpriteAnimation();
+
+	// calm grunts now and then
+	if ((BoarState == EDCBoarState::Idle || BoarState == EDCBoarState::Wander) && GruntSound && GetWorld()->GetTimeSeconds() >= NextGruntTime)
+	{
+		PlayBoarSound(GruntSound);
+		NextGruntTime = GetWorld()->GetTimeSeconds() + FMath::FRandRange(GruntInterval.X, FMath::Max(GruntInterval.X, GruntInterval.Y));
+	}
 
 	// death: roll onto its side over 0.35 s (greybox body only; the sprite has its own fall frames)
 	if (!bUseSprite && DeathAnimTime >= 0.0f && DeathAnimTime < 1.0f)
@@ -286,6 +314,10 @@ void ADCBoar::HandleHealthChanged(UDCHealthComponent* HealthComponent, float Cur
 	{
 		Sprite->PlayOneShot(TEXT("Hit"));
 	}
+	if (Delta < 0.0f && !HealthComponent->IsDead())
+	{
+		PlayBoarSound(HurtSound);
+	}
 }
 
 void ADCBoar::SetBoarState(EDCBoarState NewState)
@@ -302,6 +334,14 @@ void ADCBoar::SetBoarState(EDCBoarState NewState)
 		StateText->SetTextRenderColor(bHostile ? FColor::Red : FColor::White);
 	}
 	OnStateChanged.Broadcast(this, NewState);
+
+	switch (NewState)
+	{
+	case EDCBoarState::Angry:  PlayBoarSound(AngrySound); break;
+	case EDCBoarState::Charge: PlayBoarSound(ChargeSound); break;
+	case EDCBoarState::Bite:   PlayBoarSound(BiteSound); break;
+	default: break;
+	}
 }
 
 void ADCBoar::UpdateStateText()

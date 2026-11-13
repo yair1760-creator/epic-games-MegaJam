@@ -24,6 +24,8 @@ class AShooterCharacter;
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FShooterDiedDelegate, AShooterCharacter*, Character);
 
 class UDCHitFeedbackComponent;
+class UDecalComponent;
+class USoundBase;
 
 /**
  *  A player controllable first person shooter character
@@ -38,6 +40,10 @@ class EPICGAMEJAMGAME_API AShooterCharacter : public AEpicGameJamGameCharacter, 
 	/** AI Noise emitter component */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
 	UPawnNoiseEmitterComponent* PawnNoiseEmitter;
+
+	/** Director's Cut: round cartoon shadow under the feet (the body casts no real shadow) */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UDecalComponent> BlobShadow;
 
 	/** Director's Cut: red flash + camera shake when the player is hit */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
@@ -73,9 +79,17 @@ protected:
 	UPROPERTY(EditAnywhere, Category ="Aim", meta = (ClampMin = 0, ClampMax = 100000, Units = "cm"))
 	float MaxAimDistance = 10000.0f;
 
+	/** Grunt when hurt (2D; empty = silent) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Health|Audio")
+	TObjectPtr<USoundBase> HurtSound;
+
+	/** On death (2D; empty = silent) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Health|Audio")
+	TObjectPtr<USoundBase> DeathSound;
+
 	/** Max HP this character can have */
 	UPROPERTY(EditAnywhere, Category="Health")
-	float MaxHP = 500.0f;
+	float MaxHP = 100.0f;
 
 	/** Current HP remaining to this character */
 	float CurrentHP = 0.0f;
@@ -212,6 +226,15 @@ public:
 	/** Returns the currently equipped weapon */
 	UFUNCTION(BlueprintPure, Category="Weapons")
 	AShooterWeapon* GetCurrentWeapon() const { return CurrentWeapon; }
+
+	/** Sword-only beats: while holding a melee weapon (no magazine), weapon switching, reload and weapon pickups are ignored.
+	 *  The level flow's ReplaceWeaponsWithClass still swaps to the gun. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Weapons")
+	bool bLockLoadoutWhileMelee = true;
+
+	/** True while the player holds a melee weapon and bLockLoadoutWhileMelee is on */
+	UFUNCTION(BlueprintPure, Category="Weapons")
+	bool IsLoadoutLocked() const;
 
 	/** Activates the passed weapon */
 	virtual void OnWeaponActivated(AShooterWeapon* Weapon) override;

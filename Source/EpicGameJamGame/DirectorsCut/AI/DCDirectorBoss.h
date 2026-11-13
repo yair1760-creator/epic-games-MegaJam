@@ -12,6 +12,9 @@ class UStaticMeshComponent;
 class UPointLightComponent;
 class UTextRenderComponent;
 
+class USoundBase;
+class UNiagaraSystem;
+
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FDCOnDirectorBossEvent);
 
 UCLASS(DisplayName="DC Director Boss")
@@ -40,6 +43,24 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Boss", meta=(ClampMin=1.0))
 	float TauntInterval = 9.0f;
+
+	// ---------------- audio / VFX (empty = silent / nothing; placeholders in /Game/DirectorsCut/Audio/SFX)
+
+	/** Each time he fires (once per volley) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Boss|Audio")
+	TObjectPtr<USoundBase> AttackSound;
+
+	/** When he takes damage (at most every 0.15 s; the rifle hits 10 times a second) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Boss|Audio")
+	TObjectPtr<USoundBase> HitSound;
+
+	/** When he is defeated */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Boss|Audio")
+	TObjectPtr<USoundBase> DefeatSound;
+
+	/** Effect when he is defeated */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Boss|FX")
+	TObjectPtr<UNiagaraSystem> DefeatFX;
 
 	UPROPERTY(BlueprintAssignable, Category="Boss")
 	FDCOnDirectorBossEvent OnBossHalfHP;

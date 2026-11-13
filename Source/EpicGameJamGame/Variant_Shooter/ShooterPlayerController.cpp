@@ -165,6 +165,10 @@ void AShooterPlayerController::OnBulletCountUpdated(int32 MagazineSize, int32 Bu
 	if (BulletCounterUI)
 	{
 		BulletCounterUI->BP_UpdateBulletCounter(MagazineSize, Bullets);
+
+		// Director's Cut: melee weapons (no magazine, e.g. the sword) don't show the template ammo counter;
+		// it would overlap the game HUD. Guns bring it back.
+		BulletCounterUI->SetVisibility(MagazineSize > 0 ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
 	}
 }
 

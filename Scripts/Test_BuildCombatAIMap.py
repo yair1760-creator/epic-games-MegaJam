@@ -24,7 +24,8 @@ ZONE_F = (1000, -3300, 6500, -1500)   # sprite gallery (south)
 
 
 def _world():
-    return unreal.EditorLevelLibrary.get_editor_world()
+    w = unreal.get_editor_subsystem(unreal.UnrealEditorSubsystem).get_editor_world()
+    return w or unreal.EditorLevelLibrary.get_editor_world()
 
 
 def trigger(label, loc, extent, tags, yaw=0):
@@ -213,7 +214,30 @@ def z_sprites():
             _finish(a, label)
 
 
-ZONES = {"base": z_base, "light": z_light, "combat": z_combat, "boar": z_boar, "sprites": z_sprites}
+def z_house():
+    """Zone H: taisho's house_01 drawing as a film-set flat (painted facade propped up by braces)."""
+    CURRENT_FOLDER[0] = "Test/H_House"
+    clear_folder("Test/H_House")
+    mi = unreal.load_asset("/Game/DirectorsCut/Environment/House01/MI_House01_Facade")
+    plane = unreal.load_asset("/Engine/BasicShapes/Plane")
+    W, H = 545.0, 550.0                    # drawing is 2683 x 2712 px; door comes out ~2.7 m tall
+    fx, fy = -300.0, -2400.0               # facade centre on the ground, facing +X (east)
+    face = EAS.spawn_actor_from_object(plane, V(fx, fy, H / 2 + 2), unreal.Rotator(roll=90, pitch=0, yaw=-90))
+    face.set_actor_scale3d(V(W / 100.0, H / 100.0, 1.0))
+    face.static_mesh_component.set_material(0, mi)
+    face.static_mesh_component.set_collision_enabled(unreal.CollisionEnabled.NO_COLLISION)
+    _finish(face, "H_House01_Facade")
+    # plywood board behind the painting (blocks the player, shows the 'it's a film set' joke from behind)
+    box("H_House01_Board", (fx - 14, fy - W * 0.41, 0), (fx - 4, fy + W * 0.41, H * 0.92), "Structure")
+    # two diagonal braces down to the ground behind, plus sandbags holding them
+    for side in (-1, 1):
+        y = fy + side * W * 0.3
+        ramp("H_Brace_%d" % (side + 1), (fx - 14, y, H * 0.62), (fx - 330, y, 0), 18, "Trunk", thick=14)
+        cbox("H_Sandbag_%d" % (side + 1), (fx - 330, y, 18), (70, 50, 36), "Dark")
+    label_text("H  HOUSE 01 (film-set flat)", (fx + 120, fy, H + 80), 60, yaw=0, color=(255, 220, 140))
+
+
+ZONES = {"base": z_base, "light": z_light, "combat": z_combat, "boar": z_boar, "sprites": z_sprites, "house": z_house}
 
 
 def build_test_map(which="all"):

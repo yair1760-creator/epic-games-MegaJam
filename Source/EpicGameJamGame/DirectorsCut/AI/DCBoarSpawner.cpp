@@ -2,6 +2,7 @@
 
 #include "DirectorsCut/AI/DCBoarSpawner.h"
 #include "DirectorsCut/AI/DCBoar.h"
+#include "DirectorsCut/AI/DCBoarSubsystem.h"
 #include "DirectorsCut/AI/DCBoarAIController.h"
 #include "DirectorsCut/Combat/DCHealthComponent.h"
 #include "Components/BillboardComponent.h"
@@ -28,6 +29,7 @@ void ADCBoarSpawner::BeginPlay()
 	Super::BeginPlay();
 
 	GatherSpawnPoints();
+
 	if (bAutoStart)
 	{
 		StartSpawning();
@@ -124,13 +126,14 @@ void ADCBoarSpawner::SetHyperspawnMode(bool bEnabled)
 	bHyperspawnMode = bEnabled;
 	if (bEnabled)
 	{
-		MaxAlive = 12;
-		RespawnDelay = 0.25f;
+		MaxAlive = HyperMaxAlive;
+		RespawnDelay = HyperRespawnDelay;
 		StaggerDelay = 0.25f;
 		MinPlayerDistance = 850.0f;
 		bAutoAggroNewBoars = true;
-		OverrideBoarMaxHP = 25.0f;
+		OverrideBoarMaxHP = HyperBoarHP;
 		OverrideCorpseTime = 1.0f;
+		OverrideBiteDamage = HyperBiteDamage;
 
 		// Make existing living boars charge immediately too
 		for (const TWeakObjectPtr<ADCBoar>& B : Living)
@@ -139,9 +142,10 @@ void ADCBoarSpawner::SetHyperspawnMode(bool bEnabled)
 			{
 				Boar->bAutoAggroPlayer = true;
 				Boar->CorpseTime = 1.0f;
+				Boar->BiteDamage = HyperBiteDamage;
 				if (UDCHealthComponent* H = Boar->GetHealth())
 				{
-					H->MaxHP = 25.0f;
+					H->MaxHP = HyperBoarHP;
 					H->ResetHealth();
 				}
 				if (ADCBoarAIController* AI = Cast<ADCBoarAIController>(Boar->GetController()))
@@ -165,6 +169,7 @@ void ADCBoarSpawner::SetHyperspawnMode(bool bEnabled)
 		bAutoAggroNewBoars = false;
 		OverrideBoarMaxHP = 0.0f;
 		OverrideCorpseTime = 0.0f;
+		OverrideBiteDamage = -1.0f;
 	}
 }
 
@@ -258,6 +263,10 @@ ADCBoar* ADCBoarSpawner::SpawnOne()
 	if (OverrideCorpseTime > 0.0f)
 	{
 		Boar->CorpseTime = OverrideCorpseTime;
+	}
+	if (OverrideBiteDamage >= 0.0f)
+	{
+		Boar->BiteDamage = OverrideBiteDamage;
 	}
 	Boar->FinishSpawning(T);
 	if (!IsValid(Boar))

@@ -3,6 +3,8 @@
 #include "DirectorsCut/AI/DCBoarSubsystem.h"
 #include "DirectorsCut/AI/DCBoar.h"
 #include "DirectorsCut/Combat/DCHealthComponent.h"
+#include "Engine/World.h"
+#include "HAL/IConsoleManager.h"
 
 int32 UDCBoarSubsystem::GetAliveCount() const
 {

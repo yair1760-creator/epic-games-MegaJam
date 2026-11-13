@@ -1,4 +1,4 @@
-# Writes Docs/Plan_CombatAI_Sprites.xlsx with only the standard library (no openpyxl on this machine).
+﻿# Writes Docs/Plan_CombatAI_Sprites.xlsx with only the standard library (no openpyxl on this machine).
 import zipfile
 from xml.sax.saxutils import escape
 
@@ -171,12 +171,58 @@ rows = [
   "DirectorsCut/Rendering", "DirectorsCut/Rendering",
   "Zone F: walk the yellow ring around the centre slot; check the slots at different distances and heights; then a boar in zone B.",
   "Sprite never shows its edge or back; works on the boar.", "4", 2, "Done (review)"),
+ (11, "Boar meat drops (bacon quest)", "B",
+  "Built (SetMeatDropsEnabled + ADCBoarMeat), then REMOVED: the lead's ADCBoarMeatPickup (spawned by DCGameMode) already does this, so only one meat system remains.",
+  "DirectorsCut/AI", "DirectorsCut/AI",
+  "n/a (removed)",
+  "Our meat code is gone; boars still report Kill.Boar.", "6", 1.5, "Removed"),
  (10, "Integration pass + handoff notes", "A, B, F",
   "Full loop in the test map: start with sword, boars spawn, fight, flee, die, kill events. Short handoff doc for the team (classes, events, tags) so they can drop it into the main map.",
   "-", "Docs", "Play zones A and B start to finish.",
-  "Everything works together; doc in Docs/; nothing saved in the main map.", "1-9", 1.5, "Not started"),
+  "Everything works together; doc in Docs/; nothing saved in the main map.", "1-9", 1.5, "Done (review)"),
+ # ---- round 2 (lead's Dev 2 list, 2026-11-13) ----
+ (13, "P0 Production cleanup", "B",
+  "Boar debug label off on BP_DC_Boar. Lead's ADCBoarMeatPickup (Combat) shows a camera-facing ham sprite (UDCBillboardSprite) instead of cube/cylinder parts. BP_DCBoarSpawner reaches main with our next PR.",
+  "DirectorsCut/Combat", "DirectorsCut/Combat, Characters/Boar/Sprites",
+  "Zone B: boars have no floating label; DC.StartQuest + meat beat: the meat is a ham sprite that faces you.",
+  "No debug text on boars; meat is a sprite; pickup still reports Collect.Meat.", "11", 1, "Done (review)"),
+ (14, "P0 Balance + weapon rules", "A, B",
+  "Sword 25 dmg so boars (60 HP) hit the 35% flee point on the 2nd hit; boar bite 10; player MaxHP 100. Tune King Boar / Director boss HP, speed, projectile and Beat 3 hyperspawn (25 HP). Sword-only in Beats 1-2 (no weapon switch / reload), gun ammo + reload work in Beats 3-5.",
+  "DirectorsCut/Combat, DirectorsCut/AI, Variant_Shooter", "DirectorsCut/AI, Combat",
+  "Test map: hit a boar twice -> it flees, third hit kills. Full Level 1 playtest in PIE (no main-map save) for boss numbers.",
+  "Numbers match the plan; flee happens; a full run is beatable but not trivial.", "13", 2, "Testing"),
+ (15, "P0 King Boar visuals", "B",
+  "King Boar = boar sprite scaled up + gold tint + a sprite crown on top; remove the rotating cylinder and the forced 'KING BOAR' debug text.",
+  "DirectorsCut/AI", "DirectorsCut/AI",
+  "Spawn the King Boar in zone B: big golden boar with a crown, no debug text, still faces the camera.",
+  "Reads as 'king boar' at 15 m; no primitives left.", "13", 1.5, "Done (review)"),
+ (16, "P0 Director boss + projectile visuals", "B, F",
+  "Swap the cube/cylinder Director for a UDCBillboardSprite with idle / attack / hurt / death frames, and give the projectile a sprite + trail + hit puff. NEEDS Designer 1's Director frames; until then a placeholder drawing.",
+  "DirectorsCut/AI", "DirectorsCut/AI",
+  "Spawn the boss in the test map: sprite faces you, swaps frames on attack/hurt/death; shots are visible and pop on hit.",
+  "No primitives on the boss or shots.", "9", 2.5, "Waiting art"),
+ (17, "P0 Princess visuals", "F",
+  "Swap the cylinder/cube Princess for a camera-facing sprite (idle bob). Optional: shed door opens. NEEDS a Princess drawing; until then a placeholder.",
+  "DirectorsCut/AI", "DirectorsCut/AI",
+  "Place the Princess in the test map: sprite faces you and bobs.",
+  "No primitives on the Princess.", "9", 1, "Waiting art"),
+ (18, "P1 Audio + VFX hooks (code)", "A, B",
+  "Editable sound / Niagara slots + playback on the sword (swing, hit, trail), boar (grunt, charge, squeal, death, death poof), player (hurt), boss (attack, hit, defeat). Empty slot = silent, so it works before the files exist.",
+  "DirectorsCut/Combat, DirectorsCut/AI, Variant_Shooter", "DirectorsCut/Audio (slots only)",
+  "Test map with placeholder sounds: each action plays its sound once, at the right moment, with distance falloff.",
+  "Every event in the list has a slot and plays it; nothing spams.", "13", 2, "Done (review)"),
+ (19, "P1 SFX + music files", "Audio (shared)",
+  "Make S_* sound effects and the 5 music loops (heroic, frantic, pastel romance, boss, victory sting). Sources allowed by the jam: AI tools (fal: ElevenLabs SFX v3, Stable Audio, Sonilo SFX/music, Lyria, ElevenLabs Music) and licensed assets (WeLoveIndies free non-commercial pack, Fab). List every source in the submission.",
+  "-", "DirectorsCut/Audio/SFX, DirectorsCut/Audio/Music",
+  "Plug into the slots from system 18; play Level 1 and listen.",
+  "All 13 SFX + 5 music cues in; sources listed in Docs.", "18", 3, "Needs owner"),
+ (20, "P1 Boar side/back views + hit flash overlay", "B, F",
+  "Plug side/back boar frames into the sprite when Designer 1 delivers them. Move the red hit flash from camera fade to a HUD overlay so a Director 'CUT!' fade can't be overridden.",
+  "DirectorsCut/Combat, DirectorsCut/AI", "DirectorsCut/Characters/Boar",
+  "Walk around a boar: back/side frames show. Get hit during a CUT! fade: both show.",
+  "Correct view per angle; flash never cancels another fade.", "9", 1.5, "Waiting art"),
 ]
-APPROVED = {1: "Approved", 2: "Approved", 3: "Approved", 4: "Approved", 5: "Approved", 6: "Approved", 7: "Approved", 8: "Approved", 9: "Approved"}   # approvals the user gave in chat (2026-11-13)
+APPROVED = {1: "Approved", 2: "Approved", 3: "Approved", 4: "Approved", 5: "Approved", 6: "Approved", 7: "Approved", 8: "Approved", 9: "Approved", 10: "Approved", 11: "Approved", 13: "Approved", 14: "Approved", 15: "Approved", 18: "Approved"}   # approvals the user gave in chat (2026-11-13)
 r = HR + 1
 for row in rows:
     done = row[10].startswith("Done")
@@ -195,7 +241,7 @@ plan.set(r + 1, 10, '=COUNTIF(L%d:L%d,"Approved")&" of "&COUNTA(A%d:A%d)' % (HR 
 plan.set(r + 2, 9, "Note", S_BOLD)
 plan.set(r + 2, 10, "Hours are rough jam-pace estimates by Claude, not measured. Deadline: Sun Nov 15, 5:59 PM PST.", S_ITAL)
 plan.dv.append(("L%d:L%d" % (HR + 1, last), "Approved,Change it,Skip"))
-plan.dv.append(("K%d:K%d" % (HR + 1, last), "Not started,In progress,Testing,Done (review),Done"))
+plan.dv.append(("K%d:K%d" % (HR + 1, last), "Not started,Waiting art,Needs owner,In progress,Testing,Done (review),Done,Removed"))
 plan.freeze = (HR + 1, 3)
 lg = r + 5
 plan.set(lg, 1, "Legend", S_BOLD)
@@ -216,12 +262,12 @@ BACKLOG = [
  (2, "Player HP + hit feedback", "VFX", "No low-HP warning (red vignette / ink cracks at the screen edge)", "", "Medium"),
  (2, "Player HP + hit feedback", "Animation", "Death shows the template third-person ragdoll; no first-person death camera", "Comedy beat opportunity (Director: 'cut!')", "Medium"),
  (2, "Player HP + hit feedback", "UI", "Template ammo/HP widget still on screen; real HP bar is the HUD team's", "Coordinate with HUD package", "Low"),
- (3, "Sword", "Art", "No hand on the grip: template rifle arms are hidden while the sword is out", "FMF2-style drawn hand: sprite (system 9) or Meshy arm", "High"),
- (3, "Sword", "Animation", "Swing is procedural (rotate + slide); no real swing/idle animation, no wind-up", "Add idle sway, wind-up, follow-through; maybe 2-3 swing variants", "High"),
- (3, "Sword", "Texture", "Meshy texture lost the concept's ink lines; outline + darker material compensate", "Optional: hand-paint ink lines or a Meshy retexture (10 credits)", "Medium"),
+ (3, "Sword", "Art", "Done 2026-11-13: 2D hand + sword frames from the designer video replace the 3D sword in first person", "", "Low"),
+ (3, "Sword", "Animation", "Done 2026-11-13: idle / wind-up / slash smear / follow-through frames with the video's timing, plus walk bob", "", "Low"),
+ (3, "Sword", "Texture", "3D Meshy sword is no longer seen in first person (2D frames now); its texture issue only matters for a world pickup", "Keep for a pickup / third person, or drop", "Low"),
  (3, "Sword", "Audio", "No whoosh / flesh-hit / miss sounds", "Hook OnSwing / OnHit", "High"),
  (3, "Sword", "VFX", "No slash trail or impact effect", "", "Medium"),
- (3, "Sword", "UI", "Ammo counter shows 0/0 while holding the sword", "Hide it for melee (HUD team)", "Low"),
+ (3, "Sword", "UI", "Done 2026-11-13: template ammo counter hides for melee weapons; the test map still shows the template team score (0 | 0) because it uses BP_ShooterGameMode", "Real game uses BP_DCGameMode (no team score)", "Low"),
  (3, "Sword", "Code", "No third-person sword mesh (only the first-person view shows it)", "Only matters for mirrors / other players", "Low"),
  (3, "Sword", "Code", "Tuned hold/swing values live in BP_DC_Sword; C++ defaults updated but not yet compiled", "Compiles with the next build", "Low"),
  (3, "Sword", "Design", "Template rifle pickups still exist in the project", "Decide if the shotgun swap (Director beat 3) reuses them", "Low"),
@@ -229,7 +275,7 @@ BACKLOG = [
  (4, "Boar: body + wander", "Animation", "Done 2026-11-13: idle (blink) + 3-frame run cycle from the designer's frames, run speed follows walking speed", "No sniffing / grazing frames", "Low"),
  (4, "Boar: body + wander", "Audio", "No grunts, snorts or footsteps", "Hook OnStateChanged", "Medium"),
  (4, "Boar: body + wander", "Design", "Wander is purely random; no grazing spots, no herds, calm boars ignore the player", "Could add points of interest (food, mud) later", "Low"),
- (4, "Boar: body + wander", "Code", "Floating state label (Idle / Wander) is on by default", "Turn bShowDebugState off on BP_DC_Boar for the real game", "Medium"),
+ (4, "Boar: body + wander", "Code", "Done 2026-11-13 (system 13): floating state label is off by default and on BP_DC_Boar", "Tick Show Debug State on a boar to see its AI state", "Low"),
  (4, "Boar: body + wander", "Integration", "Main map needs a wander area (a TriggerBox) so boars stay in the bowl; spawner (system 7) will pass it", "Main map is the teammate's: ask before adding", "Medium"),
  (5, "Boar: angry, charge, bite", "Animation", "Anger is a hop, the bite is a forward lunge; no snort, run or bite animation", "Sprite frames (system 9) for angry / charge / bite", "High"),
  (5, "Boar: angry, charge, bite", "Audio", "No angry snort, charge thunder or bite chomp", "Hook OnStateChanged (Angry / Charge / Bite)", "High"),
@@ -258,7 +304,22 @@ BACKLOG = [
  (5, "Boar: angry, charge, bite", "Balance", "Team plan numbers differ from ours: player 100 HP, sword 25 dmg, boar bite 10 dmg / 1.2 s, max 5 boars, flee under 25%", "Ours: player 500 (template), sword 35, bite 40 / 1.0 s, spawner 4, flee 35%. Align with the lead", "High"),
  (9, "Camera-facing sprite", "Lighting", "Sprites are unlit: they don't darken in the storm or turn red in the boss beat", "Lit two-sided version, or tint per beat from the Director's lighting sublevels", "Medium"),
  (9, "Camera-facing sprite", "Code", "Three views (front / side / back); no 8-direction sprites", "Enough for boars; 8 directions only if the art exists", "Low"),
+ (9, "Camera-facing sprite", "Art", "Sprite gallery actors in the test map (DCSpriteActor) still show the placeholder boar drawing", "Test map only; point them at T_Boar_* if useful", "Low"),
+ (10, "Integration", "Integration", "Boars spawn during the Director's ~34 s intro and kills before the quest starts don't count", "Lead: spawner Auto Start off + SetActive(true) in ADCGameMode::StartHuntQuest (handoff doc section 1)", "High"),
+ (10, "Integration", "Balance", "Sword 35 vs boar 60 HP = 2 hits, so fleeing is almost never seen", "With the plan's 25 damage the 2nd hit leaves 17% and the boar flees; align numbers", "High"),
+ (10, "Integration", "Integration", "Main map has no spawner / wander area yet; BP_DCBoarSpawner (max 5) is ready for the lead to place", "Handoff doc section 1", "High"),
+ (10, "Integration", "UX", "Standing right on top of a boar, its card fills the bottom of the screen", "Expected for 2.5D; could push the player back on bite", "Low"),
+ (12, "2D sword view", "Art", "Done 2026-11-13: designer PNGs (1920x1080, transparent) replace the frames cut from the video", "Source PSD + GIF in Art/Player/Sword/Reference", "Low"),
+ (12, "2D sword view", "Animation", "Only 4 poses (idle, wind-up, smear, follow-through); no in-betweens, no impact frame, one swing only", "More frames / a second swing that alternates", "Medium"),
+ (12, "2D sword view", "Feel", "Designer timing (12 fps: windup 3 ticks, smear 1, follow 3): the hit lands 250 ms after the click, next attack after 583 ms", "Change Windup Ticks / Anim FPS on BP_DC_Sword if it feels slow", "Medium"),
+ (12, "2D sword view", "Integration", "Teammate HUD (WBP_DCHUD, main 6098a67) not yet merged into design-yair; weapon layer sits under the HUD (Z -10) but overlap not checked", "Pull main and check the health bar / subtitles vs the hand", "Medium"),
+ (12, "2D sword view", "Repo", "Hand_Sword.psd and Dream 14.gif are stored in plain git (.gitattributes has no LFS rule for psd/gif)", "Add *.psd / *.gif LFS rules if more source art is coming (shared file: ask the lead)", "Low"),
+ (12, "2D sword view", "Design", "Other weapons (shotgun beat 3, PG tool) need their own hand frames", "Same widget, new frame set per weapon", "Medium"),
  (9, "Camera-facing sprite", "Art", "Same component can draw the missing sword hand (system 3) and the Director", "Needs the art", "Medium"),
+ (14, "Balance + weapon rules", "Design", "King Boar 900 HP and Director 1500 HP are worked out from rifle damage, not from a real run", "Full Level 1 playtest in the main map (PIE, don't save); tune in DCKingBoar.cpp / DCDirectorBoss.cpp", "High"),
+ (14, "Balance + weapon rules", "Design", "A weapon pickup touched during a sword-only beat is used up but gives nothing", "Only matters if the main map keeps template rifle pickups in Beats 1-2", "Low"),
+(15, "King Boar visuals", "Art", "Gold is a tint over the normal (red-brown) boar frames, so it reads orange-gold; the crown is a placeholder drawing", "Designer: a gold King Boar frame set and a crown; swap on Sprite / CrownSprite", "Medium"), (15, "King Boar visuals", "Animation", "Crown is fixed to the head position of the idle/charge frames; it doesn't follow hit/hurt frames", "Fine at 2.5x scale; real art could draw the crown into the frames", "Low"),
+(18, "Audio + VFX hooks", "Audio", "All 13 S_* sounds are synthesized placeholders (beeps, noise, buzz)", "System 19: reimport real files over the same S_* assets", "High"), (18, "Audio + VFX hooks", "VFX", "Hit impact, sword trail, boar death poof and boss defeat Niagara slots are empty (no effects in the project)", "Make NS_HitImpact / NS_BoarDeathPoof (ink splat style) and assign", "Medium"), (18, "Audio + VFX hooks", "Repo", "Done 2026-11-13: /Game/DirectorsCut/Audio added to Directories to Always Cook (Config/DefaultGame.ini), so the sounds ship in packaged builds", "Check once in the first packaged build", "Low"), (18, "Audio + VFX hooks", "Audio", "The killing blow on the boss also plays a hit sound under the defeat sound", "Cosmetic", "Low"),
 ]
 pol = Sheet("Polish backlog")
 pol.set(1, 1, "Polish backlog: what each system still lacks (art, animation, textures, audio, VFX, UI)", S_TITLE)

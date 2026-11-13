@@ -98,4 +98,51 @@ front = [
     (ellipse(98, 106, 8, 8), INK), (ellipse(158, 106, 8, 8), INK),          # eyes
 ]
 write_png(os.path.join(OUT, "T_DC_Boar_Front_Placeholder.png"), W2, H2, render(W2, H2, front))
+
+# ---------------- boar meat pickup (cartoon ham shank, bone sticking out to the upper right)
+MEAT = (176, 62, 48, 255)
+SEAR = (120, 38, 30, 255)
+FAT = (236, 190, 160, 255)
+BONE = (244, 238, 222, 255)
+W3, H3 = 256, 256
+def along(x, y, x0, y0, x1, y1, r):
+    # inside a thick line segment (the bone shaft)
+    dx, dy = x1 - x0, y1 - y0
+    t = max(0.0, min(1.0, ((x - x0) * dx + (y - y0) * dy) / float(dx * dx + dy * dy)))
+    px, py = x0 + t * dx, y0 + t * dy
+    return (x - px) ** 2 + (y - py) ** 2 <= r * r
+meat = [
+    (lambda x, y: along(x, y, 140, 120, 205, 55, 13), BONE),          # shaft
+    (ellipse(212, 44, 17, 17), BONE), (ellipse(222, 60, 17, 17), BONE),  # knob
+    (ellipse(108, 152, 84, 70), MEAT),                                 # ham
+    (ellipse(92, 172, 52, 34), SEAR),                                  # seared side
+    (ellipse(150, 118, 26, 22), FAT),                                  # fat ring at the bone
+    (ellipse(150, 118, 13, 11), BONE),                                 # bone end in the meat
+    (ellipse(70, 130, 10, 7), FAT),                                    # highlight
+]
+write_png(os.path.join(OUT, "T_DC_BoarMeat_Placeholder.png"), W3, H3, render(W3, H3, meat, ink=5))
+# ---------------- King Boar crown (gold, 5 points with ball tips, gems on the band)
+GOLD = (236, 184, 52, 255)
+GOLD_DK = (186, 128, 28, 255)
+RUBY = (200, 36, 48, 255)
+SAPH = (40, 92, 200, 255)
+W4, H4 = 256, 192
+def in_tri(x, y, ax, ay, bx, by, cx, cy):
+    d1 = (x - bx) * (ay - by) - (ax - bx) * (y - by)
+    d2 = (x - cx) * (by - cy) - (bx - cx) * (y - cy)
+    d3 = (x - ax) * (cy - ay) - (cx - ax) * (y - ay)
+    neg = d1 < 0 or d2 < 0 or d3 < 0
+    pos = d1 > 0 or d2 > 0 or d3 > 0
+    return not (neg and pos)
+PEAKS = [(42, 58), (85, 34), (128, 18), (171, 34), (214, 58)]   # x, tip y
+crown = []
+for i, (px_, ty) in enumerate(PEAKS):
+    crown.append((lambda x, y, px_=px_, ty=ty: in_tri(x, y, px_ - 27, 130, px_ + 27, 130, px_, ty + 10), GOLD))
+crown.append((rect(30, 104, 226, 170), GOLD))                            # band
+crown.append((rect(30, 152, 226, 170), GOLD_DK))                         # band shadow
+for px_, ty in PEAKS:
+    crown.append((ellipse(px_, ty + 6, 11, 11), GOLD))                   # ball tips
+crown += [(ellipse(128, 132, 14, 14), RUBY), (ellipse(72, 134, 10, 10), SAPH), (ellipse(184, 134, 10, 10), SAPH)]
+crown.append((ellipse(122, 126, 4, 4), (255, 220, 220, 255)))          # glint
+write_png(os.path.join(OUT, "T_DC_KingCrown_Placeholder.png"), W4, H4, render(W4, H4, crown, ink=5))
 print("ok")

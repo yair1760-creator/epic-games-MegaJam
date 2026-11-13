@@ -14,14 +14,41 @@
 #include "TimerManager.h"
 #include "ShooterGameMode.h"
 #include "DirectorsCut/Combat/DCHitFeedbackComponent.h"
+#include "DirectorsCut/Combat/DCFXLibrary.h"
+#include "Sound/SoundBase.h"
+#include "Components/DecalComponent.h"
+#include "Materials/MaterialInterface.h"
+#include "UObject/ConstructorHelpers.h"
 
 AShooterCharacter::AShooterCharacter()
 {
+	DC_DEFAULT_SFX(HurtSound, "S_PlayerHurt");
 	// create the noise emitter component
 	PawnNoiseEmitter = CreateDefaultSubobject<UPawnNoiseEmitterComponent>(TEXT("Pawn Noise Emitter"));
 
 	// Director's Cut: hit feedback (red flash + camera shake), plays only for the local player
 	HitFeedback = CreateDefaultSubobject<UDCHitFeedbackComponent>(TEXT("Hit Feedback"));
+
+	// Director's Cut: cartoon blob shadow instead of the body's real shadow (classic platformer style).
+	// A dark disc decal under the feet; the projection is deep so it stays on the ground while jumping.
+	GetMesh()->SetCastShadow(false);
+	GetMesh()->SetReceivesDecals(false);
+	if (GetFirstPersonMesh())
+	{
+		GetFirstPersonMesh()->SetCastShadow(false);
+		GetFirstPersonMesh()->SetReceivesDecals(false);
+	}
+	BlobShadow = CreateDefaultSubobject<UDecalComponent>(TEXT("Blob Shadow"));
+	BlobShadow->SetupAttachment(GetCapsuleComponent());
+	BlobShadow->SetRelativeLocation(FVector(0.0f, 0.0f, -GetCapsuleComponent()->GetUnscaledCapsuleHalfHeight()));
+	BlobShadow->SetRelativeRotation(FRotator(-90.0f, 0.0f, 0.0f));   // project straight down
+	BlobShadow->DecalSize = FVector(250.0f, 38.0f, 38.0f);           // half-size: 2.5 m deep, 76 cm wide disc
+	BlobShadow->SetUsingAbsoluteRotation(true);                       // stays flat when the capsule turns
+	static ConstructorHelpers::FObjectFinder<UMaterialInterface> BlobMat(TEXT("/Game/DirectorsCut/Rendering/Materials/M_DC_BlobShadow.M_DC_BlobShadow"));
+	if (BlobMat.Succeeded())
+	{
+		BlobShadow->SetDecalMaterial(BlobMat.Object);
+	}
 
 	// configure movement
 	GetCharacterMovement()->RotationRate = FRotator(0.0f, 600.0f, 0.0f);
@@ -105,7 +132,12 @@ float AShooterCharacter::TakeDamage(float Damage, struct FDamageEvent const& Dam
 	if (CurrentHP <= 0.0f)
 	{
 		CurrentHP = 0.0f;
+		UDCFXLibrary::PlayUISound(this, DeathSound, 1.0f, 0.0f, 0.0f);
 		Die();
+	}
+	else
+	{
+		UDCFXLibrary::PlayUISound(this, HurtSound, 1.0f, 0.06f, 0.25f);   // a swarm bites a lot: one grunt per 0.25 s
 	}
 
 	// update the HUD
@@ -170,8 +202,8 @@ void AShooterCharacter::DoStopFiring()
 
 void AShooterCharacter::DoSwitchWeapon()
 {
-	// ensure we have at least two weapons two switch between
-	if (OwnedWeapons.Num() > 1 && !IsDead())
+	// ensure we have at least two weapons two switch between (and we're not in a sword-only beat)
+	if (OwnedWeapons.Num() > 1 && !IsDead() && !IsLoadoutLocked())
 	{
 		// deactivate the old weapon
 		CurrentWeapon->DeactivateWeapon();
@@ -200,11 +232,16 @@ void AShooterCharacter::DoSwitchWeapon()
 
 void AShooterCharacter::DoReload()
 {
-	// reload the current weapon
-	if (CurrentWeapon && !IsDead())
+	// reload the current weapon (a melee weapon has nothing to reload)
+	if (CurrentWeapon && !IsDead() && !IsLoadoutLocked())
 	{
 		CurrentWeapon->StartReload();
 	}
+}
+
+bool AShooterCharacter::IsLoadoutLocked() const
+{
+	return bLockLoadoutWhileMelee && IsValid(CurrentWeapon) && CurrentWeapon->GetMagazineSize() <= 0;
 }
 
 void AShooterCharacter::RefreshWeaponHUD()
@@ -263,6 +300,12 @@ FVector AShooterCharacter::GetWeaponTargetLocation()
 
 void AShooterCharacter::AddWeaponClass(const TSubclassOf<AShooterWeapon>& WeaponClass)
 {
+	// sword-only beat: ignore weapon pickups (ReplaceWeaponsWithClass clears CurrentWeapon first, so it still works)
+	if (IsLoadoutLocked())
+	{
+		return;
+	}
+
 	// do we already own this weapon?
 	AShooterWeapon* OwnedWeapon = FindWeaponOfType(WeaponClass);
 

@@ -66,6 +66,22 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Spawner")
 	TObjectPtr<AActor> WanderArea;
 
+	/** Beat 3 hyperspawn: boars alive at once */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Spawner|Hyperspawn", meta=(ClampMin=1, ClampMax=50))
+	int32 HyperMaxAlive = 12;
+
+	/** Beat 3 hyperspawn: seconds before a dead boar is replaced */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Spawner|Hyperspawn", meta=(ClampMin=0, Units="s"))
+	float HyperRespawnDelay = 0.25f;
+
+	/** Beat 3 hyperspawn: boar HP (one rifle bullet = 25) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Spawner|Hyperspawn", meta=(ClampMin=1))
+	float HyperBoarHP = 25.0f;
+
+	/** Beat 3 hyperspawn: damage per bite (a swarm bites a lot, so lower than a normal boar) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Spawner|Hyperspawn", meta=(ClampMin=0))
+	float HyperBiteDamage = 5.0f;
+
 	UFUNCTION(BlueprintCallable, Category="Spawner")
 	void StartSpawning();
 
@@ -86,6 +102,10 @@ public:
 
 	UFUNCTION(BlueprintPure, Category="Spawner")
 	bool IsSpawning() const { return bSpawning; }
+
+	/** The level flow's on/off switch (Level1_Plan "bActive"): true = StartSpawning, false = StopSpawning (boars stay) */
+	UFUNCTION(BlueprintCallable, Category="Spawner")
+	void SetActive(bool bNewActive) { bNewActive ? StartSpawning() : StopSpawning(false); }
 
 	UFUNCTION(BlueprintPure, Category="Spawner")
 	int32 GetAliveCount() const;
@@ -127,6 +147,7 @@ private:
 	float NormalMinPlayerDistance = 800.0f;
 	float OverrideBoarMaxHP = 0.0f;
 	float OverrideCorpseTime = 0.0f;
+	float OverrideBiteDamage = -1.0f;   // < 0 = keep the boar's own
 	bool bAutoAggroNewBoars = false;
 	FTimerHandle FillTimer;
 };
