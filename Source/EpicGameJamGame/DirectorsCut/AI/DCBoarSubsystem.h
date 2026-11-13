@@ -10,6 +10,7 @@ class ADCBoar;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FDCOnBoarKilled, ADCBoar*, Boar, APawn*, Killer);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FDCOnBoarSpawned, ADCBoar*, Boar);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FDCOnMeatCollected, AActor*, Meat, APawn*, Collector);
 
 /**
  *  Tracks living boars in the world and broadcasts when one spawns or dies.
@@ -40,6 +41,22 @@ public:
 	UFUNCTION(BlueprintPure, Category="Boar")
 	TArray<ADCBoar*> GetAliveBoars() const;
 
+	/** Meat phase of the hunt: when on, every boar that dies drops a meat pickup (off at level start).
+	 *  The level flow calls SetMeatDropsEnabled(true) when the Director swaps the quest to "collect meat".
+	 *  Console: DC.BoarMeatDrops 1 / 0 */
+	UFUNCTION(BlueprintCallable, Category="Boar|Meat")
+	void SetMeatDropsEnabled(bool bEnabled);
+
+	UFUNCTION(BlueprintPure, Category="Boar|Meat")
+	bool IsMeatDropsEnabled() const { return bMeatDropsEnabled; }
+
+	/** Fired when the player picks up a piece of meat (the quest itself is told via Collect.Meat) */
+	UPROPERTY(BlueprintAssignable, Category="Boar|Meat")
+	FDCOnMeatCollected OnMeatCollected;
+
+	/** Called by ADCBoarMeat */
+	void NotifyMeatCollected(AActor* Meat, APawn* Collector);
+
 	/** Called by ADCBoar */
 	void RegisterBoar(ADCBoar* Boar);
 	void NotifyBoarKilled(ADCBoar* Boar, APawn* Killer);
@@ -48,4 +65,5 @@ private:
 
 	TArray<TWeakObjectPtr<ADCBoar>> Alive;
 	int32 KilledCount = 0;
+	bool bMeatDropsEnabled = false;
 };

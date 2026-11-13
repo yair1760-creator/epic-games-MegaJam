@@ -171,12 +171,17 @@ rows = [
   "DirectorsCut/Rendering", "DirectorsCut/Rendering",
   "Zone F: walk the yellow ring around the centre slot; check the slots at different distances and heights; then a boar in zone B.",
   "Sprite never shows its edge or back; works on the boar.", "4", 2, "Done (review)"),
+ (11, "Boar meat drops (bacon quest)", "B",
+  "Lead's request: a switch on DCBoarSubsystem (SetMeatDropsEnabled, off at start) so boars drop a meat pickup on death; picking it up reports Collect.Meat once.",
+  "DirectorsCut/AI", "DirectorsCut/AI",
+  "DC.StartQuest Q_Bacon 5 Collect.Meat ..., DC.BoarMeatDrops 1, kill boars, walk over the meat.",
+  "No meat while off; one pickup per death while on; quest +1 per pickup, kills not counted.", "6", 1.5, "Done (review)"),
  (10, "Integration pass + handoff notes", "A, B, F",
   "Full loop in the test map: start with sword, boars spawn, fight, flee, die, kill events. Short handoff doc for the team (classes, events, tags) so they can drop it into the main map.",
   "-", "Docs", "Play zones A and B start to finish.",
   "Everything works together; doc in Docs/; nothing saved in the main map.", "1-9", 1.5, "Done (review)"),
 ]
-APPROVED = {1: "Approved", 2: "Approved", 3: "Approved", 4: "Approved", 5: "Approved", 6: "Approved", 7: "Approved", 8: "Approved", 9: "Approved", 10: "Approved"}   # approvals the user gave in chat (2026-11-13)
+APPROVED = {1: "Approved", 2: "Approved", 3: "Approved", 4: "Approved", 5: "Approved", 6: "Approved", 7: "Approved", 8: "Approved", 9: "Approved", 10: "Approved", 11: "Approved"}   # approvals the user gave in chat (2026-11-13)
 r = HR + 1
 for row in rows:
     done = row[10].startswith("Done")
@@ -263,6 +268,10 @@ BACKLOG = [
  (10, "Integration", "Balance", "Sword 35 vs boar 60 HP = 2 hits, so fleeing is almost never seen", "With the plan's 25 damage the 2nd hit leaves 17% and the boar flees; align numbers", "High"),
  (10, "Integration", "Integration", "Main map has no spawner / wander area yet; BP_DCBoarSpawner (max 5) is ready for the lead to place", "Handoff doc section 1", "High"),
  (10, "Integration", "UX", "Standing right on top of a boar, its card fills the bottom of the screen", "Expected for 2.5D; could push the player back on bite", "Low"),
+ (11, "Meat drops", "Art", "Meat is a placeholder ham drawing (T_DC_BoarMeat_Placeholder)", "Real meat/bacon sprite from the artist; swap on BP_DC_BoarMeat", "Medium"),
+ (11, "Meat drops", "Audio/VFX", "No pickup sound, sparkle or 'chomp' feedback; no drop sound", "Hook DCBoarSubsystem.OnMeatCollected", "Medium"),
+ (11, "Meat drops", "Design", "Meat never expires (Lifetime 0) and drops 100% of the time", "Fine for a 5-meat quest; tune Meat Drop Chance / Lifetime if the joke needs scarcity", "Low"),
+ (11, "Meat drops", "Code", "A pop near a fence can land the meat on top of the fence (it lands on any level geometry)", "Rare; reduce Pop Out Speed if it happens in the main map", "Low"),
  (9, "Camera-facing sprite", "Art", "Same component can draw the missing sword hand (system 3) and the Director", "Needs the art", "Medium"),
 ]
 pol = Sheet("Polish backlog")
