@@ -170,7 +170,7 @@ def p_ground():
         cbox("Path_%02d" % i, ((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, 2), (L + 300, 350, 6), "Path", yaw=yaw)
     ws = _world().get_world_settings()
     ws.set_editor_property("kill_z", -1500.0)
-    gm = unreal.load_class(None, "/Game/Variant_Shooter/Blueprints/BP_ShooterGameMode.BP_ShooterGameMode_C")
+    gm = unreal.load_class(None, "/Game/DirectorsCut/Blueprints/BP_DCGameMode.BP_DCGameMode_C")
     if gm:
         ws.set_editor_property("default_game_mode", gm)
 

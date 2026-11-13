@@ -36,7 +36,7 @@ These stay the same in every beat:
 - **Sky:** SkyAtmosphere and SkyLight (real-time capture). Sun, fog and post-process live in the light sublevels.
 - **Gameplay:**
   - `PlayerStart_Village` at (-5200,0), facing +X, tagged `RED` and `BLUE` to match the Shooter respawn lookup.
-  - 6 × `BoarSpawn` target points, `NavMeshBounds_Bowl`, Kill Z -1500, and the GameMode override `BP_ShooterGameMode`.
+  - 6 × `BoarSpawn` target points, `NavMeshBounds_Bowl`, Kill Z -1500, and the GameMode override `BP_DCGameMode` (pawn `BP_ShooterCharacter` until `BP_DCCharacter` lands).
   - `Narrator_Focus_TheSet` (tag `NarratorFocus`): a point at The Set for camera or voice focus if needed.
 
 ## Beat → sublevel table (the contract for the programmer)

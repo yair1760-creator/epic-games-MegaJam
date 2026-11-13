@@ -189,7 +189,7 @@ Signs are created by `sign_text(...)` in `Scripts/LD_BuildDirectorsCut.py`. Dele
 
 | Script line | Sign | Sublevel | Becomes |
 |---|---|---|---|
-| 372 | "HUNT THE BOARS!" | Set_Hunt | Director line `L1_Intro_02` + quest tracker |
+| 372 | "HUNT THE BOARS!" | Set_Hunt | Director line `L1_Intro_04` + quest tracker |
 | 373 | "WANTED: 3 BOAR MEAT" | Set_Hunt | Director line in Level 2 + quest tracker |
 | 395 | "MEAT: 0 / 3" | Set_NoMeat | Quest tracker in Level 2 |
 | 452 | "SHOO ZONE (no hurting!)" | Set_PG | Director line in Level 4 |
@@ -209,20 +209,25 @@ Also update `Docs/LevelDesign_DirectorsCut.md` so its beat table no longer lists
 
 ---
 
-## Level 1 Director script (draft, goes in `DT_NarratorLines`)
+## Level 1 Director script (in `DT_NarratorLines`, voiced)
 
-| Row ID | Trigger | Text |
+The Director is deadpan and sarcastic: a weary auteur unimpressed by his lead actor. The "Voice line" column is the exact text-to-speech input, with ElevenLabs v3 audio tags in brackets. The subtitle (the `Text` column in `DT_NarratorLines`) is the same line without the tags.
+
+**Voice settings:** `fal-ai/elevenlabs/tts/eleven-v3`, voice `Callum`, stability `0.3`, output `pcm_24000`. Save each clip as `RawAudio/VO/<RowId>.pcm`, then run `Scripts/DC_ImportVoiceLines.py` in the editor. It imports the clips as `/Game/DirectorsCut/Audio/VO/VO_<RowId>`, sets the `Voice` column, and sets `Duration` to the clip length + 0.4 s. `RawAudio/` is not committed.
+
+| Row ID | Trigger | Voice line |
 |---|---|---|
-| `L1_Intro_01` | Game start | "Aaand... ACTION! Our hero awakens in a peaceful fantasy village." |
-| `L1_Intro_02` | +3 s | "Wild boars have entered the perimeter! Take up arms and eliminate them!" |
-| `L1_Intro_03` | +3 s, quest starts | "Ten of them. Ten is a very cinematic number. Don't ask." |
-| `L1_FirstHit` | First hit on a boar | "Yes! Violence! The audience loves it." |
-| `L1_FirstKill` | 1/10 | "Beautiful! Hold that pose... okay, keep going." |
-| `L1_Half` | 5/10 | "Halfway there. The audience is on the edge of their seats. Probably." |
-| `L1_PlayerHurt` | First time the player is below 50% HP | "Try not to die. The insurance on this production is terrible." |
-| `L1_PlayerDied` | Player death | "CUT! Again, from the top. With feeling this time." |
-| `L1_Idle` | No kill for 30 s | "Hello? The boars are over there. I can see them from up here." |
-| `L1_Complete` | 10/10 | "And... CUT! That's a wrap on scene one!" |
+| `L1_Intro_01` | Game start | [deadpan] Welcome to the scene. Ah. Our leading actor. Well... casting has made a choice. |
+| `L1_Intro_02` | After 01 | Those boars ate the village's crops. The villagers are starving. The boars, on the other hand, look fantastic. |
+| `L1_Intro_03` | After 02 | [sarcastic] Fortunately, we have you. And a sword. Apparently that was the entire budget. |
+| `L1_Intro_04` | After 03, quest starts when it ends | Fight ten boars. Exactly ten. We're making cinema, not a census. [sighs] And... action. |
+| `L1_FirstHit` | First hit on a boar | Ooh, contact. [deadpan] The boar is acting hurt. Very convincing. Somebody nominate the boar. |
+| `L1_FirstKill` | 1/10 | [deadpan] One down. Hold that pose... no. Not that one. Keep going. |
+| `L1_Half` | 5/10 | Five. Halfway. [sarcastic] The audience is on the edge of their seats. Mostly because the seats are broken. |
+| `L1_PlayerHurt` | First time the player is below 50% HP | Try not to die. The insurance on this production is... [sighs] aspirational. |
+| `L1_PlayerDied` | Player death | [exasperated] CUT! Someone get the actor back to their mark. [sighs] With feeling this time. |
+| `L1_Idle` | No kill for 30 s | [deadpan] Hello? The boars are over there. I can see them from up here. I can see everything from up here. |
+| `L1_Complete` | 10/10 | [shouts] And... CUT! That's a wrap on scene one. [deadpan] Don't let it go to your head. |
 
 ---
 

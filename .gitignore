@@ -78,3 +78,6 @@ DerivedDataCache/*
 *.slnx
 .vscode/
 .claude/settings.local.json
+
+# Raw generated audio (imported copies live in Content/DirectorsCut/Audio)
+RawAudio/
