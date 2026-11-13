@@ -3,13 +3,11 @@
 #include "DirectorsCut/AI/DCKingBoar.h"
 #include "DirectorsCut/AI/DCBoarAIController.h"
 #include "DirectorsCut/Combat/DCHealthComponent.h"
-#include "DirectorsCut/Combat/DCFloatingHPBar.h"
-#include "Components/StaticMeshComponent.h"
+#include "DirectorsCut/Rendering/DCBillboardSprite.h"
 #include "Components/TextRenderComponent.h"
-#include "Engine/StaticMesh.h"
+#include "Engine/Texture2D.h"
 #include "GameFramework/Pawn.h"
 #include "Kismet/GameplayStatics.h"
-#include "Materials/MaterialInterface.h"
 #include "UObject/ConstructorHelpers.h"
 
 ADCKingBoar::ADCKingBoar()
@@ -27,29 +25,28 @@ ADCKingBoar::ADCKingBoar()
 	KillEventTag = FName("Kill.KingBoar");
 	CorpseTime = 5.0f;
 
-	CrownMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Crown Mesh"));
-	CrownMesh->SetupAttachment(GetRootComponent());
-	CrownMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	CrownMesh->SetRelativeLocation(FVector(0.0f, 0.0f, 75.0f));
-	CrownMesh->SetRelativeScale3D(FVector(0.55f, 0.55f, 0.4f));
-
-	static ConstructorHelpers::FObjectFinder<UStaticMesh> Cyl(TEXT("/Game/LevelPrototyping/Meshes/SM_Cylinder.SM_Cylinder"));
-	static ConstructorHelpers::FObjectFinder<UMaterialInterface> GoldMat(TEXT("/Game/VerticalSlice/Materials/MI_LD_Breadcrumb.MI_LD_Breadcrumb"));
-	if (Cyl.Succeeded())
+	// gold boar
+	if (Sprite)
 	{
-		CrownMesh->SetStaticMesh(Cyl.Object);
+		Sprite->Tint = KingTint;
+		Sprite->Brightness = KingBrightness;
 	}
-	if (GoldMat.Succeeded())
+
+	// crown: its own camera-facing card on the boar card, nudged toward the camera so it always draws in front of the head
+	CrownSprite = CreateDefaultSubobject<UDCBillboardSprite>(TEXT("Crown Sprite"));
+	CrownSprite->SetupAttachment(Sprite ? static_cast<USceneComponent*>(Sprite) : GetRootComponent());
+	CrownSprite->SetRelativeLocation(CrownOffset);
+	CrownSprite->FrontSize = FVector2D(52.0f, 39.0f);
+	CrownSprite->bPivotAtBottom = true;
+	static ConstructorHelpers::FObjectFinder<UTexture2D> CrownArt(TEXT("/Game/DirectorsCut/Characters/Boar/Sprites/T_DC_KingCrown_Placeholder.T_DC_KingCrown_Placeholder"));
+	if (CrownArt.Succeeded())
 	{
-		CrownMesh->SetMaterial(0, GoldMat.Object);
+		CrownSprite->FrontTexture = CrownArt.Object;
 	}
 
 	if (StateText)
 	{
-		StateText->SetRelativeLocation(FVector(0.0f, 0.0f, 130.0f));
-		StateText->SetWorldSize(34.0f);
-		StateText->SetText(FText::FromString(TEXT("KING BOAR")));
-		StateText->SetTextRenderColor(FColor::Yellow);
+		StateText->SetRelativeLocation(FVector(0.0f, 0.0f, 130.0f));   // debug label (off unless bShowDebugState)
 	}
 
 	Tags.Add(TEXT("KingBoar"));
@@ -59,11 +56,13 @@ void ADCKingBoar::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (StateText)
+	if (Sprite)
 	{
-		StateText->SetVisibility(true);
-		StateText->SetText(FText::FromString(TEXT("KING BOAR")));
-		StateText->SetTextRenderColor(FColor::Yellow);
+		Sprite->SetTint(KingTint, KingBrightness);
+	}
+	if (CrownSprite)
+	{
+		CrownSprite->SetRelativeLocation(CrownOffset);
 	}
 }
 
@@ -71,14 +70,10 @@ void ADCKingBoar::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
-	if (CrownMesh)
+	// the dead frame lies on the ground: the crown slides down onto the head
+	if (CrownSprite && IsDead())
 	{
-		CrownMesh->AddLocalRotation(FRotator(0.0f, 60.0f * DeltaSeconds, 0.0f));
-	}
-
-	if (StateText && !IsDead())
-	{
-		StateText->SetText(FText::FromString(TEXT("KING BOAR")));
+		CrownSprite->SetRelativeLocation(FMath::VInterpTo(CrownSprite->GetRelativeLocation(), DeadCrownOffset, DeltaSeconds, 8.0f));
 	}
 
 	// Aggro automatically if player approaches within guard range
@@ -86,7 +81,7 @@ void ADCKingBoar::Tick(float DeltaSeconds)
 	{
 		if (APawn* Player = UGameplayStatics::GetPlayerPawn(this, 0))
 		{
-			if (FVector::Dist2D(GetActorLocation(), Player->GetActorLocation()) <= 1800.0f)
+			if (FVector::Dist2D(GetActorLocation(), Player->GetActorLocation()) <= GuardRadius)
 			{
 				if (ADCBoarAIController* AI = Cast<ADCBoarAIController>(GetController()))
 				{

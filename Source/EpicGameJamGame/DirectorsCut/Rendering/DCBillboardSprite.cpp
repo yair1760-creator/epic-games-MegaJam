@@ -37,7 +37,8 @@ void UDCBillboardSprite::BeginPlay()
 {
 	Super::BeginPlay();
 
-	Quad = NewObject<UStaticMeshComponent>(GetOwner(), TEXT("SpriteQuad"));
+	// unique name: an actor can carry several sprites (King Boar body + crown); a fixed name would make the second replace the first
+	Quad = NewObject<UStaticMeshComponent>(GetOwner(), MakeUniqueObjectName(GetOwner(), UStaticMeshComponent::StaticClass(), TEXT("SpriteQuad")));
 	Quad->SetStaticMesh(QuadMesh);
 	Quad->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	Quad->SetCastShadow(true);              // cards cast a (flat) shadow, which grounds them

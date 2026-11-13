@@ -195,7 +195,7 @@ rows = [
   "King Boar = boar sprite scaled up + gold tint + a sprite crown on top; remove the rotating cylinder and the forced 'KING BOAR' debug text.",
   "DirectorsCut/AI", "DirectorsCut/AI",
   "Spawn the King Boar in zone B: big golden boar with a crown, no debug text, still faces the camera.",
-  "Reads as 'king boar' at 15 m; no primitives left.", "13", 1.5, "Not started"),
+  "Reads as 'king boar' at 15 m; no primitives left.", "13", 1.5, "Done (review)"),
  (16, "P0 Director boss + projectile visuals", "B, F",
   "Swap the cube/cylinder Director for a UDCBillboardSprite with idle / attack / hurt / death frames, and give the projectile a sprite + trail + hit puff. NEEDS Designer 1's Director frames; until then a placeholder drawing.",
   "DirectorsCut/AI", "DirectorsCut/AI",
@@ -222,7 +222,7 @@ rows = [
   "Walk around a boar: back/side frames show. Get hit during a CUT! fade: both show.",
   "Correct view per angle; flash never cancels another fade.", "9", 1.5, "Waiting art"),
 ]
-APPROVED = {1: "Approved", 2: "Approved", 3: "Approved", 4: "Approved", 5: "Approved", 6: "Approved", 7: "Approved", 8: "Approved", 9: "Approved", 10: "Approved", 11: "Approved", 13: "Approved", 14: "Approved"}   # approvals the user gave in chat (2026-11-13)
+APPROVED = {1: "Approved", 2: "Approved", 3: "Approved", 4: "Approved", 5: "Approved", 6: "Approved", 7: "Approved", 8: "Approved", 9: "Approved", 10: "Approved", 11: "Approved", 13: "Approved", 14: "Approved", 15: "Approved"}   # approvals the user gave in chat (2026-11-13)
 r = HR + 1
 for row in rows:
     done = row[10].startswith("Done")
@@ -318,6 +318,7 @@ BACKLOG = [
  (9, "Camera-facing sprite", "Art", "Same component can draw the missing sword hand (system 3) and the Director", "Needs the art", "Medium"),
  (14, "Balance + weapon rules", "Design", "King Boar 900 HP and Director 1500 HP are worked out from rifle damage, not from a real run", "Full Level 1 playtest in the main map (PIE, don't save); tune in DCKingBoar.cpp / DCDirectorBoss.cpp", "High"),
  (14, "Balance + weapon rules", "Design", "A weapon pickup touched during a sword-only beat is used up but gives nothing", "Only matters if the main map keeps template rifle pickups in Beats 1-2", "Low"),
+(15, "King Boar visuals", "Art", "Gold is a tint over the normal (red-brown) boar frames, so it reads orange-gold; the crown is a placeholder drawing", "Designer: a gold King Boar frame set and a crown; swap on Sprite / CrownSprite", "Medium"), (15, "King Boar visuals", "Animation", "Crown is fixed to the head position of the idle/charge frames; it doesn't follow hit/hurt frames", "Fine at 2.5x scale; real art could draw the crown into the frames", "Low"),
 ]
 pol = Sheet("Polish backlog")
 pol.set(1, 1, "Polish backlog: what each system still lacks (art, animation, textures, audio, VFX, UI)", S_TITLE)

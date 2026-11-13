@@ -162,3 +162,12 @@ Why the bosses went up: the rifle does about 250 damage per second, so a 400 HP 
 **Sword-only beats:** while the player holds a melee weapon, weapon switching, reload and weapon pickups are ignored (`AShooterCharacter::bLockLoadoutWhileMelee`, `IsLoadoutLocked()`). The level flow's `ReplaceWeaponsWithClass` still swaps to the rifle in Beat 3, and switching and reload work normally with the gun.
 
 **Tested in `Lvl_Test_CombatAI`:** player 100/100; switching and reload do nothing with the sword; the rifle swap unlocks (40-round magazine); a hyperspawn swarm of 12 took 20 HP from a player standing still for 10 s. **Not tested yet:** a full Level 1 run (boss and King Boar feel). That needs a playtest in the main map.
+
+## 10. King Boar visuals (system 15)
+
+- The King Boar is a normal boar sprite at 2.5x, tinted gold (`KingTint`, `KingBrightness`), with a separate camera-facing **crown sprite** (`CrownSprite`, placeholder `T_DC_KingCrown_Placeholder`) on its head. The rotating cylinder and the forced "KING BOAR" text are gone; the debug label follows `bShowDebugState` like any boar.
+- On death the crown slides down onto the lying head (`DeadCrownOffset`).
+- Tunables on `DCKingBoar`: `CrownOffset`, `DeadCrownOffset`, `GuardRadius` (was a fixed 1800 cm).
+- To use real art: set the crown's Front Texture, or give the King its own boar frames on `Sprite`.
+- **Fix in `UDCBillboardSprite`:** each sprite now gives its picture a unique name. Before, a second sprite on the same actor replaced the first one's picture, so the boar went invisible and the crown took its place. Any actor can now carry several sprites (useful for the Director boss).
+- Screenshots: `Docs/Screenshots/Sys15_King_Alive.png`, `Sys15_King_Dead.png`.
