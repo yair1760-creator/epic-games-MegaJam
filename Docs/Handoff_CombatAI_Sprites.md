@@ -47,7 +47,7 @@ The frames live in `/Game/DirectorsCut/Combat/Sword/Sprites/`.
 - **Hit timing:** the hit lands when the smear appears, **250 ms after the click**.
 - **Movement:** the hand bobs while walking and sways slightly when standing still. The attack poses keep their exact drawn placement (no bob).
 - **Layering:** the screen layer (`UDCWeaponSpriteWidget`, built in C++) sits **under** the HUD (viewport Z -10).
-- **Settings** on `BP_DC_Sword` → **Sword | 2D View**: `bUseSpriteView` (off brings back the 3D Meshy sword), the 4 frame textures, Anim FPS, Windup / Smear / Follow ticks, Screen Scale (1 = the 1920×1080 frame fills the screen height), and walk bob / idle sway.
+- **Settings** on `BP_DC_Sword` → **Sword | 2D View**: `bUseSpriteView` (off brings back the 3D Meshy sword), the 4 frame textures, Anim FPS, Windup / Smear / Follow ticks, Screen Scale (1 = the 1920×1080 frame fills the screen height), walk bob / idle sway, and Edge Bleed Pixels. Every pose is pushed (bob + sway + bleed) pixels past the bottom-right corner, so walking never pulls the drawing's cut-off arm edge into view (fixed 2026-11-13; before, the sleeve showed a straight edge while walking).
 - **For tests / UI:** `GetSpritePose()` returns Idle / Windup / Swing / Follow, plus `GetAttackElapsed()` and `GetAttackDuration()`.
 - **Template ammo counter:** it is hidden while a melee weapon is held (`ShooterPlayerController`), so it doesn't overlap the HUD.
 

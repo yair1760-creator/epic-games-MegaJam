@@ -179,6 +179,11 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Sword|2D View", meta=(ClampMin=0))
 	float IdleSwayPixels = 4.0f;
 
+	/** Extra pixels the frames are pushed past the bottom-right corner (on top of the bob), so the arm's cut-off
+	 *  edge in the drawing never shows on screen while walking */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Sword|2D View", meta=(ClampMin=0))
+	float EdgeBleedPixels = 4.0f;
+
 	virtual void SetActorHiddenInGame(bool bNewHidden) override;
 
 protected:

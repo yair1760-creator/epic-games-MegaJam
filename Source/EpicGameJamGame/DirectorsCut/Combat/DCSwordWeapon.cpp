@@ -149,7 +149,10 @@ void ADCSwordWeapon::UpdateSpriteView(float DeltaSeconds)
 	Offset.X = FMath::Sin(Step) * WalkBobPixels * Run * Calm;
 	Offset.Y = (FMath::Abs(FMath::Sin(Step)) * WalkBobPixels * 0.6f * Run
 		+ FMath::Sin(BobTime * 2.0f * PI * 0.35f) * IdleSwayPixels * (1.0f - Run)) * Calm;
-	SpriteWidget->SetPlacement(Offset, SpriteScreenScale);
+	// the arm is drawn running off the frame's bottom-right corner: push every pose a little further off-screen
+	// (at least as far as the bob can move it) so the bob never pulls the frame's straight edge into view
+	const FVector2D EdgeBleed(WalkBobPixels + EdgeBleedPixels, IdleSwayPixels + EdgeBleedPixels);
+	SpriteWidget->SetPlacement(Offset + EdgeBleed, SpriteScreenScale);
 }
 
 void ADCSwordWeapon::BeginPlay()
