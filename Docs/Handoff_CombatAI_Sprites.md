@@ -79,11 +79,13 @@ The frames live in `/Game/DirectorsCut/Combat/Sword/Sprites/`.
 | Charge speed | 650 | |
 | Body removed after | 4 s | 3 s |
 
-- **Debug label:** the floating label is on (`bShowDebugState`). **Turn it off on `BP_DC_Boar` for the real game.**
+- **Debug label:** off by default and on `BP_DC_Boar`. Tick `Show Debug State` on a boar to see its AI state (Idle / Wander / Angry ...).
 
 ## 4b. Meat drops (the "collect boar meat for bacon" part of the hunt)
 
-Boar meat comes from the lead's `ADCBoarMeatPickup` (Combat), which `ADCGameMode` spawns during the bacon beat. Our earlier `ADCBoarMeat` / `SetMeatDropsEnabled` was removed so there is only one meat system. Boars still report `Kill.Boar` when they die.
+Boar meat comes from the lead's `ADCBoarMeatPickup` (Combat), which `ADCGameMode` spawns during the bacon beat.
+
+The pickup shows a camera-facing ham picture (`UDCBillboardSprite` + `T_DC_BoarMeat_Placeholder`, 70 cm) with a warm glow; the cube/cylinder parts and the "BOAR HAM" label are gone. Swap the picture via the `Sprite` component's Front Texture when the artist's meat sprite exists. Our earlier `ADCBoarMeat` / `SetMeatDropsEnabled` was removed so there is only one meat system. Boars still report `Kill.Boar` when they die.
 
 ## 5. Sprites (`DCBillboardSprite`)
 

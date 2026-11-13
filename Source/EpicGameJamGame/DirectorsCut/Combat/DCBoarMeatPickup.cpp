@@ -4,13 +4,11 @@
 #include "Quest/DCQuestSubsystem.h"
 #include "Components/PointLightComponent.h"
 #include "Components/SphereComponent.h"
-#include "Components/StaticMeshComponent.h"
-#include "Components/TextRenderComponent.h"
-#include "Engine/StaticMesh.h"
+#include "DirectorsCut/Rendering/DCBillboardSprite.h"
+#include "Engine/Texture2D.h"
 #include "Engine/World.h"
 #include "GameFramework/Pawn.h"
 #include "Kismet/GameplayStatics.h"
-#include "Materials/MaterialInterface.h"
 #include "UObject/ConstructorHelpers.h"
 
 ADCBoarMeatPickup::ADCBoarMeatPickup()
@@ -25,37 +23,16 @@ ADCBoarMeatPickup::ADCBoarMeatPickup()
 	CollisionSphere->SetCollisionResponseToAllChannels(ECR_Ignore);
 	CollisionSphere->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
 
-	static ConstructorHelpers::FObjectFinder<UStaticMesh> Cube(TEXT("/Game/LevelPrototyping/Meshes/SM_ChamferCube.SM_ChamferCube"));
-	static ConstructorHelpers::FObjectFinder<UStaticMesh> Cyl(TEXT("/Game/LevelPrototyping/Meshes/SM_Cylinder.SM_Cylinder"));
-	static ConstructorHelpers::FObjectFinder<UMaterialInterface> MeatMat(TEXT("/Game/VerticalSlice/Materials/MI_LD_Landmark.MI_LD_Landmark"));
-	static ConstructorHelpers::FObjectFinder<UMaterialInterface> BoneMat(TEXT("/Game/VerticalSlice/Materials/MI_LD_White.MI_LD_White"));
-
-	MeatMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Meat Mesh"));
-	MeatMesh->SetupAttachment(CollisionSphere);
-	MeatMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	MeatMesh->SetRelativeScale3D(FVector(0.55f, 0.36f, 0.28f));
-	if (Cube.Succeeded())
+	// a camera-facing ham picture, sitting on the ground and bobbing with the actor
+	Sprite = CreateDefaultSubobject<UDCBillboardSprite>(TEXT("Sprite"));
+	Sprite->SetupAttachment(CollisionSphere);
+	Sprite->SetRelativeLocation(FVector(0.0f, 0.0f, -30.0f));
+	Sprite->FrontSize = FVector2D(70.0f, 70.0f);
+	Sprite->bPivotAtBottom = true;
+	static ConstructorHelpers::FObjectFinder<UTexture2D> MeatArt(TEXT("/Game/DirectorsCut/Characters/Boar/Sprites/T_DC_BoarMeat_Placeholder.T_DC_BoarMeat_Placeholder"));
+	if (MeatArt.Succeeded())
 	{
-		MeatMesh->SetStaticMesh(Cube.Object);
-	}
-	if (MeatMat.Succeeded())
-	{
-		MeatMesh->SetMaterial(0, MeatMat.Object);
-	}
-
-	BoneMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Bone Mesh"));
-	BoneMesh->SetupAttachment(MeatMesh);
-	BoneMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	BoneMesh->SetRelativeLocation(FVector(55.0f, 0.0f, 0.0f));
-	BoneMesh->SetRelativeRotation(FRotator(90.0f, 0.0f, 0.0f));
-	BoneMesh->SetRelativeScale3D(FVector(0.28f, 0.28f, 0.65f));
-	if (Cyl.Succeeded())
-	{
-		BoneMesh->SetStaticMesh(Cyl.Object);
-	}
-	if (BoneMat.Succeeded())
-	{
-		BoneMesh->SetMaterial(0, BoneMat.Object);
+		Sprite->FrontTexture = MeatArt.Object;
 	}
 
 	GlowLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("Glow Light"));
@@ -63,15 +40,6 @@ ADCBoarMeatPickup::ADCBoarMeatPickup()
 	GlowLight->SetLightColor(FLinearColor(1.0f, 0.55f, 0.35f));
 	GlowLight->SetIntensity(2200.0f);
 	GlowLight->SetAttenuationRadius(350.0f);
-
-	LabelText = CreateDefaultSubobject<UTextRenderComponent>(TEXT("Label Text"));
-	LabelText->SetupAttachment(CollisionSphere);
-	LabelText->SetRelativeLocation(FVector(0.0f, 0.0f, 55.0f));
-	LabelText->SetHorizontalAlignment(EHTA_Center);
-	LabelText->SetWorldSize(24.0f);
-	LabelText->SetText(FText::FromString(TEXT("BOAR HAM")));
-	LabelText->SetTextRenderColor(FColor::Yellow);
-	LabelText->SetUsingAbsoluteRotation(true);
 }
 
 void ADCBoarMeatPickup::BeginPlay()
@@ -86,8 +54,6 @@ void ADCBoarMeatPickup::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 	Age += DeltaSeconds;
-
-	AddActorLocalRotation(FRotator(0.0f, 110.0f * DeltaSeconds, 0.0f));
 
 	FVector Loc = GetActorLocation();
 	Loc.Z = BaseZ + FMath::Sin(Age * 4.0f) * 12.0f;
@@ -105,11 +71,6 @@ void ADCBoarMeatPickup::Tick(float DeltaSeconds)
 		{
 			const FVector Dir = (Player->GetActorLocation() - Loc).GetSafeNormal2D();
 			Loc += Dir * MagnetSpeed * DeltaSeconds;
-		}
-
-		if (LabelText)
-		{
-			LabelText->SetWorldRotation(FRotator(0.0f, (Player->GetActorLocation() - LabelText->GetComponentLocation()).Rotation().Yaw, 0.0f));
 		}
 	}
 

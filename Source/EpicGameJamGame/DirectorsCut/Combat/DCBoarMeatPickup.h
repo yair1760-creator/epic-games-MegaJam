@@ -7,9 +7,8 @@
 #include "DCBoarMeatPickup.generated.h"
 
 class USphereComponent;
-class UStaticMeshComponent;
+class UDCBillboardSprite;
 class UPointLightComponent;
-class UTextRenderComponent;
 
 UCLASS(DisplayName="DC Boar Meat Pickup")
 class EPICGAMEJAMGAME_API ADCBoarMeatPickup : public AActor
@@ -37,17 +36,12 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components")
 	TObjectPtr<USphereComponent> CollisionSphere;
 
+	/** Camera-facing ham picture (T_DC_BoarMeat_Placeholder until the artist's meat sprite exists) */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components")
-	TObjectPtr<UStaticMeshComponent> MeatMesh;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components")
-	TObjectPtr<UStaticMeshComponent> BoneMesh;
+	TObjectPtr<UDCBillboardSprite> Sprite;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components")
 	TObjectPtr<UPointLightComponent> GlowLight;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components")
-	TObjectPtr<UTextRenderComponent> LabelText;
 
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaSeconds) override;

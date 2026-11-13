@@ -138,9 +138,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Boar|Look")
 	bool bUseSprite = true;
 
-	/** Floating state label above the boar (test map) */
+	/** Floating state label above the boar (debug only, off for the real game; tick it on a boar to see its AI state) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Boar|Debug")
-	bool bShowDebugState = true;
+	bool bShowDebugState = false;
 
 	// ---------------- state
 

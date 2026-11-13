@@ -180,8 +180,49 @@ rows = [
   "Full loop in the test map: start with sword, boars spawn, fight, flee, die, kill events. Short handoff doc for the team (classes, events, tags) so they can drop it into the main map.",
   "-", "Docs", "Play zones A and B start to finish.",
   "Everything works together; doc in Docs/; nothing saved in the main map.", "1-9", 1.5, "Done (review)"),
+ # ---- round 2 (lead's Dev 2 list, 2026-11-13) ----
+ (13, "P0 Production cleanup", "B",
+  "Boar debug label off on BP_DC_Boar. Lead's ADCBoarMeatPickup (Combat) shows a camera-facing ham sprite (UDCBillboardSprite) instead of cube/cylinder parts. BP_DCBoarSpawner reaches main with our next PR.",
+  "DirectorsCut/Combat", "DirectorsCut/Combat, Characters/Boar/Sprites",
+  "Zone B: boars have no floating label; DC.StartQuest + meat beat: the meat is a ham sprite that faces you.",
+  "No debug text on boars; meat is a sprite; pickup still reports Collect.Meat.", "11", 1, "Done (review)"),
+ (14, "P0 Balance + weapon rules", "A, B",
+  "Sword 25 dmg so boars (60 HP) hit the 35% flee point on the 2nd hit; boar bite 10; player MaxHP 100. Tune King Boar / Director boss HP, speed, projectile and Beat 3 hyperspawn (25 HP). Sword-only in Beats 1-2 (no weapon switch / reload), gun ammo + reload work in Beats 3-5.",
+  "DirectorsCut/Combat, DirectorsCut/AI, Variant_Shooter", "DirectorsCut/AI, Combat",
+  "Test map: hit a boar twice -> it flees, third hit kills. Full Level 1 playtest in PIE (no main-map save) for boss numbers.",
+  "Numbers match the plan; flee happens; a full run is beatable but not trivial.", "13", 2, "Not started"),
+ (15, "P0 King Boar visuals", "B",
+  "King Boar = boar sprite scaled up + gold tint + a sprite crown on top; remove the rotating cylinder and the forced 'KING BOAR' debug text.",
+  "DirectorsCut/AI", "DirectorsCut/AI",
+  "Spawn the King Boar in zone B: big golden boar with a crown, no debug text, still faces the camera.",
+  "Reads as 'king boar' at 15 m; no primitives left.", "13", 1.5, "Not started"),
+ (16, "P0 Director boss + projectile visuals", "B, F",
+  "Swap the cube/cylinder Director for a UDCBillboardSprite with idle / attack / hurt / death frames, and give the projectile a sprite + trail + hit puff. NEEDS Designer 1's Director frames; until then a placeholder drawing.",
+  "DirectorsCut/AI", "DirectorsCut/AI",
+  "Spawn the boss in the test map: sprite faces you, swaps frames on attack/hurt/death; shots are visible and pop on hit.",
+  "No primitives on the boss or shots.", "9", 2.5, "Waiting art"),
+ (17, "P0 Princess visuals", "F",
+  "Swap the cylinder/cube Princess for a camera-facing sprite (idle bob). Optional: shed door opens. NEEDS a Princess drawing; until then a placeholder.",
+  "DirectorsCut/AI", "DirectorsCut/AI",
+  "Place the Princess in the test map: sprite faces you and bobs.",
+  "No primitives on the Princess.", "9", 1, "Waiting art"),
+ (18, "P1 Audio + VFX hooks (code)", "A, B",
+  "Editable sound / Niagara slots + playback on the sword (swing, hit, trail), boar (grunt, charge, squeal, death, death poof), player (hurt), boss (attack, hit, defeat). Empty slot = silent, so it works before the files exist.",
+  "DirectorsCut/Combat, DirectorsCut/AI, Variant_Shooter", "DirectorsCut/Audio (slots only)",
+  "Test map with placeholder sounds: each action plays its sound once, at the right moment, with distance falloff.",
+  "Every event in the list has a slot and plays it; nothing spams.", "13", 2, "Not started"),
+ (19, "P1 SFX + music files", "Audio (shared)",
+  "Make S_* sound effects and the 5 music loops (heroic, frantic, pastel romance, boss, victory sting). Sources allowed by the jam: AI tools (fal: ElevenLabs SFX v3, Stable Audio, Sonilo SFX/music, Lyria, ElevenLabs Music) and licensed assets (WeLoveIndies free non-commercial pack, Fab). List every source in the submission.",
+  "-", "DirectorsCut/Audio/SFX, DirectorsCut/Audio/Music",
+  "Plug into the slots from system 18; play Level 1 and listen.",
+  "All 13 SFX + 5 music cues in; sources listed in Docs.", "18", 3, "Needs owner"),
+ (20, "P1 Boar side/back views + hit flash overlay", "B, F",
+  "Plug side/back boar frames into the sprite when Designer 1 delivers them. Move the red hit flash from camera fade to a HUD overlay so a Director 'CUT!' fade can't be overridden.",
+  "DirectorsCut/Combat, DirectorsCut/AI", "DirectorsCut/Characters/Boar",
+  "Walk around a boar: back/side frames show. Get hit during a CUT! fade: both show.",
+  "Correct view per angle; flash never cancels another fade.", "9", 1.5, "Waiting art"),
 ]
-APPROVED = {1: "Approved", 2: "Approved", 3: "Approved", 4: "Approved", 5: "Approved", 6: "Approved", 7: "Approved", 8: "Approved", 9: "Approved", 10: "Approved", 11: "Approved"}   # approvals the user gave in chat (2026-11-13)
+APPROVED = {1: "Approved", 2: "Approved", 3: "Approved", 4: "Approved", 5: "Approved", 6: "Approved", 7: "Approved", 8: "Approved", 9: "Approved", 10: "Approved", 11: "Approved", 13: "Approved"}   # approvals the user gave in chat (2026-11-13)
 r = HR + 1
 for row in rows:
     done = row[10].startswith("Done")
@@ -200,7 +241,7 @@ plan.set(r + 1, 10, '=COUNTIF(L%d:L%d,"Approved")&" of "&COUNTA(A%d:A%d)' % (HR 
 plan.set(r + 2, 9, "Note", S_BOLD)
 plan.set(r + 2, 10, "Hours are rough jam-pace estimates by Claude, not measured. Deadline: Sun Nov 15, 5:59 PM PST.", S_ITAL)
 plan.dv.append(("L%d:L%d" % (HR + 1, last), "Approved,Change it,Skip"))
-plan.dv.append(("K%d:K%d" % (HR + 1, last), "Not started,In progress,Testing,Done (review),Done"))
+plan.dv.append(("K%d:K%d" % (HR + 1, last), "Not started,Waiting art,Needs owner,In progress,Testing,Done (review),Done,Removed"))
 plan.freeze = (HR + 1, 3)
 lg = r + 5
 plan.set(lg, 1, "Legend", S_BOLD)
@@ -234,7 +275,7 @@ BACKLOG = [
  (4, "Boar: body + wander", "Animation", "Done 2026-11-13: idle (blink) + 3-frame run cycle from the designer's frames, run speed follows walking speed", "No sniffing / grazing frames", "Low"),
  (4, "Boar: body + wander", "Audio", "No grunts, snorts or footsteps", "Hook OnStateChanged", "Medium"),
  (4, "Boar: body + wander", "Design", "Wander is purely random; no grazing spots, no herds, calm boars ignore the player", "Could add points of interest (food, mud) later", "Low"),
- (4, "Boar: body + wander", "Code", "Floating state label (Idle / Wander) is on by default", "Turn bShowDebugState off on BP_DC_Boar for the real game", "Medium"),
+ (4, "Boar: body + wander", "Code", "Done 2026-11-13 (system 13): floating state label is off by default and on BP_DC_Boar", "Tick Show Debug State on a boar to see its AI state", "Low"),
  (4, "Boar: body + wander", "Integration", "Main map needs a wander area (a TriggerBox) so boars stay in the bowl; spawner (system 7) will pass it", "Main map is the teammate's: ask before adding", "Medium"),
  (5, "Boar: angry, charge, bite", "Animation", "Anger is a hop, the bite is a forward lunge; no snort, run or bite animation", "Sprite frames (system 9) for angry / charge / bite", "High"),
  (5, "Boar: angry, charge, bite", "Audio", "No angry snort, charge thunder or bite chomp", "Hook OnStateChanged (Angry / Charge / Bite)", "High"),

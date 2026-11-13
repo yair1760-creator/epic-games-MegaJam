@@ -99,4 +99,26 @@ front = [
 ]
 write_png(os.path.join(OUT, "T_DC_Boar_Front_Placeholder.png"), W2, H2, render(W2, H2, front))
 
+# ---------------- boar meat pickup (cartoon ham shank, bone sticking out to the upper right)
+MEAT = (176, 62, 48, 255)
+SEAR = (120, 38, 30, 255)
+FAT = (236, 190, 160, 255)
+BONE = (244, 238, 222, 255)
+W3, H3 = 256, 256
+def along(x, y, x0, y0, x1, y1, r):
+    # inside a thick line segment (the bone shaft)
+    dx, dy = x1 - x0, y1 - y0
+    t = max(0.0, min(1.0, ((x - x0) * dx + (y - y0) * dy) / float(dx * dx + dy * dy)))
+    px, py = x0 + t * dx, y0 + t * dy
+    return (x - px) ** 2 + (y - py) ** 2 <= r * r
+meat = [
+    (lambda x, y: along(x, y, 140, 120, 205, 55, 13), BONE),          # shaft
+    (ellipse(212, 44, 17, 17), BONE), (ellipse(222, 60, 17, 17), BONE),  # knob
+    (ellipse(108, 152, 84, 70), MEAT),                                 # ham
+    (ellipse(92, 172, 52, 34), SEAR),                                  # seared side
+    (ellipse(150, 118, 26, 22), FAT),                                  # fat ring at the bone
+    (ellipse(150, 118, 13, 11), BONE),                                 # bone end in the meat
+    (ellipse(70, 130, 10, 7), FAT),                                    # highlight
+]
+write_png(os.path.join(OUT, "T_DC_BoarMeat_Placeholder.png"), W3, H3, render(W3, H3, meat, ink=5))
 print("ok")
