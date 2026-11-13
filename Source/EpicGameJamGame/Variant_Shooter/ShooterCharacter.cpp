@@ -14,6 +14,9 @@
 #include "TimerManager.h"
 #include "ShooterGameMode.h"
 #include "DirectorsCut/Combat/DCHitFeedbackComponent.h"
+#include "Components/DecalComponent.h"
+#include "Materials/MaterialInterface.h"
+#include "UObject/ConstructorHelpers.h"
 
 AShooterCharacter::AShooterCharacter()
 {
@@ -22,6 +25,27 @@ AShooterCharacter::AShooterCharacter()
 
 	// Director's Cut: hit feedback (red flash + camera shake), plays only for the local player
 	HitFeedback = CreateDefaultSubobject<UDCHitFeedbackComponent>(TEXT("Hit Feedback"));
+
+	// Director's Cut: cartoon blob shadow instead of the body's real shadow (classic platformer style).
+	// A dark disc decal under the feet; the projection is deep so it stays on the ground while jumping.
+	GetMesh()->SetCastShadow(false);
+	GetMesh()->SetReceivesDecals(false);
+	if (GetFirstPersonMesh())
+	{
+		GetFirstPersonMesh()->SetCastShadow(false);
+		GetFirstPersonMesh()->SetReceivesDecals(false);
+	}
+	BlobShadow = CreateDefaultSubobject<UDecalComponent>(TEXT("Blob Shadow"));
+	BlobShadow->SetupAttachment(GetCapsuleComponent());
+	BlobShadow->SetRelativeLocation(FVector(0.0f, 0.0f, -GetCapsuleComponent()->GetUnscaledCapsuleHalfHeight()));
+	BlobShadow->SetRelativeRotation(FRotator(-90.0f, 0.0f, 0.0f));   // project straight down
+	BlobShadow->DecalSize = FVector(250.0f, 38.0f, 38.0f);           // half-size: 2.5 m deep, 76 cm wide disc
+	BlobShadow->SetUsingAbsoluteRotation(true);                       // stays flat when the capsule turns
+	static ConstructorHelpers::FObjectFinder<UMaterialInterface> BlobMat(TEXT("/Game/DirectorsCut/Rendering/Materials/M_DC_BlobShadow.M_DC_BlobShadow"));
+	if (BlobMat.Succeeded())
+	{
+		BlobShadow->SetDecalMaterial(BlobMat.Object);
+	}
 
 	// configure movement
 	GetCharacterMovement()->RotationRate = FRotator(0.0f, 600.0f, 0.0f);

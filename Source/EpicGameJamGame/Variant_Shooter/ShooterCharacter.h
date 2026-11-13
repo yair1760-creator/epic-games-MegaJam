@@ -24,6 +24,7 @@ class AShooterCharacter;
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FShooterDiedDelegate, AShooterCharacter*, Character);
 
 class UDCHitFeedbackComponent;
+class UDecalComponent;
 
 /**
  *  A player controllable first person shooter character
@@ -38,6 +39,10 @@ class EPICGAMEJAMGAME_API AShooterCharacter : public AEpicGameJamGameCharacter, 
 	/** AI Noise emitter component */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
 	UPawnNoiseEmitterComponent* PawnNoiseEmitter;
+
+	/** Director's Cut: round cartoon shadow under the feet (the body casts no real shadow) */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UDecalComponent> BlobShadow;
 
 	/** Director's Cut: red flash + camera shake when the player is hit */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
