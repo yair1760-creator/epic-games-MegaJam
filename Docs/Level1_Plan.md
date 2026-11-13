@@ -58,7 +58,7 @@ Each package has **one owner** and **its own files**. Packages talk to each othe
 | Contract | Owner | Exact API (push the stub header in the first 30 min) |
 |---|---|---|
 | Damage | engine, built in | `UGameplayStatics::ApplyDamage` → `TakeDamage` (the shooter code already uses this) |
-| Quest | Dev D | `UDCQuestSubsystem` (WorldSubsystem): `StartQuest(FName Id, FText Title, int32 Target)`, `ReportEvent(FName EventTag)`, `OnQuestUpdated(FName Id, int32 Current, int32 Target)`, `OnQuestCompleted(FName Id)` |
+| Quest | Dev D | `UDCQuestSubsystem` (WorldSubsystem): `StartQuest(FName Id, FText Title, int32 Target, FName EventTag)`, `ReportEvent(FName EventTag)`, `ReplaceQuest(Id, Title, Target, EventTag, bKeepProgress)`, `OnQuestUpdated(FName Id, int32 Current, int32 Target)`, `OnQuestCompleted(FName Id)` |
 | Director | Dev C | `UDCNarratorSubsystem` (WorldSubsystem): `PlayLine(FName RowId)`, `PlaySequence(TArray<FName>)`, `OnLineStarted(FText Speaker, FText Text, float Duration)`, `OnLineFinished(FName RowId)`. Row struct `FDCNarratorLine { Speaker, Text, Duration, USoundBase* Voice }` |
 | Boar death | Dev B | When a boar dies it calls `QuestSubsystem->ReportEvent("Kill.Boar")`. That is the only thing the boar knows about quests. |
 | Beats | Dev E | `GoToBeat(int32 Beat)` loads/unloads sublevels per the table in `LevelDesign_DirectorsCut.md` |
@@ -179,7 +179,9 @@ In priority order:
 
 ---
 
-## Signs removal (Dev E, first hour)
+## Signs removal (Dev E, first hour) — DONE
+
+The five instruction signs below are deleted from the script and from `DC_Set_Hunt`, `DC_Set_NoMeat` and `DC_Set_PG`; the blank boards behind them stay as props. Line numbers refer to the script before the removal. The joke signs were kept.
 
 Signs are created by `sign_text(...)` in `Scripts/LD_BuildDirectorsCut.py`. Delete them in the editor **and** delete the matching lines in the script, otherwise re-running the script brings them back.
 

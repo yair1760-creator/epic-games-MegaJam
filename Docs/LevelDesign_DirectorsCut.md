@@ -45,10 +45,10 @@ Load exactly these sublevels for each beat and unload everything else. Use strea
 
 | Beat | Narrator moment | Load these | What the player sees change |
 |---|---|---|---|
-| 1 | Intro quest: hunt boars (sword) | `DC_Light_Day`, `DC_Set_Hunt` | Sunny fantasy meadow, painted sky backdrop, hay bales, sword rack, "HUNT THE BOARS!" and "WANTED: 3 BOAR MEAT" signs |
-| 2 | Meat-drop joke | + `DC_Set_NoMeat` | Stall gets "SOLD OUT", empty meat hooks and a spotlit empty plate; a giant red "HA HA HA" sign; a "MEAT: 0 / 3" scoreboard next to The Set |
+| 1 | Intro quest: hunt boars (sword) | `DC_Light_Day`, `DC_Set_Hunt` | Sunny fantasy meadow, painted sky backdrop, hay bales, sword rack |
+| 2 | Meat-drop joke | + `DC_Set_NoMeat` | Stall gets "SOLD OUT", empty meat hooks and a spotlit empty plate; a giant red "HA HA HA" sign; a blank scoreboard next to The Set |
 | 3 | Director cut #1: sword → shotgun | `DC_Light_Day`, `DC_Set_Hunt`, `DC_Set_FilmCrew` (unload NoMeat) | Film crew takes over The Set: spotlit weapon pedestal, 4 light stands, director's chair, dolly track and camera, boom mic, "SCENE 3 TAKE 2" clapperboard |
-| 4 | Director cut #2: rated PG | `DC_Light_PG`, `DC_Set_Hunt`, `DC_Set_PG` | Pastel pink light, cardboard flowers, rainbow arch over the main path, "RATED PG" billboard, pastel boar pen with a "SHOO ZONE" sign |
+| 4 | Director cut #2: rated PG | `DC_Light_PG`, `DC_Set_Hunt`, `DC_Set_PG` | Pastel pink light, cardboard flowers, rainbow arch over the main path, a blank pastel billboard, pastel boar pen with a blank sign board |
 | 5 | Escalation | `DC_Light_Storm`, `DC_Set_Hunt`, `DC_Set_Storm`, then the exit sublevels in turn: `DC_Exit_A` → `DC_Exit_B` → `DC_Exit_C` | Grey storm and fog, fallen trees across paths, barricades around The Set, crates, mud, a fake "WIND FX" machine, rain-rig pipes. The red EXIT door jumps: unload one exit sublevel, load the next |
 | 6 | Breaking point | `DC_Light_Broken`, `DC_Set_Broken` | Hunt set unloads, so the **backdrop vanishes** and exposes the scaffolding. Fallen backdrop panels, magenta "missing texture" cubes floating, black void patches, hay frozen mid-fall, a crashed studio light, a giant mouse cursor, "ERROR: SCENE NOT FOUND" and "LOADING..." |
 | 7 | Boss: the Director | `DC_Light_Boss`, `DC_Set_Boss` | Red light. The Set becomes an arena: a curved red wall with 4 entrances, 4 tall and 8 low cover blocks, 3 red spotlight rigs, and the Director's crane perch east of The Set with a "FINAL CUT" sign |
@@ -73,6 +73,8 @@ These are placed by level design for the programmer to hook into.
 | `BoarSpawn_0..5` | persistent | `BoarSpawn` | Boar spawn points around the edge, facing The Set |
 
 Editor-only text labels (`LBL_*`) are hidden in game. The `SIGN_*` text actors are real in-game signage.
+
+**No instruction signs.** Objectives and instructions come only from the Director (subtitles/voice) and the HUD quest tracker. The remaining `SIGN_*` actors are set-dressing jokes the Director "built": "SOLD OUT", "HA HA HA", "DIRECTOR", "SCENE 3 TAKE 2", "WIND FX", "EXIT", "ERROR: SCENE NOT FOUND", "LOADING..." and "FINAL CUT".
 
 ## Level design notes
 
@@ -99,7 +101,6 @@ Editor-only text labels (`LBL_*`) are hidden in game. The `SIGN_*` text actors a
 
 - Your programmer needs to drive the beat changes: Narrator beat event → Load/Unload Stream Level per the table above.
 - The checkpoint system written for `Lvl_VerticalSlice` isn't used in this map. It has no `Checkpoint` actors, so respawn falls back to `PlayerStart_Village`.
-- To make this the map the game opens on, set **Project Settings > Maps & Modes > Game Default Map** to `Lvl_DirectorsCut`.
 - Meshy art pass: swap the greybox for generated props per set. Hero pieces: the Tower camera, the butcher stall, the director's chair, the wind machine and the boss crane.
 
 ## Screenshots

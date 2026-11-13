@@ -369,8 +369,6 @@ def s_hunt():
     for j in range(3):
         cbox("SwordRack_Sword_%d" % j, (-3450, 580 + j * 120, 170), (10, 25, 160), "White")
     target_point("WeaponPickup_Sword", (-3300, 700, 60), 0, ("WeaponPickup", "Sword"))
-    sign_text("HUNT THE BOARS!", (-3720, -500, 200), 50, yaw=180, color=(40, 20, 0))
-    sign_text("WANTED: 3 BOAR MEAT", (STALL[0], STALL[1] - 260, 330), 45, yaw=-90, color=(255, 230, 180))
     label_text("SET: HUNT (beats 1-5)", (0, 0, 900), 70)
 
 def s_nomeat():
@@ -392,7 +390,6 @@ def s_nomeat():
     cbox("LaughSign_Board", (sx, sy + 300, 950), (30, 1200, 300), "Dark")
     sign_text("HA HA HA", (sx, sy + 280, 880), 140, yaw=-90, color=(255, 40, 40))
     cbox("Scoreboard", (STAGE_C[0], STAGE_C[1] + STAGE_R + 200, 500), (40, 900, 400), "Dark")
-    sign_text("MEAT: 0 / 3", (STAGE_C[0] - 25, STAGE_C[1] + STAGE_R + 200, 420), 120, yaw=180, color=(255, 200, 0))
     label_text("SET: NO MEAT (beat 2)", (sx, sy, 1300), 60)
 
 def s_filmcrew():
@@ -449,8 +446,6 @@ def s_pg():
     trigger("Pen_Zone", (pc[0], pc[1], 0), (pr - 50, pr - 50, 200), ("BoarPen",))
     gx, gy = pc[0] + (pr + 250) * math.cos(math.radians(gate)), pc[1] + (pr + 250) * math.sin(math.radians(gate))
     cbox("PenSign_Board", (gx, gy, 300), (20, 500, 160), "PG_Sky", yaw=gate)
-    sign_text("SHOO ZONE\n(no hurting!)", (gx + 15 * math.cos(math.radians(gate)), gy + 15 * math.sin(math.radians(gate)), 260),
-              45, yaw=gate, color=(255, 255, 255))
     # rainbow arch over the main path (bead arch, 5 bands)
     for b, m in enumerate(("Landmark", "POI", "Breadcrumb", "PG_Mint", "PG_Sky")):
         r = 1100 - b * 70
@@ -476,8 +471,6 @@ def s_pg():
     for j, dy in enumerate((-500, 500)):
         cyl("PGBoard_Pole_%d" % j, (bx, by + dy, 0), 30, 700, "White")
     cbox("PGBoard", (bx, by, 900), (40, 1400, 700), "PG_Sky")
-    sign_text("RATED PG", (bx - 25, by, 950), 200, yaw=180, color=(255, 255, 255))
-    sign_text("no violence, please :)", (bx - 25, by, 760), 70, yaw=180, color=(255, 255, 255))
     label_text("SET: PG (beat 4)", (bx, by, 1400), 60)
 
 def s_storm():
