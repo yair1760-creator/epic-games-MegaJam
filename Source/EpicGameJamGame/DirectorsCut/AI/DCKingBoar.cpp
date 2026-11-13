@@ -16,7 +16,7 @@ ADCKingBoar::ADCKingBoar()
 {
 	SetActorScale3D(FVector(2.5f));
 
-	Health->MaxHP = 400.0f;
+	Health->MaxHP = 900.0f;   // rifle (25 x 10/s) needs ~36 hits, about 1 magazine + a reload
 	FleeHPFraction = 0.0f;
 	ChargeSpeed = 580.0f;
 	BiteDamage = 25.0f;

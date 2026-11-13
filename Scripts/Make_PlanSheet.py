@@ -190,7 +190,7 @@ rows = [
   "Sword 25 dmg so boars (60 HP) hit the 35% flee point on the 2nd hit; boar bite 10; player MaxHP 100. Tune King Boar / Director boss HP, speed, projectile and Beat 3 hyperspawn (25 HP). Sword-only in Beats 1-2 (no weapon switch / reload), gun ammo + reload work in Beats 3-5.",
   "DirectorsCut/Combat, DirectorsCut/AI, Variant_Shooter", "DirectorsCut/AI, Combat",
   "Test map: hit a boar twice -> it flees, third hit kills. Full Level 1 playtest in PIE (no main-map save) for boss numbers.",
-  "Numbers match the plan; flee happens; a full run is beatable but not trivial.", "13", 2, "Not started"),
+  "Numbers match the plan; flee happens; a full run is beatable but not trivial.", "13", 2, "Testing"),
  (15, "P0 King Boar visuals", "B",
   "King Boar = boar sprite scaled up + gold tint + a sprite crown on top; remove the rotating cylinder and the forced 'KING BOAR' debug text.",
   "DirectorsCut/AI", "DirectorsCut/AI",
@@ -222,7 +222,7 @@ rows = [
   "Walk around a boar: back/side frames show. Get hit during a CUT! fade: both show.",
   "Correct view per angle; flash never cancels another fade.", "9", 1.5, "Waiting art"),
 ]
-APPROVED = {1: "Approved", 2: "Approved", 3: "Approved", 4: "Approved", 5: "Approved", 6: "Approved", 7: "Approved", 8: "Approved", 9: "Approved", 10: "Approved", 11: "Approved", 13: "Approved"}   # approvals the user gave in chat (2026-11-13)
+APPROVED = {1: "Approved", 2: "Approved", 3: "Approved", 4: "Approved", 5: "Approved", 6: "Approved", 7: "Approved", 8: "Approved", 9: "Approved", 10: "Approved", 11: "Approved", 13: "Approved", 14: "Approved"}   # approvals the user gave in chat (2026-11-13)
 r = HR + 1
 for row in rows:
     done = row[10].startswith("Done")
@@ -316,6 +316,8 @@ BACKLOG = [
  (12, "2D sword view", "Repo", "Hand_Sword.psd and Dream 14.gif are stored in plain git (.gitattributes has no LFS rule for psd/gif)", "Add *.psd / *.gif LFS rules if more source art is coming (shared file: ask the lead)", "Low"),
  (12, "2D sword view", "Design", "Other weapons (shotgun beat 3, PG tool) need their own hand frames", "Same widget, new frame set per weapon", "Medium"),
  (9, "Camera-facing sprite", "Art", "Same component can draw the missing sword hand (system 3) and the Director", "Needs the art", "Medium"),
+ (14, "Balance + weapon rules", "Design", "King Boar 900 HP and Director 1500 HP are worked out from rifle damage, not from a real run", "Full Level 1 playtest in the main map (PIE, don't save); tune in DCKingBoar.cpp / DCDirectorBoss.cpp", "High"),
+ (14, "Balance + weapon rules", "Design", "A weapon pickup touched during a sword-only beat is used up but gives nothing", "Only matters if the main map keeps template rifle pickups in Beats 1-2", "Low"),
 ]
 pol = Sheet("Polish backlog")
 pol.set(1, 1, "Polish backlog: what each system still lacks (art, animation, textures, audio, VFX, UI)", S_TITLE)

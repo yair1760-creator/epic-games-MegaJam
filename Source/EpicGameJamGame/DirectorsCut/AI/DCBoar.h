@@ -85,7 +85,7 @@ public:
 	float BiteRange = 70.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Boar|Anger", meta=(ClampMin=0))
-	float BiteDamage = 40.0f;
+	float BiteDamage = 10.0f;   // 10 bites kill a 100 HP player
 
 	/** Seconds between the boar stopping and the bite landing (the player can step away) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Boar|Anger", meta=(ClampMin=0, Units="s"))

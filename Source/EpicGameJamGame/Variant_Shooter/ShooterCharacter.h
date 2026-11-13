@@ -80,7 +80,7 @@ protected:
 
 	/** Max HP this character can have */
 	UPROPERTY(EditAnywhere, Category="Health")
-	float MaxHP = 500.0f;
+	float MaxHP = 100.0f;
 
 	/** Current HP remaining to this character */
 	float CurrentHP = 0.0f;
@@ -217,6 +217,15 @@ public:
 	/** Returns the currently equipped weapon */
 	UFUNCTION(BlueprintPure, Category="Weapons")
 	AShooterWeapon* GetCurrentWeapon() const { return CurrentWeapon; }
+
+	/** Sword-only beats: while holding a melee weapon (no magazine), weapon switching, reload and weapon pickups are ignored.
+	 *  The level flow's ReplaceWeaponsWithClass still swaps to the gun. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Weapons")
+	bool bLockLoadoutWhileMelee = true;
+
+	/** True while the player holds a melee weapon and bLockLoadoutWhileMelee is on */
+	UFUNCTION(BlueprintPure, Category="Weapons")
+	bool IsLoadoutLocked() const;
 
 	/** Activates the passed weapon */
 	virtual void OnWeaponActivated(AShooterWeapon* Weapon) override;

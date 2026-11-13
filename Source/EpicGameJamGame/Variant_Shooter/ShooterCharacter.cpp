@@ -194,8 +194,8 @@ void AShooterCharacter::DoStopFiring()
 
 void AShooterCharacter::DoSwitchWeapon()
 {
-	// ensure we have at least two weapons two switch between
-	if (OwnedWeapons.Num() > 1 && !IsDead())
+	// ensure we have at least two weapons two switch between (and we're not in a sword-only beat)
+	if (OwnedWeapons.Num() > 1 && !IsDead() && !IsLoadoutLocked())
 	{
 		// deactivate the old weapon
 		CurrentWeapon->DeactivateWeapon();
@@ -224,11 +224,16 @@ void AShooterCharacter::DoSwitchWeapon()
 
 void AShooterCharacter::DoReload()
 {
-	// reload the current weapon
-	if (CurrentWeapon && !IsDead())
+	// reload the current weapon (a melee weapon has nothing to reload)
+	if (CurrentWeapon && !IsDead() && !IsLoadoutLocked())
 	{
 		CurrentWeapon->StartReload();
 	}
+}
+
+bool AShooterCharacter::IsLoadoutLocked() const
+{
+	return bLockLoadoutWhileMelee && IsValid(CurrentWeapon) && CurrentWeapon->GetMagazineSize() <= 0;
 }
 
 void AShooterCharacter::RefreshWeaponHUD()
@@ -287,6 +292,12 @@ FVector AShooterCharacter::GetWeaponTargetLocation()
 
 void AShooterCharacter::AddWeaponClass(const TSubclassOf<AShooterWeapon>& WeaponClass)
 {
+	// sword-only beat: ignore weapon pickups (ReplaceWeaponsWithClass clears CurrentWeapon first, so it still works)
+	if (IsLoadoutLocked())
+	{
+		return;
+	}
+
 	// do we already own this weapon?
 	AShooterWeapon* OwnedWeapon = FindWeaponOfType(WeaponClass);
 

@@ -34,7 +34,7 @@ public:
 
 	/** Damage per hit */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Sword", meta=(ClampMin=0))
-	float Damage = 35.0f;
+	float Damage = 25.0f;   // 60 HP boar: 60 -> 35 -> 10 (below the 35% flee point) -> dead
 
 	/** How far the swing reaches from the camera */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Sword", meta=(ClampMin=10, ClampMax=1000, Units="cm"))
