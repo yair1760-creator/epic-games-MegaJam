@@ -55,6 +55,14 @@ public:
 	UFUNCTION(BlueprintCallable, Category="Narrator")
 	void PlaySequence(const TArray<FName>& RowIds);
 
+	/** Plays one line chosen at random from RowIds */
+	UFUNCTION(BlueprintCallable, Category="Narrator")
+	void PlayRandomLine(const TArray<FName>& RowIds);
+
+	/** Alternates between PrimaryRowId and AltRowId each time this pair is triggered */
+	UFUNCTION(BlueprintCallable, Category="Narrator")
+	void PlayAlternatingLine(FName PrimaryRowId, FName AltRowId);
+
 	/** Cuts off the current line and clears the queue. Fires OnLineFinished for the cut-off line. */
 	UFUNCTION(BlueprintCallable, Category="Narrator")
 	void Interrupt();
@@ -70,6 +78,8 @@ public:
 
 	UPROPERTY(BlueprintAssignable, Category="Narrator")
 	FDCOnLineFinished OnLineFinished;
+
+	void FindRowNamesForDebug();
 
 protected:
 
@@ -95,4 +105,5 @@ private:
 	TArray<FName> Queue;
 	FName CurrentLineId;
 	FTimerHandle LineTimer;
+	TMap<FName, bool> AlternateToggle;
 };

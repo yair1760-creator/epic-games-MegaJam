@@ -166,9 +166,12 @@ void ADCBoar::HandleDied(UDCHealthComponent* HealthComponent, AController* Kille
 	bDeathHandled = true;
 
 	// quest contract (lead's package): the only thing a boar tells the quest system
-	if (UDCQuestSubsystem* Quest = GetWorld()->GetSubsystem<UDCQuestSubsystem>())
+	if (!KillEventTag.IsNone())
 	{
-		Quest->ReportEvent(FName("Kill.Boar"));
+		if (UDCQuestSubsystem* Quest = GetWorld()->GetSubsystem<UDCQuestSubsystem>())
+		{
+			Quest->ReportEvent(KillEventTag);
+		}
 	}
 
 	SetBoarState(EDCBoarState::Dead);

@@ -209,11 +209,38 @@ Also update `Docs/LevelDesign_DirectorsCut.md` so its beat table no longer lists
 
 ---
 
-## Level 1 Director script (in `DT_NarratorLines`, voiced)
+## Full 5-Beat Game Flow & Quest Plan
 
-The Director is deadpan and sarcastic: a weary auteur unimpressed by his lead actor. The "Voice line" column is the exact text-to-speech input, with ElevenLabs v3 audio tags in brackets. The subtitle (the `Text` column in `DT_NarratorLines`) is the same line without the tags.
+All beats happen on `Lvl_DirectorsCut` via `ADCGameMode::GoToBeat(1..5)` and `UDCQuestSubsystem`:
 
-**Voice settings:** `fal-ai/elevenlabs/tts/eleven-v3`, voice `Callum`, stability `0.3`, output `pcm_24000`. Save each clip as `RawAudio/VO/<RowId>.pcm`, then run `Scripts/DC_ImportVoiceLines.py` in the editor. It imports the clips as `/Game/DirectorsCut/Audio/VO/VO_<RowId>`, sets the `Voice` column, and sets `Duration` to the clip length + 0.4 s. `RawAudio/` is not committed.
+| Beat | Trigger | Sublevels | Weapon | Quest (`Id` / Title / Target / `EventTag`) | Gameplay |
+|---|---|---|---|---|---|
+| **1** | Game start (`IntroDelay`) | `DC_Light_Day`, `DC_Set_Hunt` | Sword (`BP_DC_Sword`) | `Q_HuntBoars` — `"Boars killed"` (`0/10`, `Kill.Boar`) | Normal boar spawns (`MaxAlive=5`). Interrupts at **7/10** kills! |
+| **2** | 7/10 boars killed | `DC_Light_Day`, `DC_Set_Hunt`, `DC_Set_NoMeat` | Sword (`BP_DC_Sword`) | `Q_CollectMeat` — `"Boar meat collected"` (`0/5`, `Collect.Meat`) | Boars drop `ADCBoarMeatPickup`. Kill #2 (and every 4th after) drops no meat and triggers the `"this one got no meat"` joke. |
+| **3** | 5/5 boar meat collected | `DC_Light_Day`, `DC_Set_Hunt`, `DC_Set_FilmCrew` | Gun (`BP_ShooterWeapon_Rifle`) | `Q_HyperspawnBoars` — `"Boars eliminated"` (`0/100`, `Kill.Boar`) | Sword replaced by gun; spawner enters hyperspawn (`MaxAlive=12`, auto-aggro, 25 HP boars). |
+| **4** | 100/100 boars eliminated | `DC_Light_PG`, `DC_Set_Hunt`, `DC_Set_PG` | Gun (`BP_ShooterWeapon_Rifle`) | 4a: `Q_DefeatKingBoar` — `"Defeat the King Boar"` (`0/1`, `Kill.KingBoar`)<br>4b: `Q_RescuePrincess` — `"Rescue the Princess"` (`0/1`, `Rescue.Princess`) | Pastel romance set. Giant crowned `ADCKingBoar` guards `ADCPrincess`; killing him unlocks her to rescue the Princess. |
+| **5** | Princess rescued | `DC_Light_Boss`, `DC_Set_Boss` | Gun (`BP_ShooterWeapon_Rifle`) | `Q_DefeatDirector` — `"Defeat the Director"` (`0/1`, `Kill.Director`) | Director enters the arena, calls you a bad actor, and fights you (`ADCDirectorBoss`). |
+
+### Console Commands (`PIE` / Output Log)
+
+- `DC.GoToBeat <1..5>` — Switches sublevels, weapon, spawner, quest, and Director lines to Beat 1–5.
+- `DC.CompleteQuest` — Immediately completes the active quest (advances to the next beat).
+- `DC.PlayLine <RowId> [RowId...]` — Queues one or more `DT_NarratorLines` rows with subtitles + VO.
+- `DC.InterruptLine` — Cuts off the active line and clears the queue.
+- `DC.ListLines` — Logs all row IDs in `DT_NarratorLines`.
+- `DC.StartQuest <Id> <Target> <EventTag> [Title...]` — Starts a custom quest.
+- `DC.ReportEvent <EventTag> [Count]` — Reports quest events manually.
+- `DC.SwapWeapon <Sword|Gun>` — Swaps the player's equipped weapon.
+
+---
+
+## Director script (in `DT_NarratorLines`, voiced)
+
+The Director is deadpan and sarcastic: a weary auteur unimpressed by his lead actor, growing increasingly hungry, bored, dramatic, and finally furious. The "Voice line" column is the exact text-to-speech input, with ElevenLabs v3 audio tags in brackets. The subtitle (the `Text` column in `DT_NarratorLines`) is the same line without the tags.
+
+**Voice settings:** `fal-ai/elevenlabs/tts/eleven-v3`, voice `Callum`, stability `0.3`, output `pcm_24000`. Save each clip as `RawAudio/VO/<RowId>.pcm`, then run `Scripts/DC_BuildNarratorLines.py` + `Scripts/DC_ImportVoiceLines.py` in the editor. It imports the clips as `/Game/DirectorsCut/Audio/VO/VO_<RowId>`, sets the `Voice` column, and sets `Duration` to the clip length + 0.4 s. `RawAudio/` is not committed.
+
+### Beat 1: Intro Hunt (Kill 10 Boars, Interrupted at 7)
 
 | Row ID | Trigger | Voice line |
 |---|---|---|
@@ -227,7 +254,53 @@ The Director is deadpan and sarcastic: a weary auteur unimpressed by his lead ac
 | `L1_PlayerHurt` | First time the player is below 50% HP | Try not to die. The insurance on this production is... [sighs] aspirational. |
 | `L1_PlayerDied` | Player death | [exasperated] CUT! Someone get the actor back to their mark. [sighs] With feeling this time. |
 | `L1_Idle` | No kill for 30 s | [deadpan] Hello? The boars are over there. I can see them from up here. I can see everything from up here. |
-| `L1_Complete` | 10/10 | [shouts] And... CUT! That's a wrap on scene one. [deadpan] Don't let it go to your head. |
+
+### Beat 2: Breakfast / Bacon (At 7/10 Kills -> Collect 5 Boar Meat + No Meat Joke)
+
+| Row ID | Trigger | Voice line |
+|---|---|---|
+| `B2_Intro_01` | At 7/10 boar kills | [interrupting] Hold it! Stop hitting them for one second. [sighs] All this boar fighting is making me starving. |
+| `B2_Intro_02` | After `B2_Intro_01` (primary) | I skipped breakfast for this shoot. I want bacon. Crispy bacon. Bring me five slabs of ham right now. |
+| `B2_Intro_02_Alt` | After `B2_Intro_01` (alternate) | [deadpan] Forget the ten boars, the script is changing. Go butcher five cuts of boar meat for my breakfast. |
+| `B2_FirstMeat` | 1/5 meat collected | Ooh, yes, look at that marbling. Put it on the craft services table. Four more. |
+| `B2_NoMeat_01` | Boar drops no meat (primary) | [deadpan] Wait... seriously? This one got no meat. What is it, stuffed with sawdust? |
+| `B2_NoMeat_02` | Boar drops no meat (alternate) | [sarcastic] Another hollow boar. This one got no meat either. Who did our prop catering, an origami club? |
+| `B2_AlmostDone` | 4/5 meat collected | Four out of five. One more ham and I can finally eat like a real auteur. |
+
+### Beat 3: Too Boring! Sword -> Gun, Hyperspawn, Kill 100 Boars
+
+| Row ID | Trigger | Voice line |
+|---|---|---|
+| `B3_Intro_01` | 5/5 meat collected | [groans] Ugh. Actually, watching you poke pigs with a butter knife is putting me to sleep. |
+| `B3_Intro_02` | After `B3_Intro_01` | New genre. Action blockbuster! Lose the sword, take this gun. Props department, crank the boar spawner to maximum! |
+| `B3_Intro_03` | After `B3_Intro_02` (primary) | [excited] Give me a hundred dead boars! Make it loud! Make it messy! Action! |
+| `B3_Intro_03_Alt` | After `B3_Intro_02` (alternate) | [shouts] One hundred boars! Don't stop shooting until the frame rate begs for mercy! |
+| `B3_Progress_25` | 25/100 boars | [impressed] Twenty-five down! Now THAT is cinema! Keep firing! |
+| `B3_Progress_50` | 50/100 boars | Fifty! Halfway to a hundred! Someone get slow-motion cameras on that pork! |
+| `B3_Progress_80` | 80/100 boars | Eighty! Twenty more! My blood pressure is finally at a healthy level! |
+
+### Beat 4: Romance! Rescue the Princess from the Shed Guarded by the King Boar
+
+| Row ID | Trigger | Voice line |
+|---|---|---|
+| `B4_Intro_01` | 100/100 boars | [gasps] Wait, stop! Cut! Cut! Look at this carnage. It's way too violent! The ratings board will crucify me! |
+| `B4_Intro_02` | After `B4_Intro_01` | We need romance! Heart! Whimsy! Quick, turn on the pink lights! |
+| `B4_Intro_03` | After `B4_Intro_02` | There is a lovely princess locked in the shed over there. Go rescue her! Oh, and the King Boar is guarding it. Try to look heroic. |
+| `B4_ShedLocked` | Touch shed while King Boar lives | [deadpan] Uh, hello? The giant King Boar with the crown is standing right there. Deal with him first. |
+| `B4_KingBoarDead` | King Boar defeated | The King Boar is down! Now open that shed and sweep the princess off her feet. Cue the violins! |
+| `B4_PrincessRescued` | Princess rescued | And the hero saves the... wait. Look at your face. You have zero romantic chemistry. |
+
+### Beat 5: The Director Gets Mad ("Bad Actor") -> Boss Fight
+
+| Row ID | Trigger | Voice line |
+|---|---|---|
+| `B5_Intro_01` | After `B4_PrincessRescued` | [angry] CUT! CUT! CUT! Forget it! I can't watch this anymore! |
+| `B5_Intro_02` | After `B5_Intro_01` | [sighs] That performance was hopeless! Wooden delivery, zero timing, and you missed every single cue! |
+| `B5_Intro_03` | After `B5_Intro_02` | [furious] I'm coming down there myself! If you want a scene done right, the Director does it personally! Fight me! |
+| `B5_BossTaunt_01` | Boss combat taunt (primary) | [shouts] That's not your motivation! Hit your mark! |
+| `B5_BossTaunt_02` | Boss combat taunt (alternate) | [angry] You're fired! Recast! Somebody call my agent! |
+| `B5_BossHalfHP` | Director Boss at 50% HP | [strained] Ow! Hey! That's against union regulations! You can't shoot the director! |
+| `B5_DirectorDefeated` | Director Boss defeated | [weakly] Ugh... fine. You win. Terrible performance... five stars. That's... a wrap. |
 
 ---
 
@@ -245,7 +318,7 @@ The Director is deadpan and sarcastic: a weary auteur unimpressed by his lead ac
 
 ## Still to decide (Lead)
 
-1. **Quest and sign mismatch:** Level 1 = kill 10 boars, and Level 2 = the Director switches to "collect 3 meat" (0 drops). Recommended.
+        1. **Quest flow:** Beat 1 = kill 10 boars (interrupted at 7/10), Beat 2 = collect 5 boar meat (with the "this one got no meat" joke), Beat 3 = gun + hyperspawn kill 100 boars, Beat 4 = rescue the princess from the shed guarded by the King Boar, Beat 5 = fight the Director boss.
 2. **The sword:** start with it, or pick it up from the rack after the Director's "Take up arms!"? The plan assumes the player starts with it. The rack stays as decoration either way.
 3. **Player death:** keep quest progress on respawn. Recommended.
 4. **Starting numbers:** player 100 HP, sword 25 damage, boar 60 HP, boar bite 10 damage every 1.2 s, at most 5 boars alive at once.

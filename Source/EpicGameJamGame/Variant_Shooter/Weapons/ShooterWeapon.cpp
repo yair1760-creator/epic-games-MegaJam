@@ -195,8 +195,16 @@ void AShooterWeapon::Fire()
 	}
 
 	// can't fire while reloading or with an empty magazine
-	if (bIsReloading || CurrentBullets <= 0)
+	if (bIsReloading)
 	{
+		return;
+	}
+	if (CurrentBullets <= 0)
+	{
+		if (IsOwnedByPlayer() && MagazineSize > 0)
+		{
+			StartReload();
+		}
 		return;
 	}
 

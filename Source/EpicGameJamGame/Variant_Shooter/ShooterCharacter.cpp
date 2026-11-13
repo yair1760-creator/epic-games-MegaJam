@@ -319,6 +319,32 @@ void AShooterCharacter::AddWeaponClass(const TSubclassOf<AShooterWeapon>& Weapon
 	}
 }
 
+void AShooterCharacter::ReplaceWeaponsWithClass(const TSubclassOf<AShooterWeapon>& WeaponClass)
+{
+	if (!WeaponClass)
+	{
+		return;
+	}
+
+	if (IsValid(CurrentWeapon))
+	{
+		CurrentWeapon->DeactivateWeapon();
+	}
+
+	for (AShooterWeapon* Weapon : OwnedWeapons)
+	{
+		if (IsValid(Weapon))
+		{
+			Weapon->Destroy();
+		}
+	}
+
+	OwnedWeapons.Empty();
+	CurrentWeapon = nullptr;
+
+	AddWeaponClass(WeaponClass);
+}
+
 void AShooterCharacter::OnWeaponActivated(AShooterWeapon* Weapon)
 {
 	// update the bullet counter

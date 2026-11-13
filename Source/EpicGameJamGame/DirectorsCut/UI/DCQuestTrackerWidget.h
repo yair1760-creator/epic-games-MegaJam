@@ -19,6 +19,14 @@ class EPICGAMEJAMGAME_API UDCQuestTrackerWidget : public UUserWidget
 {
 	GENERATED_BODY()
 
+public:
+
+	UFUNCTION(BlueprintPure, Category="Quest")
+	FString GetDisplayedTitle() const;
+
+	UFUNCTION(BlueprintPure, Category="Quest")
+	FString GetDisplayedCount() const;
+
 protected:
 
 	/** Quest title, e.g. "Boars killed" */

@@ -34,6 +34,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category="Quest")
 	void ReplaceQuest(FName Id, FText Title, int32 Target, FName EventTag, bool bKeepProgress = false);
 
+	/** Immediately finishes the active quest (used by DC.CompleteQuest for testing). */
+	UFUNCTION(BlueprintCallable, Category="Quest")
+	void CompleteActiveQuest();
+
 	UFUNCTION(BlueprintPure, Category="Quest")
 	bool HasActiveQuest() const { return !ActiveId.IsNone(); }
 

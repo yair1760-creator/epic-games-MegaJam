@@ -60,6 +60,58 @@ void UDCNarratorSubsystem::PlaySequence(const TArray<FName>& RowIds)
 	}
 }
 
+void UDCNarratorSubsystem::PlayRandomLine(const TArray<FName>& RowIds)
+{
+	TArray<FName> Valid;
+	for (const FName& Id : RowIds)
+	{
+		if (!Id.IsNone())
+		{
+			Valid.Add(Id);
+		}
+	}
+	if (Valid.Num() > 0)
+	{
+		PlayLine(Valid[FMath::RandRange(0, Valid.Num() - 1)]);
+	}
+}
+
+void UDCNarratorSubsystem::PlayAlternatingLine(FName PrimaryRowId, FName AltRowId)
+{
+	if (PrimaryRowId.IsNone())
+	{
+		PlayLine(AltRowId);
+		return;
+	}
+	if (AltRowId.IsNone())
+	{
+		PlayLine(PrimaryRowId);
+		return;
+	}
+
+	bool& bUseAlt = AlternateToggle.FindOrAdd(PrimaryRowId, false);
+	const FName Chosen = bUseAlt ? AltRowId : PrimaryRowId;
+	bUseAlt = !bUseAlt;
+	PlayLine(Chosen);
+}
+
+void UDCNarratorSubsystem::FindRowNamesForDebug()
+{
+	if (!LoadedTable)
+	{
+		LoadedTable = LinesTable.LoadSynchronous();
+	}
+	if (!LoadedTable)
+	{
+		UE_LOG(LogEpicGameJamGame, Error, TEXT("Narrator: lines table '%s' not found"), *LinesTable.ToString());
+		return;
+	}
+	for (const FName& Name : LoadedTable->GetRowNames())
+	{
+		UE_LOG(LogEpicGameJamGame, Log, TEXT("Narrator row: %s"), *Name.ToString());
+	}
+}
+
 void UDCNarratorSubsystem::Interrupt()
 {
 	Queue.Reset();
@@ -210,5 +262,17 @@ static FAutoConsoleCommandWithWorldAndArgs GDCInterruptLineCmd(
 		if (UDCNarratorSubsystem* Sub = FindNarratorSubsystem(World))
 		{
 			Sub->Interrupt();
+		}
+	}));
+
+static FAutoConsoleCommandWithWorldAndArgs GDCListLinesCmd(
+	TEXT("DC.ListLines"),
+	TEXT("DC.ListLines - print every RowId in DT_NarratorLines"),
+	FConsoleCommandWithWorldAndArgsDelegate::CreateLambda([](const TArray<FString>& Args, UWorld* World)
+	{
+		if (UDCNarratorSubsystem* Sub = FindNarratorSubsystem(World))
+		{
+			// Trigger load if needed
+			Sub->FindRowNamesForDebug();
 		}
 	}));

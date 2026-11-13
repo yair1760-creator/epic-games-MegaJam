@@ -45,6 +45,18 @@ void UDCQuestSubsystem::ReportEvent(FName EventTag)
 	BroadcastProgress();
 }
 
+void UDCQuestSubsystem::CompleteActiveQuest()
+{
+	if (!HasActiveQuest() || bCompleted)
+	{
+		return;
+	}
+
+	Current = Target;
+	UE_LOG(LogEpicGameJamGame, Log, TEXT("Quest force-completed: %s (%d/%d)"), *ActiveId.ToString(), Current, Target);
+	BroadcastProgress();
+}
+
 void UDCQuestSubsystem::SetQuest(FName Id, const FText& Title, int32 InTarget, FName EventTag, int32 StartCount)
 {
 	ActiveId = Id;
@@ -141,5 +153,16 @@ static FAutoConsoleCommandWithWorldAndArgs GDCReportEventCmd(
 			{
 				Sub->ReportEvent(FName(*Args[0]));
 			}
+		}
+	}));
+
+static FAutoConsoleCommandWithWorldAndArgs GDCCompleteQuestCmd(
+	TEXT("DC.CompleteQuest"),
+	TEXT("DC.CompleteQuest - force-complete the active quest"),
+	FConsoleCommandWithWorldAndArgsDelegate::CreateLambda([](const TArray<FString>& Args, UWorld* World)
+	{
+		if (UDCQuestSubsystem* Sub = FindQuestSubsystem(World))
+		{
+			Sub->CompleteActiveQuest();
 		}
 	}));

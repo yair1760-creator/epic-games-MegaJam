@@ -10,7 +10,7 @@
 # Re-runnable: every piece clears its own outliner folder (DC/<Piece>) before rebuilding.
 import unreal, math, random, os
 
-_SCRIPTS = r"D:\EpicGameJam\EpicGameJamGame\EpicGameJamGame\Scripts"
+_SCRIPTS = os.path.join(unreal.Paths.convert_relative_path_to_full(unreal.Paths.project_dir()), "Scripts")
 exec(open(os.path.join(_SCRIPTS, "LD_BuildVerticalSlice.py")).read())   # shared greybox helpers + materials
 
 LES = unreal.get_editor_subsystem(unreal.LevelEditorSubsystem)
@@ -28,9 +28,7 @@ BEATS = {
     2: ["DC_Light_Day", "DC_Set_Hunt", "DC_Set_NoMeat"],
     3: ["DC_Light_Day", "DC_Set_Hunt", "DC_Set_FilmCrew"],
     4: ["DC_Light_PG", "DC_Set_Hunt", "DC_Set_PG"],
-    5: ["DC_Light_Storm", "DC_Set_Hunt", "DC_Set_Storm", "DC_Exit_A"],   # exit hops A -> B -> C
-    6: ["DC_Light_Broken", "DC_Set_Broken"],
-    7: ["DC_Light_Boss", "DC_Set_Boss"],
+    5: ["DC_Light_Boss", "DC_Set_Boss"],
 }
 
 # ---------------------------------------------------------------- layout (cm, +X toward the Tower)
@@ -284,6 +282,12 @@ def p_gameplay():
     _finish(nav, "NavMeshBounds_Bowl")
     for i, (x, y) in enumerate([(-1500, 3700), (4300, 3500), (4600, -3800), (-2600, -3700), (300, -3900), (4900, 1800)]):
         target_point("BoarSpawn_%d" % i, (x, y, 50), math.degrees(math.atan2(-y, STAGE_C[0] - x)), ("BoarSpawn",))
+    spawner_cls = getattr(unreal, "DCBoarSpawner", None)
+    if spawner_cls:
+        s = EAS.spawn_actor_from_class(spawner_cls, V(STAGE_C[0], STAGE_C[1], 300), R())
+        s.set_editor_property("auto_start", False)
+        s.set_editor_property("max_alive", 5)
+        _finish(s, "DC_BoarSpawner")
     target_point("Narrator_Focus_TheSet", (STAGE_C[0], STAGE_C[1], 300), 0, ("NarratorFocus",))
 
 # ================================================================ LIGHTING SUBLEVELS
@@ -431,21 +435,18 @@ def s_filmcrew():
     label_text("SET: FILM CREW (beat 3)", (cx, cy, 1100), 60)
 
 def s_pg():
-    """Beat 4: rated PG. Pastel cardboard world, a pen to shoo boars into."""
+    """Beat 4: rated PG romance. Pastel cardboard world, romantic shed & King Boar clearing."""
     CURRENT_FOLDER[0] = "DC/Set_PG"
     clear_folder("DC/Set_PG")
     pc, pr = PEN_C, PEN_R
-    gate = math.degrees(math.atan2(STAGE_C[1] - pc[1], STAGE_C[0] - pc[0]))   # opening faces The Set
-    for i in range(18):
-        ang = i * 20
-        if abs(((ang - gate) + 180) % 360 - 180) < 30:
+    # decorative pastel posts around the romance clearing (the shed + King Boar are spawned by ADCGameMode)
+    gate = math.degrees(math.atan2(STAGE_C[1] - pc[1], STAGE_C[0] - pc[0]))
+    for i in range(12):
+        ang = i * 30
+        if abs(((ang - gate) + 180) % 360 - 180) < 45:
             continue
         x, y = pc[0] + pr * math.cos(math.radians(ang)), pc[1] + pr * math.sin(math.radians(ang))
-        cyl("Pen_Post_%02d" % i, (x, y, 0), 25, 130, "PG_Mint")
-        cbox("Pen_Rail_%02d" % i, (x, y, 100), (30, 260, 20), "PG_Pink", yaw=ang)
-    trigger("Pen_Zone", (pc[0], pc[1], 0), (pr - 50, pr - 50, 200), ("BoarPen",))
-    gx, gy = pc[0] + (pr + 250) * math.cos(math.radians(gate)), pc[1] + (pr + 250) * math.sin(math.radians(gate))
-    cbox("PenSign_Board", (gx, gy, 300), (20, 500, 160), "PG_Sky", yaw=gate)
+        cyl("Romance_Post_%02d" % i, (x, y, 0), 25, 130, "PG_Mint")
     # rainbow arch over the main path (bead arch, 5 bands)
     for b, m in enumerate(("Landmark", "POI", "Breadcrumb", "PG_Mint", "PG_Sky")):
         r = 1100 - b * 70
@@ -466,12 +467,12 @@ def s_pg():
         cyl("Flower_%02d_Stem" % k, (x, y, 0), 15, h, "PG_Mint")
         cbox("Flower_%02d_Head" % k, (x, y, h + 40), (12, 140, 140), cols[k % 4], yaw=rnd.uniform(0, 180), roll=45)
         k += 1
-    # PG rating billboard
+    # PG romance billboard
     bx, by = 3600, 1400
     for j, dy in enumerate((-500, 500)):
         cyl("PGBoard_Pole_%d" % j, (bx, by + dy, 0), 30, 700, "White")
-    cbox("PGBoard", (bx, by, 900), (40, 1400, 700), "PG_Sky")
-    label_text("SET: PG (beat 4)", (bx, by, 1400), 60)
+    cbox("PGBoard", (bx, by, 900), (40, 1400, 700), "PG_Pink")
+    label_text("SET: ROMANCE / PG (beat 4)", (bx, by, 1400), 60)
 
 def s_storm():
     """Beat 5: escalation. Wind machine, rain rig, obstacles blocking the routes."""
