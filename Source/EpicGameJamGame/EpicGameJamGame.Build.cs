@@ -18,13 +18,16 @@ public class EpicGameJamGame : ModuleRules
 			"StateTreeModule",
 			"GameplayStateTreeModule",
 			"UMG",
-			"Slate"
+			"Slate",
+			"Paper2D",
+			"Niagara"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] { });
 
 		PublicIncludePaths.AddRange(new string[] {
 			"EpicGameJamGame",
+			"EpicGameJamGame/DirectorsCut",
 			"EpicGameJamGame/Variant_Horror",
 			"EpicGameJamGame/Variant_Horror/UI",
 			"EpicGameJamGame/Variant_Shooter",
