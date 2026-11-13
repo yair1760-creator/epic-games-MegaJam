@@ -30,6 +30,14 @@ The hit flash uses the camera-fade effect. If the Director's "CUT!" uses a camer
 
 ## 3. Sword (`BP_DC_Sword`, class `ADCSwordWeapon`)
 
+**Look in first person:** the sword is drawn as **2D hand + sword frames on screen**, like Forgive Me Father 2 / Doom. They were cut from the designer's attack video (`Art/Player/Sword/Reference_SwordAttack.mp4`).
+- **Frames:** `T_Sword_Idle` → `T_Sword_Windup` (0.24 s) → `T_Sword_Swing` smear (0.08 s) → `T_Sword_Follow` (0.24 s) → idle. They live in `/Game/DirectorsCut/Combat/Sword/Sprites/`.
+- **Hit timing:** the hit lands in the middle of the smear, **0.28 s after the click**.
+- **Movement:** the hand bobs while walking and sways slightly when standing still.
+- **Layering:** the screen layer (`UDCWeaponSpriteWidget`, built in C++) sits **under** the HUD (viewport Z -10).
+- **Settings** on `BP_DC_Sword` → **Sword | 2D View**: `bUseSpriteView` (off brings back the 3D Meshy sword), the 4 frame textures, Windup / Slash / Follow times, Screen Scale (1 = a frame fills the screen height), and walk bob / idle sway in pixels.
+- **Template ammo counter:** it is hidden while a melee weapon is held (`ShooterPlayerController`), so it doesn't overlap the HUD.
+
 | Setting | Default | Plan |
 |---|---|---|
 | Damage | 35 | 25 |

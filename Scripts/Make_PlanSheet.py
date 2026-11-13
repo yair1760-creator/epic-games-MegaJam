@@ -1,4 +1,4 @@
-# Writes Docs/Plan_CombatAI_Sprites.xlsx with only the standard library (no openpyxl on this machine).
+﻿# Writes Docs/Plan_CombatAI_Sprites.xlsx with only the standard library (no openpyxl on this machine).
 import zipfile
 from xml.sax.saxutils import escape
 
@@ -221,12 +221,12 @@ BACKLOG = [
  (2, "Player HP + hit feedback", "VFX", "No low-HP warning (red vignette / ink cracks at the screen edge)", "", "Medium"),
  (2, "Player HP + hit feedback", "Animation", "Death shows the template third-person ragdoll; no first-person death camera", "Comedy beat opportunity (Director: 'cut!')", "Medium"),
  (2, "Player HP + hit feedback", "UI", "Template ammo/HP widget still on screen; real HP bar is the HUD team's", "Coordinate with HUD package", "Low"),
- (3, "Sword", "Art", "No hand on the grip: template rifle arms are hidden while the sword is out", "FMF2-style drawn hand: sprite (system 9) or Meshy arm", "High"),
- (3, "Sword", "Animation", "Swing is procedural (rotate + slide); no real swing/idle animation, no wind-up", "Add idle sway, wind-up, follow-through; maybe 2-3 swing variants", "High"),
- (3, "Sword", "Texture", "Meshy texture lost the concept's ink lines; outline + darker material compensate", "Optional: hand-paint ink lines or a Meshy retexture (10 credits)", "Medium"),
+ (3, "Sword", "Art", "Done 2026-11-13: 2D hand + sword frames from the designer video replace the 3D sword in first person", "", "Low"),
+ (3, "Sword", "Animation", "Done 2026-11-13: idle / wind-up / slash smear / follow-through frames with the video's timing, plus walk bob", "", "Low"),
+ (3, "Sword", "Texture", "3D Meshy sword is no longer seen in first person (2D frames now); its texture issue only matters for a world pickup", "Keep for a pickup / third person, or drop", "Low"),
  (3, "Sword", "Audio", "No whoosh / flesh-hit / miss sounds", "Hook OnSwing / OnHit", "High"),
  (3, "Sword", "VFX", "No slash trail or impact effect", "", "Medium"),
- (3, "Sword", "UI", "Ammo counter shows 0/0 while holding the sword", "Hide it for melee (HUD team)", "Low"),
+ (3, "Sword", "UI", "Done 2026-11-13: template ammo counter hides for melee weapons; the test map still shows the template team score (0 | 0) because it uses BP_ShooterGameMode", "Real game uses BP_DCGameMode (no team score)", "Low"),
  (3, "Sword", "Code", "No third-person sword mesh (only the first-person view shows it)", "Only matters for mirrors / other players", "Low"),
  (3, "Sword", "Code", "Tuned hold/swing values live in BP_DC_Sword; C++ defaults updated but not yet compiled", "Compiles with the next build", "Low"),
  (3, "Sword", "Design", "Template rifle pickups still exist in the project", "Decide if the shotgun swap (Director beat 3) reuses them", "Low"),
@@ -268,6 +268,11 @@ BACKLOG = [
  (10, "Integration", "Balance", "Sword 35 vs boar 60 HP = 2 hits, so fleeing is almost never seen", "With the plan's 25 damage the 2nd hit leaves 17% and the boar flees; align numbers", "High"),
  (10, "Integration", "Integration", "Main map has no spawner / wander area yet; BP_DCBoarSpawner (max 5) is ready for the lead to place", "Handoff doc section 1", "High"),
  (10, "Integration", "UX", "Standing right on top of a boar, its card fills the bottom of the screen", "Expected for 2.5D; could push the player back on bite", "Low"),
+ (12, "2D sword view", "Art", "Frames were cut from a compressed 764x480 video: blurry and speckled at 1080p (dark blade edge dithers)", "Ask the artist for the original frames as PNG with transparency, at least 1080 px tall", "High"),
+ (12, "2D sword view", "Animation", "Only 4 poses (idle, wind-up, smear, follow-through); no in-betweens, no impact frame, one swing only", "More frames / a second swing that alternates", "Medium"),
+ (12, "2D sword view", "Feel", "The hit now lands 0.28 s after the click (middle of the smear), was 0.08 s; matches the animation but reacts slower", "Shorten Windup Time on BP_DC_Sword if it feels sluggish", "Medium"),
+ (12, "2D sword view", "Integration", "Teammate HUD (WBP_DCHUD, main 6098a67) not yet merged into design-yair; weapon layer sits under the HUD (Z -10) but overlap not checked", "Pull main and check the health bar / subtitles vs the hand", "Medium"),
+ (12, "2D sword view", "Design", "Other weapons (shotgun beat 3, PG tool) need their own hand frames", "Same widget, new frame set per weapon", "Medium"),
  (11, "Meat drops", "Art", "Meat is a placeholder ham drawing (T_DC_BoarMeat_Placeholder)", "Real meat/bacon sprite from the artist; swap on BP_DC_BoarMeat", "Medium"),
  (11, "Meat drops", "Audio/VFX", "No pickup sound, sparkle or 'chomp' feedback; no drop sound", "Hook DCBoarSubsystem.OnMeatCollected", "Medium"),
  (11, "Meat drops", "Design", "Meat never expires (Lifetime 0) and drops 100% of the time", "Fine for a 5-meat quest; tune Meat Drop Chance / Lifetime if the joke needs scarcity", "Low"),

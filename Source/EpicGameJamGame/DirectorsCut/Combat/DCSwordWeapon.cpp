@@ -3,6 +3,8 @@
 #include "DirectorsCut/Combat/DCSwordWeapon.h"
 #include "DirectorsCut/Combat/DCHealthComponent.h"
 #include "DirectorsCut/Combat/DCHitFeedbackComponent.h"
+#include "DirectorsCut/Combat/DCWeaponSpriteWidget.h"
+#include "Engine/Texture2D.h"
 #include "EpicGameJamGameCharacter.h"
 #include "Camera/CameraComponent.h"
 #include "Camera/PlayerCameraManager.h"
@@ -57,6 +59,79 @@ ADCSwordWeapon::ADCSwordWeapon()
 	{
 		SwordOutline->SetMaterial(0, OutlineMat.Object);
 	}
+
+	// 2D first-person frames (cut from the designer's attack video)
+	static ConstructorHelpers::FObjectFinder<UTexture2D> FrameIdle(TEXT("/Game/DirectorsCut/Combat/Sword/Sprites/T_Sword_Idle.T_Sword_Idle"));
+	static ConstructorHelpers::FObjectFinder<UTexture2D> FrameWindup(TEXT("/Game/DirectorsCut/Combat/Sword/Sprites/T_Sword_Windup.T_Sword_Windup"));
+	static ConstructorHelpers::FObjectFinder<UTexture2D> FrameSwing(TEXT("/Game/DirectorsCut/Combat/Sword/Sprites/T_Sword_Swing.T_Sword_Swing"));
+	static ConstructorHelpers::FObjectFinder<UTexture2D> FrameFollow(TEXT("/Game/DirectorsCut/Combat/Sword/Sprites/T_Sword_Follow.T_Sword_Follow"));
+	if (FrameIdle.Succeeded())   SpriteIdle = FrameIdle.Object;
+	if (FrameWindup.Succeeded()) SpriteWindup = FrameWindup.Object;
+	if (FrameSwing.Succeeded())  SpriteSwing = FrameSwing.Object;
+	if (FrameFollow.Succeeded()) SpriteFollow = FrameFollow.Object;
+}
+
+float ADCSwordWeapon::GetHitDelay() const
+{
+	// 2D view: the blade connects in the middle of the slash smear, like in the animation
+	return bUseSpriteView ? WindupTime + SlashTime * 0.5f : HitDelay;
+}
+
+void ADCSwordWeapon::RemoveSpriteWidget()
+{
+	if (SpriteWidget)
+	{
+		SpriteWidget->RemoveFromParent();
+		SpriteWidget = nullptr;
+	}
+}
+
+void ADCSwordWeapon::UpdateSpriteView(float DeltaSeconds)
+{
+	APawn* Pawn = PawnOwner.Get();
+	APlayerController* PC = Pawn ? Cast<APlayerController>(Pawn->GetController()) : nullptr;
+	const bool bShow = bUseSpriteView && PC && PC->IsLocalController() && !IsHidden();
+
+	if (!bShow)
+	{
+		if (SpriteWidget)
+		{
+			SpriteWidget->SetVisibility(ESlateVisibility::Collapsed);
+		}
+		return;
+	}
+
+	if (!SpriteWidget)
+	{
+		SpriteWidget = CreateWidget<UDCWeaponSpriteWidget>(PC, UDCWeaponSpriteWidget::StaticClass());
+		if (!SpriteWidget)
+		{
+			return;
+		}
+		SpriteWidget->AddToViewport(-10);   // under the HUD (health bar, quest, subtitles)
+	}
+	SpriteWidget->SetVisibility(ESlateVisibility::HitTestInvisible);
+
+	// frame from the swing timeline
+	UTexture2D* Frame = SpriteIdle;
+	if (SwingTime >= 0.0f)
+	{
+		if (SwingTime < WindupTime)                         Frame = SpriteWindup;
+		else if (SwingTime < WindupTime + SlashTime)        Frame = SpriteSwing;
+		else if (SwingTime < WindupTime + SlashTime + FollowTime) Frame = SpriteFollow;
+	}
+	SpriteWidget->SetFrame(Frame ? Frame : SpriteIdle.Get());
+
+	// walk bob / idle breathing (calmer while swinging)
+	BobTime += DeltaSeconds;
+	const float Run = FMath::Clamp(Pawn->GetVelocity().Size2D() / 600.0f, 0.0f, 1.0f);
+	const float Calm = SwingTime >= 0.0f ? 0.3f : 1.0f;
+	const float Step = BobTime * 2.0f * PI * 1.6f;
+	FVector2D Offset;
+	Offset.X = FMath::Sin(Step) * WalkBobPixels * Run * Calm;
+	Offset.Y = (FMath::Abs(FMath::Sin(Step)) * WalkBobPixels * 0.6f * Run
+		+ FMath::Sin(BobTime * 2.0f * PI * 0.35f) * IdleSwayPixels * (1.0f - Run)) * Calm;
+	SpriteWidget->SetPlacement(Offset, SpriteScreenScale);
 }
 
 void ADCSwordWeapon::BeginPlay()
@@ -68,11 +143,15 @@ void ADCSwordWeapon::BeginPlay()
 	Super::BeginPlay();   // attaches the (empty) skeletal meshes to the hand socket
 
 	AttachToOwnerCamera();
+
+	// 2D view replaces the 3D model in first person
+	SwordMesh->SetVisibility(!bUseSpriteView, true);
 }
 
 void ADCSwordWeapon::EndPlay(EEndPlayReason::Type EndPlayReason)
 {
 	GetWorldTimerManager().ClearTimer(HitTimer);
+	RemoveSpriteWidget();
 	SetOwnerArmsHidden(false);
 	Super::EndPlay(EndPlayReason);
 }
@@ -94,6 +173,12 @@ void ADCSwordWeapon::SetActorHiddenInGame(bool bNewHidden)
 
 	// the template arms are posed for a rifle: hide them while the sword is out
 	SetOwnerArmsHidden(!bNewHidden);
+
+	// the 2D hand goes away with the weapon (holstered, owner died)
+	if (bNewHidden && SpriteWidget)
+	{
+		SpriteWidget->SetVisibility(ESlateVisibility::Collapsed);
+	}
 }
 
 void ADCSwordWeapon::SetOwnerArmsHidden(bool bArmsHidden)
@@ -121,9 +206,9 @@ void ADCSwordWeapon::Fire()
 	// AI can hear swings too
 	MakeNoise(ShotLoudness, PawnOwner, PawnOwner->GetActorLocation(), ShotNoiseRange, NoiseOwnerTag);
 
-	if (HitDelay > 0.0f)
+	if (GetHitDelay() > 0.0f)
 	{
-		GetWorldTimerManager().SetTimer(HitTimer, this, &ADCSwordWeapon::DoHitSweep, HitDelay, false);
+		GetWorldTimerManager().SetTimer(HitTimer, this, &ADCSwordWeapon::DoHitSweep, GetHitDelay(), false);
 	}
 	else
 	{
@@ -246,12 +331,27 @@ void ADCSwordWeapon::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
+	if (SwingTime >= 0.0f)
+	{
+		SwingTime += DeltaSeconds;
+	}
+
+	// 2D view: frames + bob on screen
+	if (bUseSpriteView)
+	{
+		UpdateSpriteView(DeltaSeconds);
+		if (SwingTime >= WindupTime + SlashTime + FollowTime)
+		{
+			SwingTime = -1.0f;
+		}
+		return;
+	}
+
 	if (SwingTime < 0.0f)
 	{
 		return;
 	}
 
-	SwingTime += DeltaSeconds;
 	const float T = FMath::Clamp(SwingTime / SwingDuration, 0.0f, 1.0f);
 
 	// fast slash out (first 40%), slower return

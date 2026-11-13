@@ -9,6 +9,8 @@
 class USceneComponent;
 class UStaticMeshComponent;
 class UDamageType;
+class UTexture2D;
+class UDCWeaponSpriteWidget;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FDCOnSwordHit, AActor*, HitActor, float, Damage);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FDCOnSwordSwing);
@@ -98,6 +100,49 @@ public:
 	UPROPERTY(BlueprintAssignable, Category="Sword")
 	FDCOnSwordHit OnHit;
 
+	// ---------------- 2D first-person view (hand-drawn frames, the game's final look)
+
+	/** Draw the weapon as 2D hand + sword frames on screen instead of the 3D sword model */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Sword|2D View")
+	bool bUseSpriteView = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Sword|2D View")
+	TObjectPtr<UTexture2D> SpriteIdle;
+
+	/** Arm raised, blade back */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Sword|2D View")
+	TObjectPtr<UTexture2D> SpriteWindup;
+
+	/** The slash smear across the screen (the hit lands in the middle of this frame) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Sword|2D View")
+	TObjectPtr<UTexture2D> SpriteSwing;
+
+	/** Arm extended, blade pointing left */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Sword|2D View")
+	TObjectPtr<UTexture2D> SpriteFollow;
+
+	/** Frame timing from the reference video (25 fps: 6 / 2 / 6 frames) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Sword|2D View", meta=(ClampMin=0.01, Units="s"))
+	float WindupTime = 0.24f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Sword|2D View", meta=(ClampMin=0.01, Units="s"))
+	float SlashTime = 0.08f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Sword|2D View", meta=(ClampMin=0.01, Units="s"))
+	float FollowTime = 0.24f;
+
+	/** Frame size on screen (1 = a frame fills the screen height) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Sword|2D View", meta=(ClampMin=0.2, ClampMax=2))
+	float SpriteScreenScale = 1.0f;
+
+	/** Walk bob in screen pixels at full running speed (0 = off) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Sword|2D View", meta=(ClampMin=0))
+	float WalkBobPixels = 18.0f;
+
+	/** Gentle breathing sway when standing still, in pixels */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Sword|2D View", meta=(ClampMin=0))
+	float IdleSwayPixels = 4.0f;
+
 	virtual void SetActorHiddenInGame(bool bNewHidden) override;
 
 protected:
@@ -128,6 +173,17 @@ private:
 	void AttachToOwnerCamera();
 	void SetOwnerArmsHidden(bool bArmsHidden);
 
+	/** 2D view: create the screen layer for the local player (lazy: the owner may not be possessed yet) */
+	void UpdateSpriteView(float DeltaSeconds);
+	void RemoveSpriteWidget();
+
+	/** Seconds from the start of the swing to the hit */
+	float GetHitDelay() const;
+
+	UPROPERTY()
+	TObjectPtr<UDCWeaponSpriteWidget> SpriteWidget;
+
 	float SwingTime = -1.0f;   // < 0 when not swinging
+	float BobTime = 0.0f;
 	FTimerHandle HitTimer;
 };
