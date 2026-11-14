@@ -333,6 +333,10 @@ BACKLOG = [
  (17, "Set dressing: film cameras + boom mics", "Art", "The cameras and mics keep Meshy's realistic colour picture; not redrawn in the inked comic style", "Repaint or run the colour picture through an ink pass; add an outline shell like the sword", "Medium"),
  (17, "Set dressing: film cameras + boom mics", "Animation", "Film reels do not turn and cameras never pan to follow the player", "Split the reels in Blender and spin them; optional slow pan", "Low"),
  (17, "Set dressing: film cameras + boom mics", "Art", "Woodland slide and brick wall picture are imported but not used in the level", "Slide needs about 3x scale to replace the watchtower; wall picture could cover the boundary walls", "Low"),
+ (20, "Main menu + pause menu", "Audio", "No hover or click sound on START / RESUME / QUIT and no menu music", "UDCFXLibrary::PlayUISound in the button handlers; start a music track in ADCMainMenuGameMode", "Medium"),
+ (20, "Main menu + pause menu", "Design", "The main menu has no Quit, and the pause menu Quit closes the game instead of returning to the menu", "Decide the flow; both are one-line changes", "Low"),
+ (20, "Main menu + pause menu", "Art", "The main menu background is a flat dark colour", "Key art, or the level seen from a camera behind the logo", "Medium"),
+ (20, "Main menu + pause menu", "Code", "Not tested with real key presses or in a packaged build; in the editor Esc stops Play so P is the stand-in", "Test in Standalone / a packaged build", "High"),
 ]
 pol = Sheet("Polish backlog")
 pol.set(1, 1, "Polish backlog: what each system still lacks (art, animation, textures, audio, VFX, UI)", S_TITLE)

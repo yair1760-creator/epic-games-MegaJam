@@ -8,6 +8,7 @@
 
 class UInputMappingContext;
 class UUserWidget;
+class UDCPauseMenuWidget;
 
 /**
  *  Player controller for Lvl_DirectorsCut.
@@ -23,7 +24,33 @@ public:
 
 	ADCPlayerController();
 
+	// ---------------- pause menu (Esc)
+
+	/** Esc: pause the game and show the pause menu, or close it again */
+	UFUNCTION(BlueprintCallable, Category="Director's Cut|Pause")
+	void TogglePauseMenu();
+
+	UFUNCTION(BlueprintCallable, Category="Director's Cut|Pause")
+	void OpenPauseMenu();
+
+	/** RESUME: hide the menu and carry on */
+	UFUNCTION(BlueprintCallable, Category="Director's Cut|Pause")
+	void ClosePauseMenu();
+
+	/** QUIT: leave the game (same as the victory screen's Quit) */
+	UFUNCTION(BlueprintCallable, Category="Director's Cut|Pause")
+	void QuitFromPauseMenu();
+
+	UFUNCTION(BlueprintPure, Category="Director's Cut|Pause")
+	bool IsPauseMenuOpen() const { return PauseWidget != nullptr; }
+
 protected:
+
+	UPROPERTY(EditAnywhere, Category="Director's Cut|Pause")
+	TSubclassOf<UDCPauseMenuWidget> PauseMenuWidgetClass;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UDCPauseMenuWidget> PauseWidget;
 
 	/** Input mapping contexts always applied for this player */
 	UPROPERTY(EditAnywhere, Category="Input|Input Mappings")

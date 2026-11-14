@@ -370,3 +370,27 @@ Taisho's film reel camera and boom mic are placed all over the playable level so
 - Test map: zone T behind the spawn shows the three cleaned models and the wall panel (`build_test_map("taisho")`).
 - Limits: the props are static (reels do not turn); the boom mic's cable lies outside its blocker; the realistic colour pictures are not redrawn in the inked style.
 - Screenshots: `Docs/Screenshots/FilmSet_Camera.png`, `FilmSet_BoomMic.png`, `FilmSet_Stage.png`, `FilmSet_Overview.png`, `FilmSet_Village.png`.
+
+## 17. Main menu and pause menu ("Rated PG for Pig" UI art)
+
+Both menus are built in C++ like the other DC widgets (no widget Blueprints), laid out in pixels of a 1920 x 1080 reference screen (UMG's default DPI scaling keeps the sizes on other resolutions).
+
+**Art:** `Art/UI/RatedPG` (5 transparent PNGs) -> `/Game/DirectorsCut/UI/Menu/`: `T_UI_Logo_RatedPGForPig`, `T_UI_Button_Start`, `T_UI_Button_Resume`, `T_UI_Button_Quit`, `T_UI_Pause_Panel` (UI group, no streaming).
+
+**Main menu**
+- Map `/Game/DirectorsCut/Maps/Lvl_MainMenu` (empty), game mode `ADCMainMenuGameMode` (`UI/DCMainMenuGameMode.h`), widget `UDCMainMenuWidget` (`UI/DCMenuWidgets.h`).
+- Logo centred in the upper middle, about 1000 px of visible width; START centred below it, about 320 px wide; dark flat backdrop.
+- START (click, or Enter / Space) opens `GameplayMap` = `/Game/DirectorsCut/Maps/Lvl_DirectorsCut`, the game's one playable map (it was `GameDefaultMap` and is the map every design doc names).
+- `Config/DefaultEngine.ini`: `GameDefaultMap` is now `Lvl_MainMenu`, so a packaged game starts on the menu. `EditorStartupMap` is unchanged. `Config/DefaultGame.ini`: both maps are in `MapsToCook` (the gameplay map is only named in code, so it would not be packaged otherwise) and `/Game/DirectorsCut/UI/Menu` is always cooked.
+
+**Pause menu**
+- `ADCPlayerController` (`Beats/DCPlayerController.h`): `TogglePauseMenu()`, `OpenPauseMenu()`, `ClosePauseMenu()`, `QuitFromPauseMenu()`, `IsPauseMenuOpen()`; widget `UDCPauseMenuWidget`.
+- **Esc** pauses the game, dims the view (60 % black) and shows the drawn PAUSED panel (about 480 px wide, aspect kept) with RESUME and QUIT on it. Esc again or RESUME carries on; QUIT closes the game, like the victory screen's Quit.
+- **Inside the editor Esc ends the Play session before the game sees it, so P does the same job there.** Gamepad Start also works.
+- It does not open while another screen owns the mouse (the victory screen).
+- Tunables are properties on the two widgets (sizes, offsets, dim amount, backdrop colour).
+
+**Checked in play (driven by script):** the menu map shows the menu with the cursor; START loads `Lvl_DirectorsCut` with the normal player, sword and no cursor; opening the pause menu pauses the game (game time stops), shows the cursor; closing it resumes. Real mouse clicks and real Esc / P key presses were not tested by hand, and there is no packaged build yet.
+
+- Limits: no hover or click sounds; no settings screen; QUIT on the pause menu leaves the game, it does not go back to the main menu; the main menu has no Quit button; `ProjectName` in `DefaultGame.ini` is still "First Person Template".
+- Screenshots: `Docs/Screenshots/Menu_Main.png`, `Menu_Pause.png`.

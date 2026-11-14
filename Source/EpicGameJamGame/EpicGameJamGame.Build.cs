@@ -19,6 +19,7 @@ public class EpicGameJamGame : ModuleRules
 			"GameplayStateTreeModule",
 			"UMG",
 			"Slate",
+			"SlateCore",
 			"Paper2D",
 			"Niagara"
 		});
