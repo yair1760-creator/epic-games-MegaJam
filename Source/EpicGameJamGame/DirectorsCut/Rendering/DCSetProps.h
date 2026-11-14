@@ -7,10 +7,14 @@
 #include "DCSetProps.generated.h"
 
 class UCapsuleComponent;
+class UStaticMeshComponent;
 
 /**
- *  A drawn film-set prop: a camera-facing card (feet on the ground) plus an optional invisible blocker so the
- *  player and boars bump into big props. Drop a ready-made child in a level (DC Prop Grass 01, DC Prop Hay Bale 01),
+ *  A hand-drawn set prop. Two looks:
+ *  - 3D (default when a Mesh is set): Taisho's drawing rebuilt in Blender as a real model painted with the drawing
+ *    (Scripts/Blender_BuildProps3D.py), so every side looks right.
+ *  - 2D: the original drawing as a camera-facing card (feet on the ground) - turn off bUse3DModel.
+ *  Plus an optional invisible blocker so the player and boars bump into big props. Drop a ready-made child in a level (DC Prop Grass 01, DC Prop Hay Bale 01),
  *  or place this class and set the Sprite's Front Texture / Front Size per instance.
  */
 UCLASS(DisplayName="DC Set Prop")
@@ -21,6 +25,10 @@ class EPICGAMEJAMGAME_API ADCSetProp : public ADCSpriteActor
 public:
 
 	ADCSetProp();
+
+	/** Show the 3D model (Mesh) instead of the camera-facing card; off = the original 2D cut-out */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Prop")
+	bool bUse3DModel = true;
 
 	/** Invisible capsule that blocks pawns (off for small props like grass) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Prop")
@@ -34,6 +42,13 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components")
 	TObjectPtr<UCapsuleComponent> Blocker;
+
+	/** The 3D version of the drawing (SM_DC_*_3D) */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components")
+	TObjectPtr<UStaticMeshComponent> Mesh;
+
+	/** Shows the mesh or the card depending on bUse3DModel (and whether a mesh exists) */
+	void ApplyLook();
 
 	virtual void OnConstruction(const FTransform& Transform) override;
 	virtual void BeginPlay() override;

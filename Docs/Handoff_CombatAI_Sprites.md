@@ -231,3 +231,44 @@ Textures are in `/Game/DirectorsCut/Environment/Props`. The test map has them in
 Re-running the lead's `LD_BuildDirectorsCut.py` village / hunt stages would bring the greybox back; run `dress_main_map()` again afterwards.
 
 Screenshots: `Docs/Screenshots/Sys17_*.png` (`Sys17_Main_*` = the main map).
+
+### 12b. The props in 3D (Blender)
+
+Taisho's three drawings are rebuilt as real 3D models painted with the drawings themselves (Forgive Me Father style, ink lines included), so every side looks right. `Scripts/Blender_BuildProps3D.py` (`blender -b --python Scripts/Blender_BuildProps3D.py -- preview`) builds them, keys out the white sticker card, crops off the wooden stands, exports `Art/Meshy/<Prop>/Export/SM_*.glb` + textures, and renders each prop from 4 sides into `Saved/PropPreview/`.
+
+| Mesh (`/Game/DirectorsCut/Environment/Props/3D`) | Built from the drawing | Size |
+|---|---|---|
+| `SM_DC_HayBale01_3D` | lying round bale (spiral end caps, rolled sides, rounded rims) + square bale + pitchfork | 2.2 x 1.6 x 1.5 m |
+| `SM_DC_Grass01_3D` | 5 crossed cut-out cards of the drawn blades: a full clump from any side | 1.25 m wide |
+| `SM_DC_AppleTree02_3D` | flared trunk + 5 branches (drawn bark), leaf-painted canopy core, 4 crossed cards of the drawn leafy outline, fallen apples, grass skirt | 5.2 m tall |
+
+Materials: `MI_DC_*_3D` on `M_DC_InkedProp` (lit, masked, two-sided). The `DC Prop ...` classes now show the 3D mesh by default (`bUse3DModel`; off = the 2D camera-facing card), so every placed copy (main map, hunt set, test map) switched without re-placing anything. Collision is still the invisible capsule (hay blocks, tree trunk blocks, grass none), so the nav mesh is unchanged.
+
+### 12c. Round film-set stage (Meshy picture + Blender)
+
+`SM_DC_SetStage` (`/Game/DirectorsCut/Environment/SetFloor`, material `MI_DC_SetStage` on `M_DC_InkedProp`, texture `T_DC_SetStage_Planks`): the round wooden stage in the middle of the platform, in the Forgive Me Father comic style (inked floorboards, nails, scratches). 24 m across and 40 cm tall - the same footprint and height as the grey plinth `POI_TheSet_Plinth` ("THE SET") it covers.
+
+- **Made with Meshy:** one text-to-image plank picture (nano-banana-2, 6 credits): `Art/Meshy/SetFloor/Source/Planks_meshy_image.png`.
+- **Built in Blender:** `Scripts/Blender_BuildSetStage.py` (`blender -b --python ... -- preview`): a round platform with 30 cm planks running across the top (the picture repeats every 2.4 m), a ring of boards around the top edge and one board all the way round the side. Exports `Art/Meshy/SetFloor/Export/SM_DC_SetStage.glb` + `.blend` for hand edits.
+- **Placed on the playable level (2026-11-14):** `Stage_SetFloor` in `DC/SetDressing_Stage`, via `dress_main_map("stage")`: no collision of its own; `POI_TheSet_Plinth` is invisible but still collides and carries the nav mesh. Checked in play: the player walks onto it and nav reaches its centre.
+- Limits: from far away the 2.4 m repeat of the picture shows as a faint grid; there are no gaffer-tape marks or other stage dressing on it yet.
+- Screenshots: `Docs/Screenshots/SetStage_Play_Approach.png`, `SetStage_Play_On.png`.
+- **Superseded:** the first attempt `SM_DC_SetFloor` / `MI_DC_SetFloor` / `T_DC_SetFloor` (a Meshy 3D model stretched to 24 m by `Scripts/Blender_AdjustSetFloor.py`: orange, soft, 1-2 m planks) is still in the project but no longer used anywhere - safe to delete.
+
+### 12d. The whole platform's floor (Meshy + Blender)
+
+`SM_DC_SetGround` (`/Game/DirectorsCut/Environment/SetGround`): ONE flat floor mesh for the whole playing platform, 120 m x 100 m, in the Forgive Me Father comic style (thick ink lines, flat muted colours), with three materials:
+
+| Surface | Covers | Texture | Made from |
+|---|---|---|---|
+| Grass | the meadow (`G_Meadow`) | `T_DC_Ground_Grass`, repeats every 8 m | Meshy text-to-image (nano-banana-2): the sparse picture `Grass_sparse_meshy_image.png`, adjusted by the build script |
+| Dirt | the six paths (`Path_00..05`) | `T_DC_Ground_Dirt`, one picture across the 3.5 m path | Meshy text-to-image (nano-banana-2) |
+| Cobblestone | the village square (`G_VillageSquare`) | `T_DC_Ground_Cobble`, repeats every 6 m | Meshy text-to-3D tile (meshy-t2.5 + texture), photographed square-on in Blender and mirrored 2 x 2 |
+
+- `Scripts/Blender_BuildSetGround.py` builds it (`-- preview` renders checks): makes each texture seamless, then builds the floor to the level's own layout (the `MEADOW` / `SQUARE` / `PATHS` numbers at the top are the greybox pieces, read from the level on 2026-11-14). If paths move, update those numbers and re-run.
+- The mesh is **visual only**: it lies 0.6 cm above the greybox ground, which keeps doing collision and navigation. Place it at (0, 0, 0) with no rotation and collision off; hiding the greybox meshes is optional (they are fully covered).
+- Meshy credits: 45 for three 3D tiles (the grass tile failed - loose tufts only - and the dirt tile came out as a grey disc; both are kept unused in `Art/Meshy/Ground/Source`) + 12 for the two pictures that replaced them. + 6 for the sparse grass picture.
+- **Placed on the playable level (2026-11-14):** `Ground_SetFloor` in `DC/SetDressing_Ground` (persistent level), via `dress_main_map("ground")` in `Scripts/LD_DressMainMap.py`. The greybox `G_Meadow`, `G_VillageSquare` and `Path_00..05` are set invisible but still collide and carry the nav mesh; in play the player stands at the same height and all 6 boar spawns are reachable. The backstage / tower-hill areas behind the backdrop and the lilac set disc are not covered.
+- Screenshots: `Docs/Screenshots/SetGround_*.png` (a temporary copy in the level, deleted afterwards).
+
+- **Sparser grass (2026-11-14):** the first grass picture (tufts edge to edge, `Grass_meshy_image.png`, kept unused) read as crowded in play. `sparse_grass()` in `Scripts/Blender_BuildSetGround.py` now builds the meadow texture from the sparse picture: three shifted copies laid over each other (about 27 tufts per 8 m), ink lines thickened, ground colour matched to the old picture. Only the texture changed; the floor mesh is the same. Limit: up close the 1024 px picture over 8 m shows stepped ink edges. Screenshots: `Docs/Screenshots/SetGround_Grass_Sparse_Meadow.png`, `SetGround_Grass_Sparse_Close.png`.
