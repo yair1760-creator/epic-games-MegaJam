@@ -26,7 +26,7 @@ Someone on the team must read it, especially the eligibility section (age 18+, a
 - [ ] Zip named `TeamName_GameName.zip`, under 1 GB (project content is about 280 MB, so size is not a problem)
 - [ ] Uploaded to the team's own itch.io account, then submitted to the jam
 - [ ] Team name, each member's name and the email linked to their Epic Games account
-- [ ] Game name (the UI art says "Rated PG for Pig"; the project and docs still say "Director's Cut": pick one)
+- [x] Game name: **Rated PG for Pig** (decided by Yair, Nov 15). Zip: `TeamName_RatedPGforPig.zip`, team name still open
 - [ ] Gameplay video link, 30 to 60 seconds, gameplay in the first five seconds
 - [ ] Tools used (optional, needed for partner prizes): list below
 - [ ] Dev log link (optional, required only for the Glass Box prize)
@@ -56,4 +56,4 @@ Confirm with Saar and Taisho whether any other tool was used (for example an Ope
 1. **No packaged build exists.** The start map and packaging settings changed on Nov 14 (main menu map, `MapsToCook`, always-cook folders). Package and play it end to end.
 2. **Menus and loading screen are untested with real input** and in a packaged build.
 3. **Level 1 has never been played from start to finish** in one run.
-4. Project name in `Config/DefaultGame.ini` is still "First Person Template" (shows as the window title).
+4. ~~Project name was "First Person Template"~~ Fixed Nov 15: the window title reads "Rated PG for Pig" (seen in a standalone run; a Development build adds "(64-bit Development ...)" after it, a Shipping build does not).

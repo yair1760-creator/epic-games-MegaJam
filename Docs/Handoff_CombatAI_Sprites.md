@@ -526,3 +526,7 @@ Four HUD panels got a drawn frame in place of the flat ink / gold / slate border
 - **Checked in play** (beat 1 and beat 3, editor window): all four frames draw, text sits inside them, health bar and subtitles still update. Not checked: other resolutions and aspect ratios, a packaged build, the victory and death screens (not changed).
 - Not changed: the ammo counter, the "REC | SCENE" strip, the death slate and the victory card still have the flat style.
 - Screenshots: `Docs/Screenshots/HudPanels_Beat1.png`, `HudPanels_Beat3.png`.
+
+## 27. Game title
+
+The game is called **Rated PG for Pig** (Yair, Nov 15). `Config/DefaultGame.ini`: `ProjectName` and `ProjectDisplayedTitle` set under `[/Script/EngineSettings.GeneralProjectSettings]` (and the older `[ProjectSettings]` block). The `.uproject`, the module and the code names (`DirectorsCut`, `DC*`) are unchanged on purpose. Checked: a standalone run's window title is "Rated PG for Pig (64-bit Development PCD3D_SM6)"; the bracket is added by non-Shipping builds. Not checked in a packaged build.
