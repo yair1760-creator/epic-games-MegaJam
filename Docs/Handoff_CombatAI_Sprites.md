@@ -273,3 +273,22 @@ Materials: `MI_DC_*_3D` on `M_DC_InkedProp` (lit, masked, two-sided). The `DC Pr
 
 - **Path junction flicker fixed (2026-11-14):** the six path strips overlap where they meet and were all at the same height, so the overlapping faces flickered as the camera moved (z-fighting). Each strip now sits 0.5 cm above the one before it (`PATH_STEP` in the build script; the top one is 2.5 cm higher than the first). The mesh was reimported over the same asset; nothing in the level changed. Screenshot: `Docs/Screenshots/SetGround_PathJunction.png`.
 - **Sparser grass (2026-11-14):** the first grass picture (tufts edge to edge, `Grass_meshy_image.png`, kept unused) read as crowded in play. `sparse_grass()` in `Scripts/Blender_BuildSetGround.py` now builds the meadow texture from the sparse picture: three shifted copies laid over each other (about 27 tufts per 8 m), ink lines thickened, ground colour matched to the old picture. Only the texture changed; the floor mesh is the same. Limit: up close the 1024 px picture over 8 m shows stepped ink edges. Screenshots: `Docs/Screenshots/SetGround_Grass_Sparse_Meadow.png`, `SetGround_Grass_Sparse_Close.png`.
+
+### 12e. Butcher stall, SOLD OUT and HA HA HA signs (Meshy pictures + Blender)
+
+Four models in `/Game/DirectorsCut/Environment/ButcherStall`, built by `Scripts/Blender_BuildButcherStall.py` (`blender -b --python ... -- preview`) and placed by `dress_main_map("stall")`:
+
+| Mesh | What | Where it lives |
+|---|---|---|
+| `SM_DC_ButcherStall` | plank counter (8 x 4 x 1.1 m), 4 posts, beams, sloped red-and-white striped awning with a scalloped front edge | `Lvl_DirectorsCut`, `Stall_ButcherStall` in `DC/SetDressing_Stall` (always there) |
+| `SM_DC_ButcherSign` | the stall's name board: brown planks with cream "BUTCHER", a cleaver and a ham, 5.4 x 1.7 m on two stubs above the back of the awning | `Lvl_DirectorsCut`, `Stall_ButcherSign` in `DC/SetDressing_Stall` (always there) |
+| `SM_DC_SoldOutSign` | plank board with white inked "SOLD OUT", hanging on two ropes over the counter front | `DC_Set_NoMeat` sublevel, `NoMeat_Sign_SoldOut` (beat 2 only) |
+| `SM_DC_LaughSign` | 12.6 m dark billboard on two poles with red dripping "HA HA HA", top at 11.2 m, behind the stall | `DC_Set_NoMeat` sublevel, `NoMeat_Sign_Laugh` (beat 2 only) |
+
+- **Meshy (24 credits):** four text-to-image pictures (nano-banana-2) in `Art/Meshy/ButcherStall/Source`: awning cloth, SOLD OUT board, HA HA HA board, BUTCHER board. The SOLD OUT board came out as a photo, so only its letters are used: the script cuts them out, outlines them in ink and puts them on the stage's inked plank picture. All wood reuses `MI_DC_SetStage`.
+- **Greybox:** the old counter, posts, roof, sign boards, poles and the two text actors are invisible, not deleted (12 actors), so collision and the nav mesh are unchanged. The new meshes have no collision.
+- **Checked in play:** stall alone in beat 1; with `DC_Set_NoMeat` loaded both signs appear and read correctly; nav still reaches the stall front.
+- Limits: the SOLD OUT letters look grey when the awning's shadow falls on the board; the meat hooks and empty plate of beat 2 are still greybox; nothing is on the counter (no meat, cleaver or scales).
+- Screenshots: `Docs/Screenshots/ButcherStall_Beat1.png`, `ButcherStall_Beat2_Close.png`, `ButcherStall_Beat2_Far.png`.
+
+**Merge note (2026-11-14):** Saar's commit `b10990e` and the stall work both changed `Lvl_DirectorsCut.umap`. Our version of the level was kept, and Saar's one level change was re-created by hand exactly as his `LD_BuildDirectorsCut.py` does it: the `BoarWanderArea` trigger box (centre 0, 0, 500; extent 5700 x 4700 x 500; tag `BoarWanderArea`; folder `DC/Gameplay`) and `DC_BoarSpawner.wander_area` pointing at it. Checked in play: a spawned boar has the area set.

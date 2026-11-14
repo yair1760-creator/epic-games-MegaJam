@@ -5,11 +5,13 @@
 #   - Taisho's apple trees around the village edges and the meadow border
 #   - the Forgive Me Father style floor (SM_DC_SetGround) over the meadow, paths and village square
 #   - the round wooden stage floor (SM_DC_SetStage) over the lilac disc "THE SET"
+#   - the butcher stall (SM_DC_ButcherStall) over the greybox stall, and in the DC_Set_NoMeat sublevel the SOLD OUT and
+#     HA HA HA signs (SM_DC_SoldOutSign, SM_DC_LaughSign) over the greybox boards and text
 # Run inside the editor (Lvl_DirectorsCut open):
 #   exec(open(r"D:\EpicGameJam\EpicGameJamGame\EpicGameJamGame\Scripts\LD_DressMainMap.py").read())
-#   dress_main_map()            # or dress_main_map("houses") / ("hunt") / ("props") / ("trees") / ("ground") / ("stage")
+#   dress_main_map()            # or dress_main_map("houses") / ("hunt") / ("props") / ("trees") / ("ground") / ("stage") / ("stall")
 # Re-runnable: clears DC/Village_Flats, DC/SetDressing_Props and DC/SetDressing_Trees (persistent level) and the Hunt_HayProp_* actors first.
-# DC_Set_Hunt only gets its greybox hay bales swapped for the real ones; no other sublevel is touched.
+# DC_Set_Hunt only gets its greybox hay bales swapped for the real ones; DC_Set_NoMeat only gets the two signs. No other sublevel is touched.
 # Note: re-running LD_BuildDirectorsCut's village / hunt stages would bring the greybox back - run this again afterwards.
 import unreal, math, os, random
 
@@ -233,6 +235,63 @@ def dress_stage():
     return {"at": [round(o.x), round(o.y), round(o.z - e.z)], "size_cm": [round(2 * e.x), round(2 * e.y), round(2 * e.z)]}
 
 
+STALL = (-2500, 2800)                  # the butcher stall (same as LD_BuildDirectorsCut)
+STALL_DIR = "/Game/DirectorsCut/Environment/ButcherStall"
+
+
+def _visual_only(a):
+    c = a.static_mesh_component
+    c.set_collision_enabled(unreal.CollisionEnabled.NO_COLLISION)
+    c.set_editor_property("can_ever_affect_navigation", False)
+
+
+def _hide(a):
+    """greybox piece goes invisible; it keeps its collision and its place on the nav mesh"""
+    if a.get_class().get_name() == "TextRenderActor":
+        a.text_render.set_editor_property("visible", False)
+    else:
+        a.static_mesh_component.set_editor_property("visible", False)
+
+
+def dress_stall():
+    """The butcher stall and its two joke signs (Meshy pictures + Scripts/Blender_BuildButcherStall.py).
+    Persistent level: SM_DC_ButcherStall over the greybox counter / posts / roof, and its name board SM_DC_ButcherSign
+    ("BUTCHER") above the awning (DC/SetDressing_Stall).
+    DC_Set_NoMeat sublevel (beat 2): SM_DC_SoldOutSign and SM_DC_LaughSign over the greybox boards, poles and text,
+    spawned into that sublevel so they still stream in with the joke. Visual only: the greybox goes invisible."""
+    sx, sy = STALL
+    CURRENT_FOLDER[0] = "DC/SetDressing_Stall"
+    clear_folder("DC/SetDressing_Stall")
+    a = EAS.spawn_actor_from_object(unreal.load_asset(STALL_DIR + "/SM_DC_ButcherStall"), V(sx, sy, 0), R())
+    _visual_only(a)
+    _finish(a, "Stall_ButcherStall")
+    n = EAS.spawn_actor_from_object(unreal.load_asset(STALL_DIR + "/SM_DC_ButcherSign"), V(sx, sy, 0), R())   # name board, same origin
+    _visual_only(n)
+    _finish(n, "Stall_ButcherSign")
+    hidden = []
+    grey_main = ["POI_ButcherStall_Counter", "ButcherStall_Roof"] + ["ButcherStall_Post_%d" % j for j in range(4)]
+    grey_nomeat = ["SoldOut_Board", "SIGN_SOLD_OUT", "LaughSign_Board", "LaughSign_Pole_0", "LaughSign_Pole_1", "SIGN_HA_HA_HA"]
+    for x in EAS.get_all_level_actors():
+        lvl = x.get_level().get_outer().get_name()
+        if (lvl == MAIN and x.get_actor_label() in grey_main) or (lvl == "DC_Set_NoMeat" and x.get_actor_label() in grey_nomeat):
+            _hide(x)
+            hidden.append(x.get_actor_label())
+    LES.set_current_level_by_name("DC_Set_NoMeat")
+    try:
+        for x in EAS.get_all_level_actors():
+            if x.get_level().get_outer().get_name() == "DC_Set_NoMeat" and x.get_actor_label().startswith("NoMeat_Sign_"):
+                EAS.destroy_actor(x)
+        for label, asset, loc in (("NoMeat_Sign_SoldOut", "SM_DC_SoldOutSign", (sx, sy - 225, 180)),     # hangs over the counter front
+                                  ("NoMeat_Sign_Laugh", "SM_DC_LaughSign", (sx, sy + 300, 0))):          # towers behind the stall
+            s = EAS.spawn_actor_from_object(unreal.load_asset(STALL_DIR + "/" + asset), V(*loc), R())
+            _visual_only(s)
+            s.set_actor_label(label)
+            s.set_folder_path("DC/Set_NoMeat")
+    finally:
+        LES.set_current_level_by_name(MAIN)
+    return {"hidden_greybox": sorted(hidden)}
+
+
 def dress_main_map(which="all"):
     _check_world()
     # no ensure_materials(): it re-saves the lead's shared MI_LD_* materials; the ones used here already exist
@@ -248,6 +307,8 @@ def dress_main_map(which="all"):
             out["ground_hidden_greybox"] = dress_ground()
         if which in ("all", "stage"):
             out["stage"] = dress_stage()
+        if which in ("all", "stall"):
+            out["stall"] = dress_stall()
         if which in ("all", "trees"):
             out["apple_trees"] = dress_trees()
     w = UES.get_editor_world()
