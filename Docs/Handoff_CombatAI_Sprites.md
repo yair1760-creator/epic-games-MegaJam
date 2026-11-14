@@ -366,7 +366,7 @@ Taisho's film reel camera and boom mic are placed all over the playable level so
 
 **Checked (editor view, not in Play):** close-ups show no tearing; nav paths from the spawn to the stage, stall front, pen, east meadow and sword pickup are valid and all 6 boar spawn points are reachable.
 
-- Not used yet: `SM_DC_WoodlandSlide` (only in the test map; it is 1.4 m tall and would need about 3x scale to replace the watchtower) and Taisho's brick wall picture (`/Game/DirectorsCut/Environment/Taisho/Wall`, test map only).
+- Not used yet: `SM_DC_WoodlandSlide` (only in the test map; it is 1.4 m tall and would need about 3x scale to replace the watchtower) The brick wall picture is now on the boundary walls (section 22).
 - Left out on purpose: the modern cine camera from `taisho/3d-cameras` (cannot be used in the game). Do not merge that branch as a whole.
 - Test map: zone T behind the spawn shows the three cleaned models and the wall panel (`build_test_map("taisho")`).
 - Limits: the props are static (reels do not turn); the boom mic's cable lies outside its blocker; the realistic colour pictures are not redrawn in the inked style.
@@ -461,3 +461,13 @@ When the player dies, the hero's drawn death plays once on a full-screen layer, 
 - **Checked in play:** `Dying` at 0 ms, `Dead` at 250 / 253 ms, removed at 5.0 s when the player respawns with the sword; second death starts on `Dying` again; take counter goes 2, 3.
 - Limits: a two-line subtitle box grows upward and covers the lowest edge of the body; not tried at other aspect ratios or in a packaged build; the first-person camera view behind the drawing is unchanged (no camera fall).
 - Screenshots: `Docs/Screenshots/PlayerDeath_01_Dying.png`, `PlayerDeath_02_Dead.png` (the first was taken with the grid slowed down so the pose could be photographed).
+
+## 22. Brick boundary walls (Taisho's wall picture)
+
+The four boundary walls of the main level (`B_West`, `B_North`, `B_South`, `B_BackstageEast`) now show Taisho's brick wall picture.
+
+- **Why new meshes:** the greybox walls are one cube scaled to 100 m or 134 m, and the inked material has no tiling setting, so the picture would be stretched once over the whole wall. `Scripts/Blender_BuildBoundaryWalls.py` builds three plain boxes (100x15 m, 134x15 m, 100x7 m), 4 cm bigger than the greybox all round, with UVs in wall metres: one picture per 5 m (`TILE_M`), the same brick size on every wall. Change `TILE_M` and re-run for bigger or smaller bricks.
+- **In Unreal:** `/Game/DirectorsCut/Environment/Taisho/Wall/SM_DC_BoundaryWall_*` with `MI_Taisho_Wall` (Nanite off). `dress_main_map("walls")` in `Scripts/LD_DressMainMap.py` puts a skin over each wall (`DC/SetDressing_Walls`, labels `Wall_Brick_*`) and makes the greybox wall invisible. The greybox keeps its collision; the skins have none.
+- Only the persistent level file changed (`Lvl_DirectorsCut.umap`): four actors added, four made invisible.
+- Limits: the picture was not made to tile, so the ivy patches repeat every 5 m and a faint seam shows at each repeat; bricks are oversized on purpose (about 18 cm rows) so they read from across the set; not checked in Play or in a packaged build (looked at with editor captures only); the scaffold in front of the east wall is still greybox metal.
+- Screenshots: `Docs/Screenshots/BrickWalls_Corner.png`, `BrickWalls_Close.png`, `BrickWalls_Overview.png`.

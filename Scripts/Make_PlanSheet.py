@@ -326,6 +326,7 @@ BACKLOG = [
  (19, "2D shotgun view", "Design", "The drawn reload ends at 0.58 s but the reload lasts 1.5 s: the gun shows Idle for 0.9 s while it still cannot fire", "Shorten ReloadTime to about 0.6 s, or ask the designer for a longer reload loop", "Medium"),
  (21, "Player death drawing", "Design", "The death drawing is shown at 0.9 size so the body clears the subtitle box; a two-line subtitle still covers its lowest edge", "Designer to confirm the placement, or move the subtitle box up while the death slate is shown", "Low"),
  (21, "Player death drawing", "Audio", "No sound of its own for the fall (only the existing CUT sound and death sound)", "Add a body-fall thud at the 250 ms cut", "Low"),
+ (22, "Brick boundary walls", "Art", "The brick picture repeats visibly every 5 m (ivy patches, faint seams); the pine trees and the east scaffold in front of it are still greybox", "A seamless brick picture or 2-3 variants; replace the cone pines", "Low"),
  (19, "2D shotgun view", "Code", "Pellets leave from the hidden 3D gun muzzle, not from the drawn barrel", "Fire from the camera centre while the 2D view is on", "Low"),
  (19, "2D shotgun view", "Audio", "Blast is still the template grenade launcher sound", "Use one of the fal shotgun takes once picked", "Medium"),
  (17, "Set dressing: notice board", "Animation", "The quest mark over the notice board is static (no bob or spin) and never goes away", "Slow bob in a small actor class; hide it once the King Boar quest starts or ends", "Low"),

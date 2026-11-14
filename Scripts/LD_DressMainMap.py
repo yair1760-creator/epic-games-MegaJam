@@ -9,6 +9,7 @@
 #   - the village well (SM_DC_Well) over the greybox cylinder, and in DC_Set_Hunt the sword rack (SM_DC_SwordRack)
 #     with three SM_DC_Sword over the greybox rack
 #   - Taisho's film cameras and boom mics around the level (SM_DC_FilmCamera, SM_DC_BoomMic), and in DC_Set_FilmCrew
+#   - Taisho's brick wall picture on the four boundary walls (tiled brick skins over the greybox walls)
 #     the real models over the greybox dolly camera and boom mic
 #   - the butcher stall (SM_DC_ButcherStall) over the greybox stall, and in the DC_Set_NoMeat sublevel the SOLD OUT and
 #     HA HA HA signs (SM_DC_SoldOutSign, SM_DC_LaughSign) over the greybox boards and text
@@ -471,6 +472,33 @@ def dress_filmset():
     return {"cameras": len(FILM_CAMERAS), "boom_mics": len(BOOM_MICS), "filmcrew_hidden_greybox": sorted(hidden)}
 
 
+WALL_DIR = "/Game/DirectorsCut/Environment/Taisho/Wall"
+BOUNDARY_WALLS = {"B_West": "SM_DC_BoundaryWall_100x15", "B_North": "SM_DC_BoundaryWall_134x15",
+                  "B_South": "SM_DC_BoundaryWall_134x15", "B_BackstageEast": "SM_DC_BoundaryWall_100x7"}
+
+
+def dress_walls():
+    """Taisho's brick wall picture on the four boundary walls (Scripts/Blender_BuildBoundaryWalls.py): a brick skin
+    with evenly tiled UVs over each greybox wall (one picture per 5 m), material MI_Taisho_Wall.
+    Persistent level, DC/SetDressing_Walls. Visual only: the greybox wall goes invisible but keeps its collision."""
+    CURRENT_FOLDER[0] = "DC/SetDressing_Walls"
+    clear_folder("DC/SetDressing_Walls")
+    done = {}
+    for x in EAS.get_all_level_actors():
+        label = x.get_actor_label()
+        if label in BOUNDARY_WALLS and x.get_level().get_outer().get_name() == MAIN:
+            o, e = x.get_actor_bounds(False)
+            yaw = 0 if e.x > e.y else 90                  # the skin's long side is its X axis
+            a = EAS.spawn_actor_from_object(unreal.load_asset(WALL_DIR + "/" + BOUNDARY_WALLS[label]), V(o.x, o.y, o.z - e.z), R(yaw=yaw))
+            _visual_only(a)
+            a.static_mesh_component.set_cast_shadow(x.static_mesh_component.cast_shadow)
+            _finish(a, "Wall_Brick_" + label[2:])
+            _hide(x)
+            done[label] = [round(o.x), round(o.y), round(o.z - e.z), yaw]
+    assert len(done) == len(BOUNDARY_WALLS), "boundary walls found: %s" % sorted(done)
+    return done
+
+
 def dress_main_map(which="all"):
     _check_world()
     # no ensure_materials(): it re-saves the lead's shared MI_LD_* materials; the ones used here already exist
@@ -494,6 +522,8 @@ def dress_main_map(which="all"):
             out["village"] = dress_village()
         if which in ("all", "filmset"):
             out["filmset"] = dress_filmset()
+        if which in ("all", "walls"):
+            out["walls"] = dress_walls()
         if which in ("all", "trees"):
             out["apple_trees"] = dress_trees()
     w = UES.get_editor_world()
