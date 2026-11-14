@@ -292,3 +292,54 @@ Four models in `/Game/DirectorsCut/Environment/ButcherStall`, built by `Scripts/
 - Screenshots: `Docs/Screenshots/ButcherStall_Beat1.png`, `ButcherStall_Beat2_Close.png`, `ButcherStall_Beat2_Far.png`.
 
 **Merge note (2026-11-14):** Saar's commit `b10990e` and the stall work both changed `Lvl_DirectorsCut.umap`. Our version of the level was kept, and Saar's one level change was re-created by hand exactly as his `LD_BuildDirectorsCut.py` does it: the `BoarWanderArea` trigger box (centre 0, 0, 500; extent 5700 x 4700 x 500; tag `BoarWanderArea`; folder `DC/Gameplay`) and `DC_BoarSpawner.wander_area` pointing at it. Checked in play: a spawned boar has the area set.
+
+## 13. 2D shotgun view (designer frames, 12 fps)
+
+`ADCShotgunWeapon` (Saar's Beat 3-5 shotgun) now draws the designer's hand-drawn frames on screen, the same way the sword does (`UDCWeaponSpriteWidget`, full-screen layer under the HUD). The 3D gun and the template arms are hidden in first person; pellets, ammo, sound and camera kick are unchanged.
+
+| Frame | Starts | Held |
+|---|---|---|
+| `T_Shotgun_Idle` | before input | until the player fires |
+| `T_Shotgun_Flash` (flash drawn in) | 0 ms, on the accepted shot itself | 2 ticks (167 ms) |
+| `T_Shotgun_Recoil` (peak) | 167 ms | 1 tick (83 ms) |
+| `T_Shotgun_Recovery` | 250 ms | 2 ticks (167 ms) |
+| `T_Shotgun_Idle` | 417 ms | until the next shot |
+
+- Frames: `/Game/DirectorsCut/Combat/Shotgun/Sprites/` (1920 x 1080, UI group, no streaming). Source art, the PSD, the reference GIF and the designer's `Timing.txt`: `Art/Player/Shotgun`.
+- The sequence starts in `FireProjectile`, so it plays once per accepted shot: an empty magazine, a reload or a click during the refire delay does not play it. `RefireRate` (0.55 s) is kept at least as long as the animation (0.417 s), so a shot never cuts the previous one off.
+- Hard cuts on the tick grid; the one-tick peak recoil is always shown, even if a slow frame would skip it.
+- Walk bob and idle sway only while idle; the shot drawings keep their exact drawn placement.
+- Tunables on the weapon (`Shotgun|2D View`): `bUseSpriteView` (off = the old 3D gun), `AnimFPS`, `FlashTicks`, `RecoilTicks`, `RecoveryTicks`, `SpriteScreenScale`, `WalkBobPixels`, `IdleSwayPixels`, `EdgeBleedPixels`. For tests: `GetSpritePose()`, `GetShotElapsed()`, `GetShotAnimDuration()`.
+- Checked in play (`DC.SwapWeapon Gun`): pose changes measured at 0 / 168 / 251 / 418 ms; a second click 200 ms into the animation does not restart it; swapping back to the sword removes the shotgun layer.
+- Limits: no reload drawing (the idle frame stays up while reloading); the pellets still leave from the hidden 3D gun's muzzle, not from the drawn barrel; Saar's automation tests were not re-run.
+- Screenshots: `Docs/Screenshots/Shotgun2D_Idle.png`, `Shotgun2D_Flash.png`, `Shotgun2D_Recoil.png`, `Shotgun2D_Recovery.png`.
+
+## 14. Village notice board: Boar King wanted poster (Meshy picture + Blender)
+
+`SM_DC_NoticeBoard` (`/Game/DirectorsCut/Environment/NoticeBoard`) covers the yellow greybox notice board in the village (`POI_NoticeBoard` + `Notice_PostL/R`), placed by `dress_main_map("notice")` as `Notice_WantedBoard` in `DC/SetDressing_Notice`. It is in the persistent level, so it is always visible.
+
+- **Board:** inked plank board on two posts with a small cap (wood = `MI_DC_SetStage`), same size and spot as the greybox board, facing the player spawn.
+- **Poster:** `T_DC_WantedPoster` / `MI_DC_WantedPoster`: torn parchment, "WANTED", an inked crowned boar, "THE BOAR KING", "REWARD: 10 XP". One Meshy text-to-image picture (nano-banana-2, 6 credits, `Art/Meshy/NoticeBoard/Source`); the build script cuts away the white outside the torn edge.
+- **Quest mark:** a yellow "!" floating over the board: ONE camera-facing sprite (`Notice_QuestMark`, a `DCSpriteActor` using `T_DC_QuestMark`, drawn by the build script, 57.5 x 115 cm, no shadow). It was first two crossed cards inside the mesh, which read as two marks from above and from the side; that was removed. It is the nod to classic kill-ten-boars quests; no other game's logo, name or art is used. `MI_DC_QuestMark` is left over from the crossed cards and is unused.
+- Built by `Scripts/Blender_BuildNoticeBoard.py` (`blender -b --python ... -- preview`). The greybox board and posts are invisible, not deleted, so collision and nav are unchanged; the new mesh has no collision.
+- Limits: the "!" does not bob or spin and stays up for the whole game (it is not tied to the quest state); the back of the board is plain planks; the board is not interactive.
+- Screenshots: `Docs/Screenshots/NoticeBoard_Front.png`, `NoticeBoard_FromSpawn.png`, `NoticeBoard_MarkFromBelow.png`.
+
+## 15. Village well and sword rack (Meshy picture + Blender)
+
+Two models in `/Game/DirectorsCut/Environment/Village`, built by `Scripts/Blender_BuildVillageProps.py` (`blender -b --python ... -- preview`) and placed by `dress_main_map("village")`:
+
+| Mesh | What | Where it lives |
+|---|---|---|
+| `SM_DC_Well` | inked stone ring (2.2 m across, 1 m tall) with cap stones and dark water, two posts, windlass with crank, rope and bucket, small plank roof | `Lvl_DirectorsCut`, `Village_Well` in `DC/SetDressing_Village` (always there) |
+| `SM_DC_SwordRack` | plank base, back board with a cap, two cheeks and a rail | `DC_Set_Hunt` sublevel, `Hunt_Rack` (beats 1-4, like the greybox rack) |
+| `SM_DC_Sword` x 3 | the game's own sword model, 1.6x size, blade down, leaning on the rail | `DC_Set_Hunt`, `Hunt_RackSword_0..2` |
+
+- **Meshy (6 credits):** one text-to-image picture of inked stone bricks (`Art/Meshy/Village/Source`); the script keeps its 8 inner rows and mirrors them so the texture wraps around the ring (`T_DC_StoneBricks`). The water texture is drawn by the script. All wood reuses `MI_DC_SetStage`.
+- **Rack swords:** the weapon's own material (`MI_DC_Sword`) rendered black on a static prop, so the rack swords use `MI_DC_Sword_Prop` (`M_DC_InkedProp` + the sword's colour picture).
+- **Greybox:** the white well cylinder, the rack base and its three white sticks are invisible, not deleted, so collision and nav are unchanged. The new meshes have no collision. The sword pickup point (`WeaponPickup_Sword`) is untouched.
+- **Checked:** pictures taken in the editor view (not in Play, see the note below). Nav from the spawn to the sword pickup was valid in an earlier Play run with the first placement.
+- Limits: the rack swords are decoration and do not disappear when the player takes the sword; the well is not interactive; the well roof and posts have no collision (only the stone ring blocks).
+- Screenshots: `Docs/Screenshots/Village_Well.png`, `Village_SwordRack.png`, `Village_SwordRack_Side.png`.
+
+**Crash note (2026-11-14 19:25):** the editor crashed (`Assertion failed: !bPostTickComponentUpdate`, call stack in the level editor's interactive tools) at the moment a script started Play while the level was being edited by hand in the viewport. Unsaved hand edits to `Lvl_DirectorsCut` and `DC_Set_Hunt` (a group actor, moved backdrop pieces) were recovered from the 19:24 autosave. Avoid starting Play from a script while someone is dragging things in the viewport; editor-view captures (`SceneCaptureToolset`) are safe.

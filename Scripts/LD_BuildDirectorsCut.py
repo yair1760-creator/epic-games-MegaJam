@@ -405,7 +405,6 @@ def s_nomeat():
         cyl("LaughSign_Pole_%d" % j, (sx + dx, sy + 300, 0), 25, 900, "Dark")
     cbox("LaughSign_Board", (sx, sy + 300, 950), (30, 1200, 300), "Dark")
     sign_text("HA HA HA", (sx, sy + 280, 880), 140, yaw=-90, color=(255, 40, 40))
-    cbox("Scoreboard", (STAGE_C[0], STAGE_C[1] + STAGE_R + 200, 500), (40, 900, 400), "Dark")
     label_text("SET: NO MEAT (beat 2)", (sx, sy, 1300), 60)
 
 def s_filmcrew():

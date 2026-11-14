@@ -46,7 +46,7 @@ Load exactly these sublevels for each beat and unload everything else. Use strea
 | Beat | Narrator moment | Load these | What the player sees change |
 |---|---|---|---|
 | 1 | Intro quest: kill 10 boars (sword; interrupted at 7/10) | `DC_Light_Day`, `DC_Set_Hunt` | Sunny fantasy meadow, painted sky backdrop, hay bales, sword rack |
-| 2 | Breakfast / meat-drop joke: collect 5 boar meat | `DC_Light_Day`, `DC_Set_Hunt`, `DC_Set_NoMeat` | Stall gets "SOLD OUT", empty meat hooks and a spotlit empty plate; a giant red "HA HA HA" sign; a blank scoreboard next to The Set |
+| 2 | Breakfast / meat-drop joke: collect 5 boar meat | `DC_Light_Day`, `DC_Set_Hunt`, `DC_Set_NoMeat` | Stall gets "SOLD OUT", empty meat hooks and a spotlit empty plate; a giant red "HA HA HA" sign |
 | 3 | Director cut #1: too boring! Sword → gun, hyperspawn, kill 100 boars | `DC_Light_Day`, `DC_Set_Hunt`, `DC_Set_FilmCrew` | Film crew takes over The Set: spotlit weapon pedestal, 4 light stands, director's chair, dolly track and camera, boom mic, "SCENE 3 TAKE 2" clapperboard |
 | 4 | Director cut #2: too violent, need romance! Rescue the Princess from the shed guarded by the King Boar | `DC_Light_PG`, `DC_Set_Hunt`, `DC_Set_PG` | Pastel pink light, cardboard flowers, rainbow arch over the main path, romantic shed holding the Princess, guarded by the giant crowned King Boar |
 | 5 | Climax / Boss: the Director gets mad, enters the scene ("bad actor"), fight the Director | `DC_Light_Boss`, `DC_Set_Boss` | Red light. The Set becomes an arena: a curved red wall with 4 entrances, 4 tall and 8 low cover blocks, 3 red spotlight rigs, and the Director's crane perch east of The Set with a "FINAL CUT" sign |
