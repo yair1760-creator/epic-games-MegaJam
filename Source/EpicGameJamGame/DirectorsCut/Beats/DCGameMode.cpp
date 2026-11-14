@@ -38,6 +38,7 @@
 
 ADCGameMode::ADCGameMode()
 {
+	DC_DEFAULT_SFX(CutSound, "S_Cut");
 	PlayerControllerClass = ADCPlayerController::StaticClass();
 	IntroLines = { FName("L1_Intro_01"), FName("L1_Intro_02"), FName("L1_Intro_03"), FName("L1_Intro_04") };
 	HuntQuestTitle = NSLOCTEXT("DirectorsCut", "HuntQuestTitle", "Boars killed");

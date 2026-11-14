@@ -146,6 +146,35 @@ bool FDCNarratorAuditTest::RunTest(const FString& Parameters)
 		TestNotNull(*FString::Printf(TEXT("UI font %s must exist"), FontPath), FontAsset);
 	}
 
+	const TCHAR* ExpectedSFX[] = {
+		TEXT("/Game/DirectorsCut/Audio/SFX/S_SwordSwing.S_SwordSwing"),
+		TEXT("/Game/DirectorsCut/Audio/SFX/S_SwordHit.S_SwordHit"),
+		TEXT("/Game/DirectorsCut/Audio/SFX/S_BoarGrunt.S_BoarGrunt"),
+		TEXT("/Game/DirectorsCut/Audio/SFX/S_BoarAggro.S_BoarAggro"),
+		TEXT("/Game/DirectorsCut/Audio/SFX/S_BoarCharge.S_BoarCharge"),
+		TEXT("/Game/DirectorsCut/Audio/SFX/S_BoarBite.S_BoarBite"),
+		TEXT("/Game/DirectorsCut/Audio/SFX/S_BoarSqueal.S_BoarSqueal"),
+		TEXT("/Game/DirectorsCut/Audio/SFX/S_BoarDeath.S_BoarDeath"),
+		TEXT("/Game/DirectorsCut/Audio/SFX/S_PlayerHurt.S_PlayerHurt"),
+		TEXT("/Game/DirectorsCut/Audio/SFX/S_MeatPickup.S_MeatPickup"),
+		TEXT("/Game/DirectorsCut/Audio/SFX/S_BossShot.S_BossShot"),
+		TEXT("/Game/DirectorsCut/Audio/SFX/S_BossHit.S_BossHit"),
+		TEXT("/Game/DirectorsCut/Audio/SFX/S_BossDefeat.S_BossDefeat"),
+		TEXT("/Game/DirectorsCut/Audio/SFX/S_Cut.S_Cut"),
+		TEXT("/Game/DirectorsCut/Audio/SFX/S_QuestTick.S_QuestTick"),
+		TEXT("/Game/DirectorsCut/Audio/SFX/S_QuestComplete.S_QuestComplete"),
+	};
+	for (const TCHAR* SfxPath : ExpectedSFX)
+	{
+		USoundBase* Sfx = LoadObject<USoundBase>(nullptr, SfxPath);
+		TestNotNull(*FString::Printf(TEXT("SFX asset %s must exist"), SfxPath), Sfx);
+		if (Sfx)
+		{
+			TestFalse(*FString::Printf(TEXT("SFX asset %s should not loop"), SfxPath), Sfx->IsLooping());
+			TestTrue(*FString::Printf(TEXT("SFX asset %s duration > 0"), SfxPath), Sfx->GetDuration() > 0.0f);
+		}
+	}
+
 	return true;
 }
 
