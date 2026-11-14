@@ -337,6 +337,8 @@ BACKLOG = [
  (20, "Main menu + pause menu", "Design", "The main menu has no Quit, and the pause menu Quit closes the game instead of returning to the menu", "Decide the flow; both are one-line changes", "Low"),
  (20, "Main menu + pause menu", "Art", "The main menu background is a flat dark colour", "Key art, or the level seen from a camera behind the logo", "Medium"),
  (20, "Main menu + pause menu", "Code", "Not tested with real key presses or in a packaged build; in the editor Esc stops Play so P is the stand-in", "Test in Standalone / a packaged build", "High"),
+ (21, "Drawn HP bar", "Animation", "The bar jumps to the new value: no drain animation, no shake or flash on the bar when hit", "Lerp LifePercent in the widget tick; small scale punch on damage", "Low"),
+ (21, "Drawn HP bar", "Design", "The health number is hidden on the drawn bar", "bShowNumber on the widget turns it back on; needs a matching font", "Low"),
 ]
 pol = Sheet("Polish backlog")
 pol.set(1, 1, "Polish backlog: what each system still lacks (art, animation, textures, audio, VFX, UI)", S_TITLE)

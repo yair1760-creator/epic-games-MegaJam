@@ -1,0 +1,1 @@
+Layer HP_Bar_Full over HP_Bar_Empty at identical size and position. Clip only the upper image horizontally (never resize it) using CurrentHealth / MaxHealth clamped to 0–1. Map the clip edge to the inner track width so the frame stays visible and the fill responds from 0% through 100%.

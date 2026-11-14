@@ -394,3 +394,16 @@ Both menus are built in C++ like the other DC widgets (no widget Blueprints), la
 
 - Limits: no hover or click sounds; no settings screen; QUIT on the pause menu leaves the game, it does not go back to the main menu; the main menu has no Quit button; `ProjectName` in `DefaultGame.ini` is still "First Person Template".
 - Screenshots: `Docs/Screenshots/Menu_Main.png`, `Menu_Pause.png`.
+
+## 18. Drawn HP bar ("Rated PG for Pig" UI art)
+
+The HUD health bar now shows the designer's two pictures instead of the plain red progress bar, following `Art/UI/HPBar/Reference/Implementation.txt`: `HP_Bar_Full` lies over `HP_Bar_Empty` at the same size and position, and only the full picture is clipped from the right. It is never resized.
+
+- **Art:** `Art/UI/HPBar` (PSD + note under `Reference`) -> `/Game/DirectorsCut/UI/HUD/T_UI_HPBar_Empty`, `T_UI_HPBar_Full` (640 x 112, UI group).
+- **Code:** `UDCHealthBarWidget` (`UI/DCHealthBarWidget.h`). On construct it adds the two pictures into the layout's own stack, hides the plain bar and the number, and resizes the frame to the bar (320 x 56 at the 1920 x 1080 reference, half the art's size). `WBP_HealthBar` and `DC_BuildHUDWidgets.py` are not changed; if a restyled layout has no such stack, the widget leaves it alone.
+- **Clip:** the visible width of the full picture = `TrackStartPx + (CurrentHealth / MaxHealth, clamped 0-1) x (TrackEndPx - TrackStartPx)`, with the inner track measured from the art at 27..615 px. So at 0 % the clip edge sits on the track's left end and at 100 % on its right end, and the frame is always whole. The clipping is done with the picture's UV region, so its pixels keep the same scale as the empty picture.
+- **Tunables** (`Health|Drawn Bar`): `bUseDrawnBar` (off = the old plain bar), `BarSize`, `TrackStartPx`, `TrackEndPx`, `bShowNumber`, the two textures. For tests: `GetFillClipFraction()`, `IsDrawnBarActive()`.
+- `HealthBar` is now an optional binding (it was required), so a layout without the plain progress bar is allowed.
+- **Checked in play:** screenshots at 100 %, 70 %, 35 %, 5 % and 0 % health and after respawn (back to full).
+- Limits: the bar jumps to the new value (no drain animation, no flash on the bar itself); the number is hidden.
+- Screenshots: `Docs/Screenshots/HPBar_100.png`, `HPBar_035.png`.
