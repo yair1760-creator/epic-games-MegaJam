@@ -41,7 +41,7 @@ void UDCBillboardSprite::BeginPlay()
 	Quad = NewObject<UStaticMeshComponent>(GetOwner(), MakeUniqueObjectName(GetOwner(), UStaticMeshComponent::StaticClass(), TEXT("SpriteQuad")));
 	Quad->SetStaticMesh(QuadMesh);
 	Quad->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	Quad->SetCastShadow(true);              // cards cast a (flat) shadow, which grounds them
+	Quad->SetCastShadow(bCastShadow);       // cards cast a (flat) shadow, which grounds them (effects turn it off)
 	Quad->bCastHiddenShadow = false;
 	Quad->SetupAttachment(this);
 	Quad->SetRelativeRotation(QuadToCamera);

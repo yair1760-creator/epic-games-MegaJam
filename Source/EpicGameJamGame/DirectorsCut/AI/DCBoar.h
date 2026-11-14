@@ -13,6 +13,7 @@ class UDCFloatingHPBar;
 class UDCBillboardSprite;
 class USoundBase;
 class UNiagaraSystem;
+class ADCSpriteFX;
 
 /** What the boar is doing. Systems 5-6 add Angry / Charge / Bite / Flee / Dead behaviour. */
 UENUM(BlueprintType)
@@ -168,6 +169,10 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Boar|Audio")
 	TObjectPtr<USoundBase> DeathSound;
+
+	/** Hand-drawn effect where it dies (default: dust poof, scaled with the boar) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Boar|FX")
+	TSubclassOf<ADCSpriteFX> DeathSpriteFX;
 
 	/** Effect where it dies (NS_BoarDeathPoof) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Boar|FX")

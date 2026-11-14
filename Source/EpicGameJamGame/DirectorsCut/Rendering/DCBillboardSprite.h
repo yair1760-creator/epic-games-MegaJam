@@ -85,6 +85,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Sprite")
 	FVector2D SideSize = FVector2D(165.0f, 110.0f);
 
+	/** The card casts a flat shadow (grounds characters; off for effects like dust and flashes) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Sprite")
+	bool bCastShadow = true;
+
 	/** Bottom edge of the card sits on this component (feet on the ground); off = card centred on it */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Sprite")
 	bool bPivotAtBottom = true;

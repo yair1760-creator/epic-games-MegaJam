@@ -10,6 +10,7 @@
 #include "DirectorsCut/Combat/DCFloatingHPBar.h"
 #include "DirectorsCut/Rendering/DCBillboardSprite.h"
 #include "DirectorsCut/Combat/DCFXLibrary.h"
+#include "DirectorsCut/Rendering/DCSpriteFX.h"
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundBase.h"
 #include "NiagaraSystem.h"
@@ -32,6 +33,7 @@ ADCBoar::ADCBoar()
 	DC_DEFAULT_SFX(BiteSound, "S_BoarBite");
 	DC_DEFAULT_SFX(HurtSound, "S_BoarSqueal");
 	DC_DEFAULT_SFX(DeathSound, "S_BoarDeath");
+	DeathSpriteFX = ADCFX_BoarPoof::StaticClass();
 	PrimaryActorTick.bCanEverTick = true;
 
 	// low, wide capsule
@@ -193,6 +195,8 @@ void ADCBoar::HandleDied(UDCHealthComponent* HealthComponent, AController* Kille
 	SetBoarState(EDCBoarState::Dead);
 	PlayBoarSound(DeathSound);
 	UDCFXLibrary::SpawnWorldFX(this, DeathFX, GetActorLocation(), FRotator::ZeroRotator, GetActorScale3D().X);
+	// raised a little so the bottom puffs don't sink into the ground
+	UDCFXLibrary::SpawnSpriteFX(this, DeathSpriteFX, GetActorLocation() + FVector(0.0f, 0.0f, 40.0f * GetActorScale3D().Z), GetActorScale3D().X, 30.0f);
 
 	// sprite: wobble and fall over (the frames hold on the last one)
 	if (bUseSprite && Sprite)

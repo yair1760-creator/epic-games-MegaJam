@@ -5,6 +5,7 @@
 #include "DirectorsCut/Combat/DCHitFeedbackComponent.h"
 #include "DirectorsCut/Combat/DCWeaponSpriteWidget.h"
 #include "DirectorsCut/Combat/DCFXLibrary.h"
+#include "DirectorsCut/Rendering/DCSpriteFX.h"
 #include "Sound/SoundBase.h"
 #include "NiagaraSystem.h"
 #include "Engine/Texture2D.h"
@@ -27,6 +28,7 @@ ADCSwordWeapon::ADCSwordWeapon()
 {
 	DC_DEFAULT_SFX(SwingSound, "S_SwordSwing");
 	DC_DEFAULT_SFX(HitSound, "S_SwordHit");
+	HitSpriteFX = ADCFX_HitSplat::StaticClass();
 	PrimaryActorTick.bCanEverTick = true;
 
 	// a sword has no magazine: firing never needs ammo and reload does nothing
@@ -325,6 +327,7 @@ void ADCSwordWeapon::DoHitSweep()
 			const FVector ImpactAt = Hit.bBlockingHit || !Hit.ImpactPoint.IsNearlyZero() ? FVector(Hit.ImpactPoint) : Target->GetActorLocation();
 			UDCFXLibrary::PlayWorldSound(this, HitSound, ImpactAt);
 			UDCFXLibrary::SpawnWorldFX(this, HitFX, ImpactAt, (ViewLoc - ImpactAt).Rotation());
+			UDCFXLibrary::SpawnSpriteFX(this, HitSpriteFX, ImpactAt, 1.0f, 25.0f);
 		}
 
 		if (Knockback > 0.0f)

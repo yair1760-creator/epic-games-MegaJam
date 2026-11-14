@@ -193,7 +193,15 @@ Every slot is a normal property (empty = silent / no effect). All of them play t
 
 **The 13 `S_*` sounds in `/Game/DirectorsCut/Audio/SFX` are synthesized placeholders** (`Scripts/Make_PlaceholderSFX.py`, sources in `Art/Audio/SFX_Placeholder`). To use real audio, reimport the real file over the same asset (right-click → Reimport with a new file) and every slot picks it up. Or point a slot at a different asset on the Blueprint.
 
-**Niagara slots are empty:** the project has no hit/poof/trail effects yet.
+**Hand-drawn effects (`ADCSpriteFX`, Rendering):** a camera-facing card that plays its frames once and removes itself, in the same ink style as the boars (no Niagara needed). Ready-made and set as defaults:
+
+| Effect | Class | Slot | Frames |
+|---|---|---|---|
+| Comic impact star → shards, 0.25 s | `ADCFX_HitSplat` | Sword → Hit Sprite FX | `T_FX_HitSplat_0..3` |
+| Dust poof, 0.4 s, scaled with the boar (King 2.5x) | `ADCFX_BoarPoof` | Boar → Death Sprite FX | `T_FX_Poof_0..4` |
+| Big golden poof, 0.55 s | `ADCFX_BossDefeat` | Director → Defeat Sprite FX | `T_FX_Poof_0..4` (gold tint) |
+
+Frames are placeholders drawn by `Scripts/Make_PlaceholderFX.py` (`Art/FX`, imported to `/Game/DirectorsCut/FX/Textures`); reimport the artist's frames over the same names. New effects: a Blueprint child of `DC Sprite FX` with its own Frames / FPS / Size / Tint, spawned with `SpawnSpriteFX`. The Niagara slots still exist (empty) for anyone who wants particles. Screenshots: `Docs/Screenshots/Sys18b_FX_*.png`.
 
 **Tested in `Lvl_Test_CombatAI`** with `log LogDCCombat Verbose` (each sound logs `SFX 2D/3D <name>`): a sword kill played swing, hit, squeal, aggro, charge and death; an angry boar played bite and the player's hurt sound; the meat played its blip; the boss played shot, hit and defeat.
 
