@@ -497,3 +497,12 @@ The greybox watchtower at (2800, 3600) now looks like a plank tower: log legs wi
   - Not covered: the boars did not attack during the 6-second watch (the player stood away from them), so boar combat after the change was not re-checked; no full start-to-finish run.
   - Not changed: dressing pieces inside sublevels (SOLD OUT and HA HA HA signs, sword rack and its swords, film-crew props) still carry their hulls; they sit over greybox of about the same shape.
 - Screenshots: `Docs/Screenshots/Watchtower_Ramp.png`, `Watchtower_Side.png`, `Watchtower_OnDeck.png`.
+
+## 25. Controls prompt and the reload key
+
+- **Controls card:** `UDCControlsHintWidget` (`Source/.../UI/DCControlsHintWidget.h/.cpp`), built in code in the HUD's ink-and-cream look, on the right edge of the screen. `ADCPlayerController::BeginPlay` shows the sword set for `StartHintSeconds` (10 s): W A S D move, mouse look, left mouse swing the sword, Space jump, Esc pause. The first time the shotgun's 2D view comes up, `ShowShotgunHintOnce()` shows "NEW PROP | SHOTGUN": left mouse fire, R reload, for `ShotgunHintSeconds` (6 s). It fades out over 0.4 s and removes itself. It only shows on maps that run `ADCGameMode` (not on the main menu). Nothing inside `WBP_DCHUD` or `DCGameMode` was touched.
+- **Reload key bug fixed:** no key was mapped to `IA_Reload` in any input context (`IMC_Weapons` only maps fire and Left Shift = swap weapon), so pressing R did nothing even though the ammo counter says "R RELOAD"; the gun only reloaded on a click with an empty magazine. `ADCPlayerController::SetupInputComponent` now binds R and gamepad X to `AShooterCharacter::DoReload`.
+- **Checked in play:** card up at start with the five rows, gone after 11 s; the shotgun card appears on `DC.GoToBeat 3`, is gone 7 s later and does not come back when the gun is swapped away and back; `DoReload` starts the drawn reload. **Not checked:** a real R key press (the test calls the same function by code), other aspect ratios, a packaged build.
+- Left Shift is still mapped to "swap weapon" from the template; with one weapon it does nothing visible and is not listed on the card.
+- `DC_Set_Hunt.umap` was saved in this commit at Yair's instruction: one actor's position value changed (about 1915 -> 2385 on one axis) plus the file's save stamps; the change was made in the editor, not by a script.
+- Screenshots: `Docs/Screenshots/ControlsPrompt_Start.png`, `ControlsPrompt_Shotgun.png`.

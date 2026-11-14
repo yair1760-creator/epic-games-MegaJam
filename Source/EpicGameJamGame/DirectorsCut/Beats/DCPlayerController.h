@@ -9,6 +9,7 @@
 class UInputMappingContext;
 class UUserWidget;
 class UDCPauseMenuWidget;
+class UDCControlsHintWidget;
 
 /**
  *  Player controller for Lvl_DirectorsCut.
@@ -47,7 +48,33 @@ public:
 	UFUNCTION(BlueprintPure, Category="Director's Cut|Pause")
 	UDCPauseMenuWidget* GetPauseMenuWidget() const { return PauseWidget; }
 
+	/** Shows the on-screen controls card: the sword set (start of the game) or the shotgun set (when the gun arrives) */
+	UFUNCTION(BlueprintCallable, Category="Director's Cut|Controls")
+	void ShowControlsHint(bool bShotgun, float Seconds);
+
+	/** Shotgun card, once per game (called by the shotgun when its 2D view first comes up) */
+	void ShowShotgunHintOnce();
+
+	UFUNCTION(BlueprintPure, Category="Director's Cut|Controls")
+	UDCControlsHintWidget* GetControlsHintWidget() const { return ControlsHintWidget; }
+
+	/** Seconds the controls card stays up at the start of the game, and when the shotgun arrives */
+	UPROPERTY(EditAnywhere, Category="Director's Cut|Controls", meta=(ClampMin=0.0, Units="s"))
+	float StartHintSeconds = 10.0f;
+
+	UPROPERTY(EditAnywhere, Category="Director's Cut|Controls", meta=(ClampMin=0.0, Units="s"))
+	float ShotgunHintSeconds = 6.0f;
+
 protected:
+
+	UPROPERTY(Transient)
+	TObjectPtr<UDCControlsHintWidget> ControlsHintWidget;
+
+	bool bShotgunHintShown = false;
+
+	/** R (and gamepad X): reload. No key was mapped to IA_Reload in the input contexts, so the key is bound here. */
+	void ReloadPressed();
+
 
 	UPROPERTY(EditAnywhere, Category="Director's Cut|Pause")
 	TSubclassOf<UDCPauseMenuWidget> PauseMenuWidgetClass;

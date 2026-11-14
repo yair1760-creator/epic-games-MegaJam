@@ -4,6 +4,7 @@
 #include "DirectorsCut/Combat/DCFXLibrary.h"
 #include "DirectorsCut/Combat/DCHitFeedbackComponent.h"
 #include "DirectorsCut/Combat/DCWeaponSpriteWidget.h"
+#include "DirectorsCut/Beats/DCPlayerController.h"
 #include "EpicGameJamGameCharacter.h"
 #include "Engine/Texture2D.h"
 #include "Animation/AnimInstance.h"
@@ -221,6 +222,12 @@ void ADCShotgunWeapon::UpdateSpriteView(float DeltaSeconds)
 			return;
 		}
 		SpriteWidget->AddToViewport(-10);   // under the HUD (health bar, quest, subtitles)
+
+		// first time the gun is in the player's hands: show how to fire and reload it
+		if (ADCPlayerController* DCPC = Cast<ADCPlayerController>(PC))
+		{
+			DCPC->ShowShotgunHintOnce();
+		}
 	}
 	SpriteWidget->SetVisibility(ESlateVisibility::HitTestInvisible);
 
