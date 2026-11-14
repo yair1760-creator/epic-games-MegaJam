@@ -34,7 +34,7 @@ Someone on the team must read it, especially the eligibility section (age 18+, a
 ## Tools used (draft for the submission form)
 
 - **Claude Code** (Anthropic; Claude Opus 5.5 and Claude Fable 5.2): C++ gameplay, level scripts, Blender scripts, docs
-- **Cursor**: used by Taisho for asset commits
+- **Cursor**: used by Saar (gameplay flow, HUD, death slate, ammo counter) and Taisho (asset commits)
 - **Unreal Engine MCP** (editor automation from the coding agent)
 - **Meshy**: 3D models (film camera, boom mic, woodland slide, first stage floor, cobblestone tile) and text-to-image pictures (ground, planks, stall, signs, wanted poster, stone bricks; model nano-banana-2)
 - **fal**: music (Stable Audio 3, Sonilo Music), sound effect takes (Sonilo SFX), Director voice lines (`fal-ai/elevenlabs/tts/eleven-v3`, voice Callum)
@@ -49,7 +49,7 @@ Confirm with Saar and Taisho whether any other tool was used (for example an Ope
 - **Wanted poster:** a generic "kill ten boars" MMO joke (quest "!" and "REWARD: 10 XP"); no game's name, logo or art is used.
 - **Cine camera:** the modern camera model from `taisho/3d-cameras` carried a real brand name and was removed; it is not on `main`. Do not merge that branch.
 - **Title "Rated PG for Pig":** fine as a parody title; do not use the film-rating board's boxed rating symbol anywhere.
-- **Audio:** music and voice are AI-generated through fal. 13 sound effects are still code-generated placeholders (`S_*`); the fal takes in `Art/Audio/SFX_fal` are not imported yet.
+- **Audio:** music, voice and sound effects are AI-generated through fal (Saar imported the 16 fal sound effects on Nov 14, replacing the code-generated placeholders).
 
 ## Known risks before the deadline
 
