@@ -530,3 +530,13 @@ Four HUD panels got a drawn frame in place of the flat ink / gold / slate border
 ## 27. Game title
 
 The game is called **Rated PG for Pig** (Yair, Nov 15). `Config/DefaultGame.ini`: `ProjectName` and `ProjectDisplayedTitle` set under `[/Script/EngineSettings.GeneralProjectSettings]` (and the older `[ProjectSettings]` block). The `.uproject`, the module and the code names (`DirectorsCut`, `DC*`) are unchanged on purpose. Checked: a standalone run's window title is "Rated PG for Pig (64-bit Development PCD3D_SM6)"; the bracket is added by non-Shipping builds. Not checked in a packaged build.
+
+## 28. Main menu background
+
+The main menu has a full-screen picture behind the logo and the START button: a dark film-set stage (curtains, spotlight, film camera, the Director's chair with beret and megaphone, two boars) inside a torn comic frame.
+
+- **Art:** `Art/UI/MainMenu/MainMenu_BG_A_Framed.png` (1376x768, 16:9), made in another session with Meshy image-to-image (nano-banana-2, the team's own art as style references; 12 credits for two pictures) and framed locally. `MainMenu_BG_A_Stage.png` and `MainMenu_BG_B_Meadow.png` are unused alternatives; `Preview/` holds mock-ups.
+- **In Unreal:** `/Game/DirectorsCut/UI/Menu/T_UI_MainMenu_BG` (UI group, no mipmaps, sRGB, same settings as the logo).
+- **Code:** `UDCMainMenuWidget` (`UI/DCMenuWidgets.h/.cpp`) has `BackgroundTexture`; `RebuildWidget` adds it as a stretched full-screen image right after the backdrop, on the same layer, so it draws over the backdrop colour and under the logo (1) and START (2). It lets clicks through. Logo, button, their sizes and offsets and the pause menu are unchanged.
+- **Checked** in a standalone run at 1280x720: picture fills the screen, logo and START as before, Enter starts the game. Not checked: mouse click, Space, gamepad, other aspect ratios (the picture stretches), a packaged build.
+- Screenshot: `Docs/Screenshots/MainMenu_Background.png`.

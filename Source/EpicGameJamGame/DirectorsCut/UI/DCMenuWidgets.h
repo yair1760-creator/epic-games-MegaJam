@@ -53,6 +53,11 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Menu")
 	TObjectPtr<UTexture2D> StartTexture;
 
+	/** Full-screen picture behind the logo and the START button (Art/UI/MainMenu/MainMenu_BG_A_Framed.png).
+	 *  Stretched to the whole screen; drawn above the plain backdrop colour, below the logo. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Menu")
+	TObjectPtr<UTexture2D> BackgroundTexture;
+
 	/** Logo size and offset from the screen centre, in 1920 x 1080 reference pixels (the art has a small clear margin) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Menu")
 	FVector2D LogoSize = FVector2D(1026.0f, 385.0f);

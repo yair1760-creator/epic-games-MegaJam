@@ -88,6 +88,8 @@ UDCMainMenuWidget::UDCMainMenuWidget(const FObjectInitializer& ObjectInitializer
 
 	static ConstructorHelpers::FObjectFinder<UTexture2D> Logo(TEXT("/Game/DirectorsCut/UI/Menu/T_UI_Logo_RatedPGForPig.T_UI_Logo_RatedPGForPig"));
 	static ConstructorHelpers::FObjectFinder<UTexture2D> Start(TEXT("/Game/DirectorsCut/UI/Menu/T_UI_Button_Start.T_UI_Button_Start"));
+	static ConstructorHelpers::FObjectFinder<UTexture2D> Background(TEXT("/Game/DirectorsCut/UI/Menu/T_UI_MainMenu_BG.T_UI_MainMenu_BG"));
+	if (Background.Succeeded()) BackgroundTexture = Background.Object;
 	if (Logo.Succeeded())  LogoTexture = Logo.Object;
 	if (Start.Succeeded()) StartTexture = Start.Object;
 }
@@ -99,6 +101,22 @@ TSharedRef<SWidget> UDCMainMenuWidget::RebuildWidget()
 		UCanvasPanel* Canvas = WidgetTree->ConstructWidget<UCanvasPanel>(UCanvasPanel::StaticClass(), TEXT("MenuCanvas"));
 		WidgetTree->RootWidget = Canvas;
 		AddBackdrop(Canvas, BackdropColor);
+
+		// the menu picture: fills the screen, same layer as the backdrop but added after it, so it draws on top of
+		// the backdrop colour and under the logo (1) and the START button (2). Clicks pass through to the backdrop.
+		if (BackgroundTexture)
+		{
+			UImage* Background = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass(), TEXT("MenuBackground"));
+			Background->SetBrushFromTexture(BackgroundTexture, /*bMatchSize*/ false);
+			Background->SetVisibility(ESlateVisibility::HitTestInvisible);
+			if (UCanvasPanelSlot* BgSlot = Canvas->AddChildToCanvas(Background))
+			{
+				BgSlot->SetAnchors(FAnchors(0.0f, 0.0f, 1.0f, 1.0f));
+				BgSlot->SetOffsets(FMargin(0.0f));
+				BgSlot->SetZOrder(0);
+			}
+		}
+
 		AddPicture(Canvas, LogoTexture, LogoOffset, LogoSize, 1);
 		StartButton = AddPictureButton(Canvas, StartTexture, StartOffset, StartSize, 2, TEXT("StartButton"));
 	}
