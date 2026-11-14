@@ -2,12 +2,21 @@
 
 #include "UI/DCQuestTrackerWidget.h"
 #include "Animation/WidgetAnimation.h"
+#include "Combat/DCFXLibrary.h"
 #include "Components/TextBlock.h"
 #include "Engine/World.h"
 #include "Quest/DCQuestSubsystem.h"
+#include "Sound/SoundBase.h"
 
 static constexpr float BumpDuration = 0.25f;
 static constexpr float BlinkDuration = 1.0f;
+
+UDCQuestTrackerWidget::UDCQuestTrackerWidget(const FObjectInitializer& ObjectInitializer)
+	: Super(ObjectInitializer)
+{
+	DC_DEFAULT_SFX(TickSound, "S_QuestTick");
+	DC_DEFAULT_SFX(CompleteSound, "S_QuestComplete");
+}
 
 void UDCQuestTrackerWidget::NativeConstruct()
 {
@@ -68,6 +77,10 @@ void UDCQuestTrackerWidget::HandleQuestUpdated(FName Id, int32 Current, int32 Ta
 		{
 			BumpTime = BumpDuration;
 		}
+		if (Current > LastCount && Current < Target)
+		{
+			UDCFXLibrary::PlayUISound(this, TickSound, 0.7f, 0.03f, 0.06f);
+		}
 		OnProgressChanged(Current, Target);
 	}
 	LastCount = Current;
@@ -79,6 +92,7 @@ void UDCQuestTrackerWidget::HandleQuestCompleted(FName Id)
 	{
 		PlayAnimation(CompleteAnim);
 	}
+	UDCFXLibrary::PlayUISound(this, CompleteSound, 0.85f, 0.02f, 0.15f);
 	OnQuestComplete();
 }
 

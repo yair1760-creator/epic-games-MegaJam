@@ -47,10 +47,14 @@ public:
 	UFUNCTION(BlueprintCallable, Category="DC|FX", meta=(WorldContext="WorldContext"))
 	static ADCSpriteFX* SpawnSpriteFX(const UObject* WorldContext, TSubclassOf<ADCSpriteFX> FXClass, FVector Location, float Scale = 1.0f, float TowardCamera = 30.0f);
 
-	/** Shared distance falloff: full volume within 3 m, silent past ~40 m */
+	/** Shared distance falloff: full volume within 1.5 m, silent past ~21.5 m */
 	static USoundAttenuation* GetWorldAttenuation();
+
+	/** Volume multiplier applied to all SFX while the Director narrator is speaking */
+	static constexpr float NarratorSFXDuckScale = 0.22f;
 
 private:
 
 	static bool PassesThrottle(const USoundBase* Sound, float MinInterval);
+	static float GetNarratorSFXDuckMultiplier(const UObject* WorldContext);
 };

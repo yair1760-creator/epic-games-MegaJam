@@ -44,6 +44,9 @@ public:
 	UFUNCTION(BlueprintPure, Category="Director's Cut|Pause")
 	bool IsPauseMenuOpen() const { return PauseWidget != nullptr; }
 
+	UFUNCTION(BlueprintPure, Category="Director's Cut|Pause")
+	UDCPauseMenuWidget* GetPauseMenuWidget() const { return PauseWidget; }
+
 protected:
 
 	UPROPERTY(EditAnywhere, Category="Director's Cut|Pause")

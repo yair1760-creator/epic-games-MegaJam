@@ -79,6 +79,10 @@ public:
 	UPROPERTY(BlueprintAssignable, Category="Narrator")
 	FDCOnLineFinished OnLineFinished;
 
+	/** Playback volume multiplier for Director voiceover clips */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Narrator", meta=(ClampMin=0.1, ClampMax=4.0))
+	float VoiceVolume = 1.6f;
+
 	void FindRowNamesForDebug();
 
 protected:

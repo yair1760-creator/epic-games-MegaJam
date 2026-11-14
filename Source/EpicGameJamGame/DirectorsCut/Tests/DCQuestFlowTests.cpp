@@ -6,12 +6,15 @@
 #include "Misc/AutomationTest.h"
 #include "Tests/AutomationCommon.h"
 #include "Engine/DataTable.h"
+#include "Engine/Font.h"
 #include "Engine/LevelStreaming.h"
+#include "Engine/Texture2D.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
 #include "GameFramework/PlayerController.h"
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundBase.h"
+#include "TimerManager.h"
 
 #include "AI/DCBoar.h"
 #include "AI/DCBoarSpawner.h"
@@ -19,15 +22,23 @@
 #include "AI/DCDirectorBoss.h"
 #include "AI/DCKingBoar.h"
 #include "Beats/DCGameMode.h"
+#include "Beats/DCPlayerController.h"
 #include "Beats/DCPrincess.h"
 #include "Beats/DCShedDoors.h"
 #include "Combat/DCBoarMeatPickup.h"
 #include "Combat/DCHealthComponent.h"
 #include "Combat/DCShotgunWeapon.h"
 #include "Combat/DCSwordWeapon.h"
+#include "Combat/DCWeaponSpriteWidget.h"
+#include "Components/SlateWrapperTypes.h"
 #include "Narrator/DCNarratorSubsystem.h"
 #include "Quest/DCQuestSubsystem.h"
+#include "UI/DCAmmoCounterWidget.h"
+#include "UI/DCDeathScreenWidget.h"
+#include "UI/DCHealthBarWidget.h"
 #include "UI/DCHUDWidget.h"
+#include "UI/DCMainMenuGameMode.h"
+#include "UI/DCMenuWidgets.h"
 #include "UI/DCQuestTrackerWidget.h"
 #include "UI/DCSubtitlesWidget.h"
 #include "UI/DCVictoryWidget.h"
@@ -115,6 +126,60 @@ bool FDCNarratorAuditTest::RunTest(const FString& Parameters)
 		}
 	}
 
+	const TCHAR* ExpectedUITextures[] = {
+		TEXT("/Game/DirectorsCut/UI/Art/T_DC_Director_Portrait.T_DC_Director_Portrait"),
+		TEXT("/Game/DirectorsCut/UI/Art/T_DC_UI_ClapperBar.T_DC_UI_ClapperBar"),
+		TEXT("/Game/DirectorsCut/UI/Art/T_DC_UI_HeartIcon.T_DC_UI_HeartIcon"),
+		TEXT("/Game/DirectorsCut/UI/Art/T_DC_UI_SlateIcon.T_DC_UI_SlateIcon"),
+		TEXT("/Game/DirectorsCut/UI/Art/T_DC_UI_Crosshair.T_DC_UI_Crosshair"),
+	};
+	for (const TCHAR* TexPath : ExpectedUITextures)
+	{
+		UTexture2D* Tex = LoadObject<UTexture2D>(nullptr, TexPath);
+		TestNotNull(*FString::Printf(TEXT("UI texture %s must exist"), TexPath), Tex);
+	}
+
+	const TCHAR* ExpectedUIFonts[] = {
+		TEXT("/Game/DirectorsCut/UI/Fonts/Font_Display.Font_Display"),
+		TEXT("/Game/DirectorsCut/UI/Fonts/Font_Condensed.Font_Condensed"),
+		TEXT("/Game/DirectorsCut/UI/Fonts/Font_Body.Font_Body"),
+		TEXT("/Game/DirectorsCut/UI/Fonts/Font_Mono.Font_Mono"),
+	};
+	for (const TCHAR* FontPath : ExpectedUIFonts)
+	{
+		UFont* FontAsset = LoadObject<UFont>(nullptr, FontPath);
+		TestNotNull(*FString::Printf(TEXT("UI font %s must exist"), FontPath), FontAsset);
+	}
+
+	const TCHAR* ExpectedSFX[] = {
+		TEXT("/Game/DirectorsCut/Audio/SFX/S_SwordSwing.S_SwordSwing"),
+		TEXT("/Game/DirectorsCut/Audio/SFX/S_SwordHit.S_SwordHit"),
+		TEXT("/Game/DirectorsCut/Audio/SFX/S_BoarGrunt.S_BoarGrunt"),
+		TEXT("/Game/DirectorsCut/Audio/SFX/S_BoarAggro.S_BoarAggro"),
+		TEXT("/Game/DirectorsCut/Audio/SFX/S_BoarCharge.S_BoarCharge"),
+		TEXT("/Game/DirectorsCut/Audio/SFX/S_BoarBite.S_BoarBite"),
+		TEXT("/Game/DirectorsCut/Audio/SFX/S_BoarSqueal.S_BoarSqueal"),
+		TEXT("/Game/DirectorsCut/Audio/SFX/S_BoarDeath.S_BoarDeath"),
+		TEXT("/Game/DirectorsCut/Audio/SFX/S_PlayerHurt.S_PlayerHurt"),
+		TEXT("/Game/DirectorsCut/Audio/SFX/S_MeatPickup.S_MeatPickup"),
+		TEXT("/Game/DirectorsCut/Audio/SFX/S_BossShot.S_BossShot"),
+		TEXT("/Game/DirectorsCut/Audio/SFX/S_BossHit.S_BossHit"),
+		TEXT("/Game/DirectorsCut/Audio/SFX/S_BossDefeat.S_BossDefeat"),
+		TEXT("/Game/DirectorsCut/Audio/SFX/S_Cut.S_Cut"),
+		TEXT("/Game/DirectorsCut/Audio/SFX/S_QuestTick.S_QuestTick"),
+		TEXT("/Game/DirectorsCut/Audio/SFX/S_QuestComplete.S_QuestComplete"),
+	};
+	for (const TCHAR* SfxPath : ExpectedSFX)
+	{
+		USoundBase* Sfx = LoadObject<USoundBase>(nullptr, SfxPath);
+		TestNotNull(*FString::Printf(TEXT("SFX asset %s must exist"), SfxPath), Sfx);
+		if (Sfx)
+		{
+			TestFalse(*FString::Printf(TEXT("SFX asset %s should not loop"), SfxPath), Sfx->IsLooping());
+			TestTrue(*FString::Printf(TEXT("SFX asset %s duration > 0"), SfxPath), Sfx->GetDuration() > 0.0f);
+		}
+	}
+
 	return true;
 }
 
@@ -180,10 +245,12 @@ bool FDCRunFullQuestFlowCommand::Update()
 	UDCHUDWidget* HUD = GM->GetHUDWidget();
 	UDCQuestTrackerWidget* Tracker = HUD ? HUD->GetQuestTracker() : nullptr;
 	UDCSubtitlesWidget* Subs = HUD ? HUD->GetSubtitles() : nullptr;
+	UDCAmmoCounterWidget* Ammo = HUD ? HUD->GetAmmoCounter() : nullptr;
 	Test->TestNotNull(TEXT("WBP_DCHUD should be created on BeginPlay"), HUD);
 	Test->TestNotNull(TEXT("WBP_QuestTracker should be bound on HUD"), Tracker);
 	Test->TestNotNull(TEXT("WBP_Subtitles should be bound on HUD"), Subs);
 	Test->TestNotNull(TEXT("WBP_HealthBar should be bound on HUD"), HUD ? HUD->GetHealthBar() : nullptr);
+	Test->TestNotNull(TEXT("WBP_AmmoCounter should be bound on HUD"), Ammo);
 
 	// Verify alternating line helper works cleanly
 	Narrator->Interrupt();
@@ -208,6 +275,10 @@ bool FDCRunFullQuestFlowCommand::Update()
 		Test->TestEqual(TEXT("HUD QuestTracker shows 0/10"), Tracker->GetDisplayedCount(), FString(TEXT("0/10")));
 	}
 	Test->TestTrue(TEXT("Beat 1 player holds ADCSwordWeapon"), Player->GetCurrentWeapon() && Player->GetCurrentWeapon()->IsA<ADCSwordWeapon>());
+	if (Ammo)
+	{
+		Test->TestEqual(TEXT("AmmoCounter is collapsed while holding Sword"), Ammo->GetVisibility(), ESlateVisibility::Collapsed);
+	}
 
 	for (int32 i = 1; i <= 6; ++i)
 	{
@@ -310,6 +381,11 @@ bool FDCRunFullQuestFlowCommand::Update()
 	}
 	Test->TestTrue(TEXT("Beat 3 player holds ADCShotgunWeapon"),
 		Player->GetCurrentWeapon() && Player->GetCurrentWeapon()->IsA<ADCShotgunWeapon>());
+	if (Ammo)
+	{
+		Test->TestEqual(TEXT("AmmoCounter is visible in Beat 3"), Ammo->GetVisibility(), ESlateVisibility::HitTestInvisible);
+		Test->TestEqual(TEXT("AmmoCounter shows 8/8 before firing"), Ammo->GetDisplayedAmmo(), FString(TEXT("8/8")));
+	}
 	if (ADCShotgunWeapon* Shotgun = Cast<ADCShotgunWeapon>(Player->GetCurrentWeapon()))
 	{
 		int32 ProjectilesBefore = 0;
@@ -319,10 +395,33 @@ bool FDCRunFullQuestFlowCommand::Update()
 		Shotgun->StartFiring();
 		Shotgun->StopFiring();
 		Test->TestEqual(TEXT("Shotgun blast consumes 1 shell"), Shotgun->GetBulletCount(), BulletsBefore - 1);
+		if (Ammo)
+		{
+			Test->TestEqual(TEXT("AmmoCounter updates to 7/8 after firing"), Ammo->GetDisplayedAmmo(), FString(TEXT("7/8")));
+		}
 
 		int32 ProjectilesAfter = 0;
 		for (TActorIterator<AShooterProjectile> It(World); It; ++It) { ++ProjectilesAfter; }
 		Test->TestEqual(TEXT("Shotgun blast spawns PelletCount projectiles"), ProjectilesAfter - ProjectilesBefore, Shotgun->GetPelletCount());
+
+		Shotgun->StartReload();
+		Test->TestTrue(TEXT("Shotgun enters reloading state"), Shotgun->IsReloading());
+		Test->TestTrue(TEXT("Shotgun reload starts 2D front-of-screen reload animation"), Shotgun->IsPlayingReloadAnim());
+		Test->TestEqual(TEXT("Shotgun reload starts in ReloadDrop pose"), Shotgun->GetSpritePose(), FName("ReloadDrop"));
+		Test->TestNotNull(TEXT("Shotgun 2D sprite widget is created on screen"), Shotgun->GetSpriteWidget());
+		if (Shotgun->GetSpriteWidget())
+		{
+			Test->TestEqual(TEXT("Shotgun 2D sprite widget is visible during reload"),
+				Shotgun->GetSpriteWidget()->GetVisibility(), ESlateVisibility::HitTestInvisible);
+		}
+
+		// Step through reload animation phases and verify pose progression
+		Shotgun->Tick(0.45f);
+		Test->TestEqual(TEXT("Shotgun reload reaches ReloadLoad pose"), Shotgun->GetSpritePose(), FName("ReloadLoad"));
+		Shotgun->Tick(0.70f);
+		Test->TestEqual(TEXT("Shotgun reload reaches ReloadPump pose"), Shotgun->GetSpritePose(), FName("ReloadPump"));
+		Shotgun->Tick(0.25f);
+		Test->TestEqual(TEXT("Shotgun reload reaches ReloadSettle pose"), Shotgun->GetSpritePose(), FName("ReloadSettle"));
 	}
 
 	bool bAnyHyperspawning = false;
@@ -343,6 +442,10 @@ bool FDCRunFullQuestFlowCommand::Update()
 	Test->TestTrue(TEXT("Beat 4 loads DC_Set_PG"), DCFlowTestInternal::IsSublevelActive(World, FName("DC_Set_PG")));
 	Test->TestTrue(TEXT("Beat 4 swaps back to ADCSwordWeapon"),
 		Player->GetCurrentWeapon() && Player->GetCurrentWeapon()->IsA<ADCSwordWeapon>());
+	if (Ammo)
+	{
+		Test->TestEqual(TEXT("AmmoCounter collapses again on Beat 4 Sword"), Ammo->GetVisibility(), ESlateVisibility::Collapsed);
+	}
 	Test->TestEqual(TEXT("Beat 4a quest is Q_DefeatKingBoar"), Quest->GetActiveQuestId(), FName("Q_DefeatKingBoar"));
 	Test->TestEqual(TEXT("Beat 4a quest target is 1"), Quest->GetTarget(), 1);
 	Test->TestEqual(TEXT("Beat 4 music is M_Romance"), GM->GetActiveMusicAsset() ? GM->GetActiveMusicAsset()->GetFName() : NAME_None, FName("M_Romance"));
@@ -431,6 +534,8 @@ bool FDCRunFullQuestFlowCommand::Update()
 		Boss->StartFight();
 		Test->TestTrue(TEXT("Director Boss fight is active"), Boss->IsFightActive());
 		Test->TestFalse(TEXT("Director Boss is no longer invulnerable"), Boss->GetHealth()->bInvulnerable);
+		Test->TestFalse(TEXT("Director Boss does not start reloading"), Boss->IsReloading());
+		Test->TestEqual(TEXT("Director Boss starts with full clip"), Boss->GetShotsRemaining(), Boss->ShotsBeforeReload);
 
 		Narrator->Interrupt();
 		Boss->GetHealth()->ApplyDamage(Boss->GetHealth()->GetMaxHP() * 0.6f, Player->GetController(), Player);
@@ -457,7 +562,67 @@ bool FDCRunFullQuestFlowCommand::Update()
 	GM->StartBeat(1);
 	Test->TestFalse(TEXT("StartBeat resets victory state"), GM->IsVictoryShown());
 
-	Test->AddInfo(TEXT("[DC_TEST] All 5 beats, quests, weapon swaps, pickups, Princess, Director Boss, B5 respawn, and Victory passed!"));
+	// Verify Pause Menu flow (Rated PG for Pig UI)
+	if (ADCPlayerController* DCPC = Cast<ADCPlayerController>(World->GetFirstPlayerController()))
+	{
+		DCPC->OpenPauseMenu();
+		Test->TestTrue(TEXT("OpenPauseMenu opens Pause menu"), DCPC->IsPauseMenuOpen());
+		Test->TestNotNull(TEXT("Pause menu widget is created"), DCPC->GetPauseMenuWidget());
+		Test->TestTrue(TEXT("Game is paused while Pause menu is open"), UGameplayStatics::IsGamePaused(World));
+
+		DCPC->ClosePauseMenu();
+		Test->TestFalse(TEXT("ClosePauseMenu closes Pause menu"), DCPC->IsPauseMenuOpen());
+		Test->TestFalse(TEXT("Game resumes after closing Pause menu"), UGameplayStatics::IsGamePaused(World));
+	}
+
+	// Verify "CUT! TAKE 2" Death Slate overlay and respawn dismissal while preserving quest progress
+	GM->StartBeat(1);
+	Quest->ReportEvent(FName("Kill.Boar"));
+	Test->TestEqual(TEXT("Pre-death Beat 1 progress is 1/10"), Quest->GetCurrent(), 1);
+	Test->TestEqual(TEXT("Initial take number is 1"), GM->GetCurrentTakeNumber(), 1);
+	Test->TestFalse(TEXT("Death screen starts hidden"), GM->IsDeathScreenShown());
+
+	if (AShooterCharacter* AlivePlayer = Cast<AShooterCharacter>(UGameplayStatics::GetPlayerPawn(World, 0)))
+	{
+		Narrator->Interrupt();
+		UGameplayStatics::ApplyDamage(AlivePlayer, AlivePlayer->GetMaxHP() + 50.0f, nullptr, nullptr, nullptr);
+		Test->TestTrue(TEXT("Player is dead after lethal damage"), AlivePlayer->IsDead());
+		Test->TestTrue(TEXT("Death screen shows on player death"), GM->IsDeathScreenShown());
+		Test->TestEqual(TEXT("Death increments take number to 2"), GM->GetCurrentTakeNumber(), 2);
+		Test->TestEqual(TEXT("Death triggers L1_PlayerDied line"), Narrator->GetCurrentLineId(), FName("L1_PlayerDied"));
+		if (UDCDeathScreenWidget* DeathWidget = GM->GetDeathScreenWidget())
+		{
+			Test->TestTrue(TEXT("Death slate title displays TAKE 2"), DeathWidget->GetTitleString().Contains(TEXT("TAKE 2")));
+		}
+		else
+		{
+			Test->AddError(TEXT("DeathScreenWidget was not created"));
+		}
+		if (HUD->GetCrosshair())
+		{
+			Test->TestEqual(TEXT("Crosshair hides while Death slate is active"), HUD->GetCrosshair()->GetVisibility(), ESlateVisibility::Collapsed);
+		}
+		if (ADCPlayerController* DCPC = Cast<ADCPlayerController>(World->GetFirstPlayerController()))
+		{
+			DCPC->OpenPauseMenu();
+			Test->TestFalse(TEXT("Pause menu cannot open while Death slate is shown"), DCPC->IsPauseMenuOpen());
+		}
+
+		// Simulate respawn timer completing (destroying dead pawn spawns fresh pawn via PC)
+		AlivePlayer->Destroy();
+		AShooterCharacter* Respawned = Cast<AShooterCharacter>(UGameplayStatics::GetPlayerPawn(World, 0));
+		Test->TestNotNull(TEXT("Respawned pawn is created"), Respawned);
+		Test->TestFalse(TEXT("Death screen dismisses after respawn"), GM->IsDeathScreenShown());
+		Test->TestEqual(TEXT("Quest progress is preserved across death/respawn"), Quest->GetCurrent(), 1);
+		if (HUD->GetCrosshair())
+		{
+			Test->TestEqual(TEXT("Crosshair restores after respawn"), HUD->GetCrosshair()->GetVisibility(), ESlateVisibility::HitTestInvisible);
+		}
+	}
+
+	GM->StartBeat(1);
+
+	Test->AddInfo(TEXT("[DC_TEST] All 5 beats, quests, weapon swaps, pickups, Princess, Director Boss, B5 respawn, Start/Pause, Death Slate, and Victory passed!"));
 	return true;
 }
 
@@ -476,6 +641,121 @@ bool FDCFullQuestFlowTest::RunTest(const FString& Parameters)
 
 	ADD_LATENT_AUTOMATION_COMMAND(FDCWaitForGameWorldCommand(this));
 	ADD_LATENT_AUTOMATION_COMMAND(FDCRunFullQuestFlowCommand(this));
+	return true;
+}
+
+// -----------------------------------------------------------------------------
+// Test 3: Passive Player Health Regeneration (5s no-damage delay, +1 HP/sec)
+// -----------------------------------------------------------------------------
+DEFINE_LATENT_AUTOMATION_COMMAND_TWO_PARAMETER(FDCVerifyHealthRegenCommand, FAutomationTestBase*, Test, double, StartTimeSec);
+bool FDCVerifyHealthRegenCommand::Update()
+{
+	UWorld* World = AutomationCommon::GetAnyGameWorld();
+	if (!World)
+	{
+		Test->AddError(TEXT("No game world found during health regen test"));
+		return true;
+	}
+
+	AShooterCharacter* Player = Cast<AShooterCharacter>(UGameplayStatics::GetPlayerPawn(World, 0));
+	if (!Player)
+	{
+		Test->AddError(TEXT("No player pawn found during health regen test"));
+		return true;
+	}
+
+	const double Elapsed = World->GetTimeSeconds() - StartTimeSec;
+
+	// Before 5 seconds elapse, HP must still be 90
+	if (Elapsed < 4.5)
+	{
+		if (!FMath::IsNearlyEqual(Player->GetCurrentHP(), 90.0f, 0.01f))
+		{
+			Test->AddError(FString::Printf(TEXT("Health regenerated too early at %.2fs (HP=%.1f)"), Elapsed, Player->GetCurrentHP()));
+			return true;
+		}
+		return false;
+	}
+
+	// Wait until 6.4s so both the 5.0s first tick (+1 -> 91) and 6.0s second tick (+1 -> 92) have fired
+	if (Elapsed < 6.4)
+	{
+		return false;
+	}
+
+	Test->TestTrue(TEXT("After 5s delay + 1s interval, HP increased by +1/s from 90 to >=92"),
+		Player->GetCurrentHP() >= 92.0f && Player->GetCurrentHP() <= 93.0f);
+	if (ADCGameMode* GM = World->GetAuthGameMode<ADCGameMode>())
+	{
+		if (UDCHealthBarWidget* HealthBar = GM->GetHUDWidget() ? GM->GetHUDWidget()->GetHealthBar() : nullptr)
+		{
+			Test->TestTrue(TEXT("HUD HealthBar reflects regenerated HP"),
+				HealthBar->GetLifePercent() >= 0.919f && HealthBar->GetLifePercent() <= 0.931f);
+		}
+	}
+
+	Test->AddInfo(TEXT("[DC_TEST] Player health regeneration (5s no-damage delay, +1 HP/s) passed!"));
+	return true;
+}
+
+DEFINE_LATENT_AUTOMATION_COMMAND_ONE_PARAMETER(FDCStartHealthRegenTestCommand, FAutomationTestBase*, Test);
+bool FDCStartHealthRegenTestCommand::Update()
+{
+	UWorld* World = AutomationCommon::GetAnyGameWorld();
+	AShooterCharacter* Player = World ? Cast<AShooterCharacter>(UGameplayStatics::GetPlayerPawn(World, 0)) : nullptr;
+	if (!World || !Player)
+	{
+		Test->AddError(TEXT("World or player missing at start of health regen test"));
+		return true;
+	}
+
+	// Pause spawners and clear any stray boars so AI bites don't interfere with the 5s no-damage window
+	// (StopSpawning instead of Destroy so subsequent tests on the same loaded map still have spawners)
+	for (TActorIterator<ADCBoarSpawner> It(World); It; ++It)
+	{
+		It->SetHyperspawnMode(false);
+		It->StopSpawning(true);
+	}
+	for (TActorIterator<ADCBoar> It(World); It; ++It)
+	{
+		It->Destroy();
+	}
+
+	Test->TestEqual(TEXT("Default HealthRegenDelay is 5.0s"), Player->GetHealthRegenDelay(), 5.0f);
+	Test->TestEqual(TEXT("Default HealthRegenAmount is 1.0"), Player->GetHealthRegenAmount(), 1.0f);
+	Test->TestEqual(TEXT("Default HealthRegenInterval is 1.0s"), Player->GetHealthRegenInterval(), 1.0f);
+
+	// First hit: 100 -> 95, starts 5s timer
+	UGameplayStatics::ApplyDamage(Player, 5.0f, nullptr, nullptr, nullptr);
+	Test->TestEqual(TEXT("HP drops to 95 after first hit"), Player->GetCurrentHP(), 95.0f);
+	Test->TestTrue(TEXT("HealthRegenTimer starts after taking damage"),
+		World->GetTimerManager().IsTimerActive(Player->GetHealthRegenTimer()));
+
+	// Second hit: 95 -> 90, resets 5s timer
+	UGameplayStatics::ApplyDamage(Player, 5.0f, nullptr, nullptr, nullptr);
+	Test->TestEqual(TEXT("HP drops to 90 after second hit"), Player->GetCurrentHP(), 90.0f);
+	const float Remaining = World->GetTimerManager().GetTimerRemaining(Player->GetHealthRegenTimer());
+	Test->TestTrue(TEXT("HealthRegenTimer resets to ~5.0s on damage"), Remaining > 4.5f && Remaining <= 5.05f);
+
+	ADD_LATENT_AUTOMATION_COMMAND(FDCVerifyHealthRegenCommand(Test, World->GetTimeSeconds()));
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FDCPlayerHealthRegenTest,
+	"DirectorsCut.Combat.PlayerHealthRegen",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ClientContext | EAutomationTestFlags::ProductFilter)
+
+bool FDCPlayerHealthRegenTest::RunTest(const FString& Parameters)
+{
+	if (!AutomationOpenMap(TEXT("/Game/DirectorsCut/Maps/Lvl_DirectorsCut")))
+	{
+		AddError(TEXT("Failed to open /Game/DirectorsCut/Maps/Lvl_DirectorsCut"));
+		return false;
+	}
+
+	ADD_LATENT_AUTOMATION_COMMAND(FDCWaitForGameWorldCommand(this));
+	ADD_LATENT_AUTOMATION_COMMAND(FDCStartHealthRegenTestCommand(this));
 	return true;
 }
 

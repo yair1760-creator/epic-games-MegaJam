@@ -28,6 +28,7 @@
 #include "ShooterWeapon.h"
 #include "Sound/SoundBase.h"
 #include "TimerManager.h"
+#include "UI/DCDeathScreenWidget.h"
 #include "UI/DCHUDWidget.h"
 #include "UI/DCVictoryWidget.h"
 #include "UObject/ConstructorHelpers.h"
@@ -35,6 +36,7 @@
 
 ADCGameMode::ADCGameMode()
 {
+	DC_DEFAULT_SFX(CutSound, "S_Cut");
 	PlayerControllerClass = ADCPlayerController::StaticClass();
 	IntroLines = { FName("L1_Intro_01"), FName("L1_Intro_02"), FName("L1_Intro_03"), FName("L1_Intro_04") };
 	HuntQuestTitle = NSLOCTEXT("DirectorsCut", "HuntQuestTitle", "Boars killed");
@@ -45,6 +47,11 @@ ADCGameMode::ADCGameMode()
 		SwordWeaponClass = SwordBP.Class;
 	}
 	GunWeaponClass = ADCShotgunWeapon::StaticClass();
+	static ConstructorHelpers::FClassFinder<UDCDeathScreenWidget> DeathScreenBP(TEXT("/Game/DirectorsCut/UI/WBP_DeathScreen"));
+	if (DeathScreenBP.Succeeded())
+	{
+		DeathScreenWidgetClass = DeathScreenBP.Class;
+	}
 	static ConstructorHelpers::FClassFinder<UDCVictoryWidget> CutScreenBP(TEXT("/Game/DirectorsCut/UI/WBP_CutScreen"));
 	if (CutScreenBP.Succeeded())
 	{
@@ -485,6 +492,12 @@ void ADCGameMode::StartBeat(int32 Beat)
 
 	bVictoryPending = false;
 	bVictoryShown = false;
+	HideDeathScreen();
+	if (Clamped == 1)
+	{
+		CurrentTakeNumber = 1;
+	}
+	bMusicDucked = false;
 	GetWorldTimerManager().ClearTimer(MusicUnduckTimer);
 	if (VictoryMusicComponent)
 	{
@@ -502,6 +515,10 @@ void ADCGameMode::StartBeat(int32 Beat)
 	}
 	if (APlayerController* PC = GetWorld()->GetFirstPlayerController())
 	{
+		if (ADCPlayerController* DCPC = Cast<ADCPlayerController>(PC))
+		{
+			DCPC->ClosePauseMenu();
+		}
 		PC->SetIgnoreMoveInput(false);
 		PC->SetIgnoreLookInput(false);
 		PC->SetInputMode(FInputModeGameOnly());
@@ -730,6 +747,11 @@ void ADCGameMode::HandlePossessedPawnChanged(APawn* OldPawn, APawn* NewPawn)
 		NewChar->OnDied.AddUniqueDynamic(this, &ADCGameMode::HandlePlayerDied);
 		bPlayedPlayerHurt = false;
 
+		if (!NewChar->IsDead())
+		{
+			HideDeathScreen();
+		}
+
 		if (bVictoryPending || bVictoryShown)
 		{
 			NewChar->SetCanBeDamaged(false);
@@ -768,6 +790,16 @@ void ADCGameMode::HandlePlayerDied(AShooterCharacter* Character)
 	{
 		return;
 	}
+	if (ADCPlayerController* DCPC = Cast<ADCPlayerController>(GetWorld()->GetFirstPlayerController()))
+	{
+		DCPC->ClosePauseMenu();
+	}
+	++CurrentTakeNumber;
+	ShowDeathScreen(Character ? Character->GetRespawnTime() : 5.0f);
+	if (USoundBase* CutSFX = CutSound ? CutSound.Get() : (FPackageName::DoesPackageExist(TEXT("/Game/DirectorsCut/Audio/SFX/S_Cut")) ? LoadObject<USoundBase>(nullptr, TEXT("/Game/DirectorsCut/Audio/SFX/S_Cut")) : nullptr))
+	{
+		UDCFXLibrary::PlayUISound(this, CutSFX, 0.75f);
+	}
 	if (UDCNarratorSubsystem* Narrator = GetWorld()->GetSubsystem<UDCNarratorSubsystem>())
 	{
 		Narrator->Interrupt();
@@ -776,6 +808,57 @@ void ADCGameMode::HandlePlayerDied(AShooterCharacter* Character)
 	if (CurrentBeat == 1 && !bHuntQuestStarted)
 	{
 		StartHuntQuest();
+	}
+}
+
+void ADCGameMode::ShowDeathScreen(float RespawnDuration)
+{
+	if (bVictoryShown)
+	{
+		return;
+	}
+
+	APlayerController* PC = GetWorld() ? GetWorld()->GetFirstPlayerController() : nullptr;
+	if (!PC)
+	{
+		return;
+	}
+
+	bDeathScreenShown = true;
+	if (HUDWidget)
+	{
+		HUDWidget->SetCrosshairVisible(false);
+		HUDWidget->RefreshTakeLabel(CurrentBeat);
+	}
+
+	if (!DeathScreenWidget)
+	{
+		TSubclassOf<UDCDeathScreenWidget> WidgetCls = DeathScreenWidgetClass ? DeathScreenWidgetClass : TSubclassOf<UDCDeathScreenWidget>(UDCDeathScreenWidget::StaticClass());
+		DeathScreenWidget = CreateWidget<UDCDeathScreenWidget>(PC, WidgetCls);
+	}
+	if (DeathScreenWidget)
+	{
+		if (!DeathScreenWidget->IsInViewport())
+		{
+			// Sit above DCScreenTintWidget (-5) and below WBP_DCHUD (0) so live subtitles + 0 HP bar remain visible.
+			DeathScreenWidget->AddToViewport(-2);
+		}
+		DeathScreenWidget->SetupDeath(CurrentTakeNumber, GetBeatDisplayName(CurrentBeat), RespawnDuration);
+	}
+}
+
+void ADCGameMode::HideDeathScreen()
+{
+	bDeathScreenShown = false;
+	if (DeathScreenWidget)
+	{
+		DeathScreenWidget->RemoveFromParent();
+		DeathScreenWidget = nullptr;
+	}
+	if (HUDWidget)
+	{
+		HUDWidget->SetCrosshairVisible(true);
+		HUDWidget->RefreshTakeLabel(CurrentBeat);
 	}
 }
 
@@ -859,6 +942,7 @@ void ADCGameMode::ShowVictoryScene()
 	}
 	bVictoryShown = true;
 	bVictoryPending = false;
+	HideDeathScreen();
 
 	GetWorldTimerManager().ClearTimer(IdleTimer);
 	GetWorldTimerManager().ClearTimer(BossStartFallbackTimer);
@@ -870,6 +954,10 @@ void ADCGameMode::ShowVictoryScene()
 	}
 
 	APlayerController* PC = GetWorld()->GetFirstPlayerController();
+	if (ADCPlayerController* DCPC = Cast<ADCPlayerController>(PC))
+	{
+		DCPC->ClosePauseMenu();
+	}
 	if (!VictoryWidget && PC)
 	{
 		TSubclassOf<UDCVictoryWidget> WidgetCls = VictoryWidgetClass ? VictoryWidgetClass : TSubclassOf<UDCVictoryWidget>(UDCVictoryWidget::StaticClass());
@@ -938,6 +1026,19 @@ void ADCGameMode::ShowVictoryScene()
 
 	OnVictoryTriggered.Broadcast();
 	UE_LOG(LogEpicGameJamGame, Log, TEXT("Victory scene displayed (THAT'S A WRAP!)"));
+}
+
+FString ADCGameMode::GetBeatDisplayName(int32 Beat) const
+{
+	switch (Beat)
+	{
+	case 1: return TEXT("SCENE 1: BOAR HUNT");
+	case 2: return TEXT("SCENE 2: BREAKFAST");
+	case 3: return TEXT("SCENE 3: ACTION BLOCKBUSTER");
+	case 4: return TEXT("SCENE 4: RATED PG ROMANCE");
+	case 5: return TEXT("SCENE 5: FINAL CUT");
+	default: return FString::Printf(TEXT("SCENE %d"), Beat);
+	}
 }
 
 void ADCGameMode::EquipBeatWeapon(bool bUseGun)

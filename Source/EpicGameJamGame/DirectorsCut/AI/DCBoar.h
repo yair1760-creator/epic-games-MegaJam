@@ -180,7 +180,11 @@ public:
 
 	/** Volume for all of this boar's sounds (the King is louder) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Boar|Audio", meta=(ClampMin=0))
-	float SoundVolume = 1.0f;
+	float SoundVolume = 0.14f;
+
+	/** Extra volume multiplier for idle/wander grunts */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Boar|Audio", meta=(ClampMin=0))
+	float GruntVolumeScale = 0.6f;
 
 	/** Pitch for all of this boar's sounds (the King is deeper) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Boar|Audio", meta=(ClampMin=0.1))
@@ -253,6 +257,8 @@ protected:
 	/** Picks the sprite animation from the state and movement speed (every frame) */
 	void UpdateSpriteAnimation();
 
+	void PlayBoarSound(USoundBase* Sound, float MinInterval = 0.14f, float VolumeScale = 1.0f);
+
 private:
 
 	UPROPERTY(VisibleInstanceOnly, Category="Boar")
@@ -269,5 +275,4 @@ private:
 	FTimerHandle CorpseTimer;
 
 	float NextGruntTime = 0.0f;
-	void PlayBoarSound(USoundBase* Sound, float MinInterval = 0.06f);
 };

@@ -6,6 +6,7 @@
 #include "Blueprint/UserWidget.h"
 #include "DCQuestTrackerWidget.generated.h"
 
+class USoundBase;
 class UTextBlock;
 class UWidgetAnimation;
 
@@ -20,6 +21,8 @@ class EPICGAMEJAMGAME_API UDCQuestTrackerWidget : public UUserWidget
 	GENERATED_BODY()
 
 public:
+
+	UDCQuestTrackerWidget(const FObjectInitializer& ObjectInitializer);
 
 	UFUNCTION(BlueprintPure, Category="Quest")
 	FString GetDisplayedTitle() const;
@@ -52,6 +55,14 @@ protected:
 	/** Count text format. {Current} and {Target} are replaced. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Quest")
 	FText CountFormat = NSLOCTEXT("DirectorsCut", "QuestCountFormat", "{Current}/{Target}");
+
+	/** Sound played when quest progress advances (2D; empty = silent) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Quest|Audio")
+	TObjectPtr<USoundBase> TickSound;
+
+	/** Sound played when the active quest completes (2D; empty = silent) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Quest|Audio")
+	TObjectPtr<USoundBase> CompleteSound;
 
 	UFUNCTION(BlueprintImplementableEvent, Category="Quest")
 	void OnProgressChanged(int32 Current, int32 Target);

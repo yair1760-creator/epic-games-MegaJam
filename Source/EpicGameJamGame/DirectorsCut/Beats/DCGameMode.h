@@ -15,6 +15,7 @@ class ADCPrincess;
 class UAudioComponent;
 class UDCHealthComponent;
 class UDCHUDWidget;
+class UDCDeathScreenWidget;
 class UDCVictoryWidget;
 class ULevelStreaming;
 class USoundBase;
@@ -68,6 +69,10 @@ public:
 	UFUNCTION(BlueprintPure, Category="Beats")
 	int32 GetCurrentBeat() const { return CurrentBeat; }
 
+	/** Human-readable scene title for HUD / Pause menu */
+	UFUNCTION(BlueprintPure, Category="Beats")
+	FString GetBeatDisplayName(int32 Beat) const;
+
 	UFUNCTION(BlueprintPure, Category="Beats|Audio")
 	USoundBase* GetActiveMusicAsset() const { return ActiveMusicAsset; }
 
@@ -75,7 +80,24 @@ public:
 	UDCHUDWidget* GetHUDWidget() const { return HUDWidget; }
 
 	UFUNCTION(BlueprintPure, Category="UI")
+	UDCDeathScreenWidget* GetDeathScreenWidget() const { return DeathScreenWidget; }
+
+	UFUNCTION(BlueprintPure, Category="UI")
 	UDCVictoryWidget* GetVictoryWidget() const { return VictoryWidget; }
+
+	UFUNCTION(BlueprintPure, Category="Beats|Death")
+	bool IsDeathScreenShown() const { return bDeathScreenShown; }
+
+	UFUNCTION(BlueprintPure, Category="Beats|Death")
+	int32 GetCurrentTakeNumber() const { return CurrentTakeNumber; }
+
+	/** Shows the "CUT! TAKE N" slate while the player waits to respawn. */
+	UFUNCTION(BlueprintCallable, Category="Beats|Death")
+	void ShowDeathScreen(float RespawnDuration = 5.0f);
+
+	/** Hides the Death slate once the actor respawns back on their mark. */
+	UFUNCTION(BlueprintCallable, Category="Beats|Death")
+	void HideDeathScreen();
 
 	UFUNCTION(BlueprintPure, Category="Beats|Victory")
 	bool IsVictoryShown() const { return bVictoryShown; }
@@ -106,6 +128,13 @@ protected:
 
 	UPROPERTY(Transient)
 	TObjectPtr<UDCHUDWidget> HUDWidget;
+
+	/** Death / respawn slate shown when the player dies (WBP_DeathScreen) */
+	UPROPERTY(EditDefaultsOnly, Category="UI")
+	TSubclassOf<UDCDeathScreenWidget> DeathScreenWidgetClass;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UDCDeathScreenWidget> DeathScreenWidget;
 
 	/** Victory / wrap screen shown after defeating The Director (WBP_CutScreen) */
 	UPROPERTY(EditDefaultsOnly, Category="UI")
@@ -146,11 +175,11 @@ protected:
 
 	/** Base volume multiplier for background music */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Beats|Audio", meta=(ClampMin=0.0, ClampMax=2.0))
-	float MusicVolume = 0.45f;
+	float MusicVolume = 0.35f;
 
 	/** Volume multiplier applied to music while the Director is speaking (VO ducking) */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Beats|Audio", meta=(ClampMin=0.0, ClampMax=1.0))
-	float MusicDuckScale = 0.35f;
+	float MusicDuckScale = 0.20f;
 
 	/** Crossfade duration when switching beat music tracks */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Beats|Audio", meta=(ClampMin=0.0, Units="s"))
@@ -158,7 +187,7 @@ protected:
 
 	/** Fade duration when ducking or restoring music around Director lines */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Beats|Audio", meta=(ClampMin=0.0, Units="s"))
-	float MusicDuckFadeDuration = 0.25f;
+	float MusicDuckFadeDuration = 0.15f;
 
 	/** Weapon used in Beats 1-2 and 4-5 */
 	UPROPERTY(EditDefaultsOnly, Category="Weapons")
@@ -255,9 +284,11 @@ private:
 	bool bPlayedFirstHit = false;
 	bool bPlayedPlayerHurt = false;
 	bool bPendingBeat5 = false;
+	bool bDeathScreenShown = false;
 	bool bVictoryPending = false;
 	bool bVictoryShown = false;
 	bool bMusicDucked = false;
+	int32 CurrentTakeNumber = 1;
 	int32 Beat2BoarKillCount = 0;
 	float RunStartTime = 0.0f;
 

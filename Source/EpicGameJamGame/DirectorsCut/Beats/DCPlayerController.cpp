@@ -216,10 +216,18 @@ void ADCPlayerController::TogglePauseMenu()
 
 void ADCPlayerController::OpenPauseMenu()
 {
-	// not while another full-screen UI owns the mouse (the victory screen), and not twice
+	// not while another full-screen UI owns the mouse (the victory screen) or death slate is active, and not twice
 	if (PauseWidget || !IsLocalPlayerController() || bShowMouseCursor || IsPaused())
 	{
 		return;
+	}
+
+	if (const ADCGameMode* GM = GetWorld() ? GetWorld()->GetAuthGameMode<ADCGameMode>() : nullptr)
+	{
+		if (GM->IsVictoryShown() || GM->IsDeathScreenShown())
+		{
+			return;
+		}
 	}
 
 	TSubclassOf<UDCPauseMenuWidget> WidgetCls = PauseMenuWidgetClass ? PauseMenuWidgetClass : TSubclassOf<UDCPauseMenuWidget>(UDCPauseMenuWidget::StaticClass());

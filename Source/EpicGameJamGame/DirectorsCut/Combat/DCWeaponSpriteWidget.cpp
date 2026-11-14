@@ -46,14 +46,15 @@ void UDCWeaponSpriteWidget::SetFrame(UTexture2D* Frame)
 	}
 }
 
-void UDCWeaponSpriteWidget::SetPlacement(const FVector2D& OffsetPx, float Scale)
+void UDCWeaponSpriteWidget::SetPlacement(const FVector2D& OffsetPx, float Scale, float AngleDeg)
 {
 	if (Box)
 	{
 		FWidgetTransform T;
 		T.Translation = OffsetPx;
 		T.Scale = FVector2D(Scale, Scale);
-		Box->SetRenderTransformPivot(FVector2D(1.0f, 1.0f));   // scale toward the bottom-right corner
+		T.Angle = AngleDeg;
+		Box->SetRenderTransformPivot(FVector2D(1.0f, 1.0f));   // scale/rotate toward the bottom-right corner
 		Box->SetRenderTransform(T);
 	}
 }

@@ -147,15 +147,50 @@ void ADCShotgunWeapon::SetActorHiddenInGame(bool bNewHidden)
 	// the drawn hands replace the template arms while the shotgun is out
 	SetOwnerArmsHidden(!bNewHidden);
 
-	// the 2D hands go away with the weapon (holstered, owner died); a holstered gun is not mid-shot
+	// the 2D hands go away with the weapon (holstered, owner died); a holstered gun is not mid-shot or mid-reload
 	if (bNewHidden)
 	{
 		ShotTime = -1.0f;
+		ReloadAnimTime = -1.0f;
 		CurrentPose = TEXT("Idle");
 		if (SpriteWidget)
 		{
 			SpriteWidget->SetVisibility(ESlateVisibility::Collapsed);
 		}
+	}
+}
+
+void ADCShotgunWeapon::StartReload()
+{
+	const bool bWasReloading = bIsReloading;
+	Super::StartReload();
+
+	if (!bWasReloading && bIsReloading && bUseSpriteView)
+	{
+		ShotTime = -1.0f;
+		bRecoilShown = false;
+		ReloadAnimTime = 0.0f;
+		UpdateSpriteView(0.0f);
+	}
+}
+
+void ADCShotgunWeapon::FinishReload()
+{
+	ReloadAnimTime = -1.0f;
+	Super::FinishReload();
+	if (bUseSpriteView)
+	{
+		UpdateSpriteView(0.0f);
+	}
+}
+
+void ADCShotgunWeapon::CancelReload()
+{
+	ReloadAnimTime = -1.0f;
+	Super::CancelReload();
+	if (bUseSpriteView)
+	{
+		UpdateSpriteView(0.0f);
 	}
 }
 
@@ -189,11 +224,19 @@ void ADCShotgunWeapon::UpdateSpriteView(float DeltaSeconds)
 	// and that can happen after this one was taken out: keep them hidden while the drawn hands are up
 	SetOwnerArmsHidden(true);
 
-	// pose from the 12 fps tick grid: hard cuts, each drawing held for whole ticks
+	// the arms are drawn running off the bottom and right edges of the frame: push every pose a little further
+	// off-screen (at least as far as the bob can move it) so the bob never pulls those straight edges into view
+	const FVector2D EdgeBleed(WalkBobPixels + EdgeBleedPixels, IdleSwayPixels + EdgeBleedPixels);
+
 	UTexture2D* Frame = SpriteIdle;
 	FName Pose = TEXT("Idle");
+	FVector2D AnimOffset = FVector2D::ZeroVector;
+	float AnimScale = SpriteScreenScale;
+	float AnimAngleDeg = 0.0f;
+
 	if (ShotTime >= 0.0f)
 	{
+		// pose from the 12 fps tick grid: hard cuts, each drawing held for whole ticks
 		const int32 RecoilStart = FlashTicks;
 		const int32 RecoveryStart = FlashTicks + RecoilTicks;
 		const int32 End = RecoveryStart + RecoveryTicks;
@@ -209,22 +252,73 @@ void ADCShotgunWeapon::UpdateSpriteView(float DeltaSeconds)
 		else if (AnimTick < RecoveryStart)  { Frame = SpriteRecoil;   Pose = TEXT("Recoil"); bRecoilShown = true; }
 		else if (AnimTick < End)            { Frame = SpriteRecovery; Pose = TEXT("Recovery"); }
 	}
+	else if (ReloadAnimTime >= 0.0f)
+	{
+		// Front-of-screen 2D reload sequence quantized to the 12 fps comic animation grid:
+		// 1) Drop/tilt gun closer into view, 2) 3 shell-loading punches, 3) Rack pump up (SpriteRecoil), 4) Settle to Idle.
+		const float FPS = FMath::Max(AnimFPS, 1.0f);
+		const float Duration = FMath::Max(ReloadTime, 0.01f);
+		const int32 TotalTicks = FMath::Max(1, FMath::RoundToInt(Duration * FPS));
+		const int32 AnimTick = FMath::Clamp(FMath::FloorToInt(ReloadAnimTime * FPS), 0, TotalTicks - 1);
+		const float T = TotalTicks > 1 ? float(AnimTick) / float(TotalTicks - 1) : 1.0f;
+
+		UTexture2D* ReloadBaseFrame = SpriteReload ? SpriteReload.Get() : SpriteRecovery.Get();
+
+		if (T < 0.20f)
+		{
+			const float Alpha = FMath::InterpEaseOut(0.0f, 1.0f, T / 0.20f, 2.0f);
+			Pose = TEXT("ReloadDrop");
+			Frame = ReloadBaseFrame;
+			AnimScale = SpriteScreenScale * FMath::Lerp(1.0f, 1.12f, Alpha);
+			AnimAngleDeg = FMath::Lerp(0.0f, -7.0f, Alpha);
+			AnimOffset = FVector2D(FMath::Lerp(0.0f, 55.0f, Alpha), FMath::Lerp(0.0f, 95.0f, Alpha));
+		}
+		else if (T < 0.72f)
+		{
+			const float Sub = (T - 0.20f) / 0.52f;
+			const float Cycle = FMath::Frac(Sub * 3.0f);
+			const float Push = (Cycle < 0.45f) ? (Cycle / 0.45f) : (1.0f - (Cycle - 0.45f) / 0.55f);
+			Pose = TEXT("ReloadLoad");
+			Frame = (Push > 0.5f) ? SpriteIdle.Get() : ReloadBaseFrame;
+			AnimScale = SpriteScreenScale * (1.12f + 0.05f * Push);
+			AnimAngleDeg = -7.0f + 3.0f * Push;
+			AnimOffset = FVector2D(55.0f - 15.0f * Push, 95.0f - 42.0f * Push);
+		}
+		else if (T < 0.89f)
+		{
+			const float Alpha = (T - 0.72f) / 0.17f;
+			const float PumpArc = FMath::Sin(Alpha * PI);
+			Pose = TEXT("ReloadPump");
+			Frame = SpriteRecoil.Get();
+			AnimScale = SpriteScreenScale * FMath::Lerp(1.12f, 1.14f, PumpArc);
+			AnimAngleDeg = 0.0f;
+			AnimOffset = FVector2D(10.0f, FMath::Lerp(55.0f, 12.0f, PumpArc));
+		}
+		else
+		{
+			const float Alpha = (T - 0.89f) / 0.11f;
+			Pose = TEXT("ReloadSettle");
+			Frame = (Alpha < 0.5f) ? ReloadBaseFrame : SpriteIdle.Get();
+			AnimScale = SpriteScreenScale * FMath::Lerp(1.10f, 1.0f, Alpha);
+			AnimAngleDeg = FMath::Lerp(-2.0f, 0.0f, Alpha);
+			AnimOffset = FVector2D(FMath::Lerp(18.0f, 0.0f, Alpha), FMath::Lerp(28.0f, 0.0f, Alpha));
+		}
+	}
+
 	CurrentPose = Pose;
 	SpriteWidget->SetFrame(Frame ? Frame : SpriteIdle.Get());
 
-	// walk bob / idle breathing while idle; the shot poses keep the exact drawn placement
+	// walk bob / idle breathing while idle; shot and reload poses keep their animated placement
 	BobTime += DeltaSeconds;
 	const float Run = FMath::Clamp(Pawn->GetVelocity().Size2D() / 600.0f, 0.0f, 1.0f);
-	const float Calm = ShotTime >= 0.0f ? 0.0f : 1.0f;
+	const float Calm = (ShotTime >= 0.0f || ReloadAnimTime >= 0.0f) ? 0.0f : 1.0f;
 	const float Step = BobTime * 2.0f * PI * 1.6f;
-	FVector2D Offset;
-	Offset.X = FMath::Sin(Step) * WalkBobPixels * Run * Calm;
-	Offset.Y = (FMath::Abs(FMath::Sin(Step)) * WalkBobPixels * 0.6f * Run
+	FVector2D BobOffset;
+	BobOffset.X = FMath::Sin(Step) * WalkBobPixels * Run * Calm;
+	BobOffset.Y = (FMath::Abs(FMath::Sin(Step)) * WalkBobPixels * 0.6f * Run
 		+ FMath::Sin(BobTime * 2.0f * PI * 0.35f) * IdleSwayPixels * (1.0f - Run)) * Calm;
-	// the arms are drawn running off the bottom and right edges of the frame: push every pose a little further
-	// off-screen (at least as far as the bob can move it) so the bob never pulls those straight edges into view
-	const FVector2D EdgeBleed(WalkBobPixels + EdgeBleedPixels, IdleSwayPixels + EdgeBleedPixels);
-	SpriteWidget->SetPlacement(Offset + EdgeBleed, SpriteScreenScale);
+
+	SpriteWidget->SetPlacement(BobOffset + AnimOffset + EdgeBleed, AnimScale, AnimAngleDeg);
 }
 
 void ADCShotgunWeapon::Tick(float DeltaSeconds)
@@ -246,6 +340,12 @@ void ADCShotgunWeapon::Tick(float DeltaSeconds)
 			ShotTime = -1.0f;
 		}
 	}
+
+	if (ReloadAnimTime >= 0.0f)
+	{
+		ReloadAnimTime += DeltaSeconds;
+	}
+
 	UpdateSpriteView(DeltaSeconds);
 }
 
@@ -356,7 +456,7 @@ void ADCShotgunWeapon::FireProjectile(const FVector& TargetLocation)
 		}
 	}
 
-	UDCFXLibrary::PlayWorldSound(this, FireSound, MuzzleLoc, 1.0f, 0.05f, 0.02f, FireSoundPitch);
+	UDCFXLibrary::PlayWorldSound(this, FireSound, MuzzleLoc, 0.55f, 0.05f, 0.02f, FireSoundPitch);
 	UDCFXLibrary::SpawnWorldFX(this, FireFX, MuzzleLoc, AimDir.Rotation());
 
 	// 2D view: this shot was accepted -> play the sequence once from the top; the flash shows on the input frame itself

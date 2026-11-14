@@ -25,8 +25,8 @@ public:
 	/** Shows this frame (keeps the texture's own aspect) */
 	void SetFrame(UTexture2D* Frame);
 
-	/** Bob / sway offset in screen pixels (positive Y = down) and overall size (1 = frame fills the screen height) */
-	void SetPlacement(const FVector2D& OffsetPx, float Scale);
+	/** Bob / sway offset in screen pixels (positive Y = down), overall size (1 = frame fills screen height), and optional tilt in degrees */
+	void SetPlacement(const FVector2D& OffsetPx, float Scale, float AngleDeg = 0.0f);
 
 protected:
 

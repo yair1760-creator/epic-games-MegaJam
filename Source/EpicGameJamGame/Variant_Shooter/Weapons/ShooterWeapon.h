@@ -155,7 +155,7 @@ public:
 	void StopFiring();
 
 	/** Starts reloading this weapon. Does nothing if the magazine is full or a reload is already in progress */
-	void StartReload();
+	virtual void StartReload();
 
 	/** Returns true if the weapon is currently reloading */
 	bool IsReloading() const { return bIsReloading; }
@@ -163,10 +163,10 @@ public:
 protected:
 
 	/** Called when the reload time has passed. Refills the magazine */
-	void FinishReload();
+	virtual void FinishReload();
 
 	/** Aborts a reload in progress */
-	void CancelReload();
+	virtual void CancelReload();
 
 	/** Returns true if the weapon owner is a human player, who has to reload manually */
 	bool IsOwnedByPlayer() const;
