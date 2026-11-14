@@ -13,6 +13,12 @@ import unreal, math, random, os
 _SCRIPTS = os.path.join(unreal.Paths.convert_relative_path_to_full(unreal.Paths.project_dir()), "Scripts")
 exec(open(os.path.join(_SCRIPTS, "LD_BuildVerticalSlice.py")).read())   # shared greybox helpers + materials
 
+def sm(label, key, loc, scale, rot=None, m=None):
+    a = EAS.spawn_actor_from_class(unreal.StaticMeshActor, V(*loc), rot or R())
+    a.static_mesh_component.set_static_mesh(mesh(key))
+    a.set_actor_scale3d(V(*scale))
+    return _finish(a, label, m)
+
 LES = unreal.get_editor_subsystem(unreal.LevelEditorSubsystem)
 MAP_DIR = "/Game/DirectorsCut/Maps"
 PERSISTENT = "Lvl_DirectorsCut"
@@ -131,7 +137,11 @@ def set_current(name):
     if name == PERSISTENT:
         LES.set_current_level_by_name("PersistentLevel") or LES.set_current_level_by_name(PERSISTENT)
     else:
-        LES.set_current_level_by_name(name)
+        sl = streaming(name)
+        if sl:
+            unreal.EditorLevelUtils.make_level_current(sl)
+        else:
+            LES.set_current_level_by_name(name)
 
 def show_beat(n):
     """Editor preview: make only the sublevels of beat n visible."""
@@ -282,11 +292,13 @@ def p_gameplay():
     _finish(nav, "NavMeshBounds_Bowl")
     for i, (x, y) in enumerate([(-1500, 3700), (4300, 3500), (4600, -3800), (-2600, -3700), (300, -3900), (4900, 1800)]):
         target_point("BoarSpawn_%d" % i, (x, y, 50), math.degrees(math.atan2(-y, STAGE_C[0] - x)), ("BoarSpawn",))
+    wander_area = trigger("BoarWanderArea", (0, 0, 0), (5700, 4700, 500), ("BoarWanderArea",))
     spawner_cls = getattr(unreal, "DCBoarSpawner", None)
     if spawner_cls:
         s = EAS.spawn_actor_from_class(spawner_cls, V(STAGE_C[0], STAGE_C[1], 300), R())
         s.set_editor_property("auto_start", False)
         s.set_editor_property("max_alive", 5)
+        s.set_editor_property("wander_area", wander_area)
         _finish(s, "DC_BoarSpawner")
     target_point("Narrator_Focus_TheSet", (STAGE_C[0], STAGE_C[1], 300), 0, ("NarratorFocus",))
 
@@ -435,17 +447,81 @@ def s_filmcrew():
     label_text("SET: FILM CREW (beat 3)", (cx, cy, 1100), 60)
 
 def s_pg():
-    """Beat 4: rated PG romance. Pastel cardboard world, romantic shed & King Boar clearing."""
+    """Beat 4: rated PG romance. Pastel cardboard world, romantic shed holding the Princess, guarded by the King Boar."""
     CURRENT_FOLDER[0] = "DC/Set_PG"
     clear_folder("DC/Set_PG")
     pc, pr = PEN_C, PEN_R
-    # decorative pastel posts around the romance clearing (the shed + King Boar are spawned by ADCGameMode)
     gate = math.degrees(math.atan2(STAGE_C[1] - pc[1], STAGE_C[0] - pc[0]))
-    for i in range(12):
-        ang = i * 30
-        if abs(((ang - gate) + 180) % 360 - 180) < 45:
+
+    # Romantic Princess Shed placed at the south-east edge of the clearing, facing The Set
+    shed_x, shed_y = 3250.0, -3550.0
+    shed_yaw = math.degrees(math.atan2(STAGE_C[1] - shed_y, STAGE_C[0] - shed_x))
+    rad = math.radians(shed_yaw)
+    fx, fy = math.cos(rad), math.sin(rad)       # local +X (out the front doorway)
+    rx, ry = -fy, fx                            # local +Y (to the right when looking out)
+
+    def shed_pt(lx, ly, lz=0.0):
+        return (shed_x + lx * fx + ly * rx, shed_y + lx * fy + ly * ry, lz)
+
+    def shed_box(name, lx, ly, lz, sx, sy, sz, m, pitch=0.0, dyaw=0.0, roll=0.0):
+        return cbox(name, shed_pt(lx, ly, lz), (sx, sy, sz), m, yaw=shed_yaw + dyaw, pitch=pitch, roll=roll)
+
+    # Floor + gentle front stoop ramp for smooth entry
+    shed_box("Shed_Floor", 40, 0, 8, 760, 680, 16, "Trunk")
+    ramp("Shed_StoopRamp", shed_pt(490, 0, 0), shed_pt(405, 0, 16), 340, "Trunk", thick=16)
+    # Back wall (lx = -310)
+    shed_box("Shed_Wall_Back", -310, 0, 196, 30, 650, 360, "PG_Pink")
+    # Side walls with cute windows (ly = +-310)
+    for tag, sy_sign in (("L", -1), ("R", 1)):
+        ly = sy_sign * 310
+        shed_box(f"Shed_Wall_{tag}_Bot", 0, ly, 86, 620, 30, 140, "PG_Pink")
+        shed_box(f"Shed_Wall_{tag}_Top", 0, ly, 316, 620, 30, 120, "PG_Pink")
+        shed_box(f"Shed_Wall_{tag}_Rear", -180, ly, 206, 260, 30, 100, "PG_Pink")
+        shed_box(f"Shed_Wall_{tag}_Front", 180, ly, 206, 260, 30, 100, "PG_Pink")
+        shed_box(f"Shed_WindowSill_{tag}", 0, ly, 156, 130, 48, 18, "White")
+    # Front wall flanking a wide 260 cm doorway (lx = +310)
+    shed_box("Shed_Wall_Front_L", 310, -225, 196, 30, 180, 360, "PG_Pink")
+    shed_box("Shed_Wall_Front_R", 310, 225, 196, 30, 180, 360, "PG_Pink")
+    shed_box("Shed_Wall_Front_Top", 310, 0, 356, 30, 290, 60, "PG_Pink")
+    # White doorway trim + lockable double shed doors (start locked while King Boar lives, swing open on his death)
+    shed_box("Shed_DoorFrame_L", 310, -135, 171, 46, 24, 310, "White")
+    shed_box("Shed_DoorFrame_R", 310, 135, 171, 46, 24, 310, "White")
+    shed_box("Shed_DoorFrame_Top", 310, 0, 330, 46, 294, 24, "White")
+    doors_cls = getattr(unreal, "DCShedDoors", None)
+    if doors_cls:
+        dp = shed_pt(310, 0, 16)
+        doors = EAS.spawn_actor_from_class(doors_cls, V(*dp), R(yaw=shed_yaw))
+        _finish(doors, "Shed_Doors")
+    else:
+        shed_box("Shed_Door_L", 365, -185, 166, 18, 120, 300, "PG_Lilac", dyaw=-55)
+        shed_box("Shed_Door_R", 365, 185, 166, 18, 120, 300, "PG_Lilac", dyaw=55)
+    # Romantic heart emblem above the doorway
+    shed_box("Shed_Heart", 332, 0, 415, 22, 80, 80, "Landmark", roll=45)
+    # Gables + pitched roof panels
+    shed_box("Shed_Gable_Front", 310, 0, 420, 28, 360, 100, "PG_Pink")
+    shed_box("Shed_Gable_Back", -310, 0, 420, 28, 360, 100, "PG_Pink")
+    shed_box("Shed_Roof_L", 0, -175, 455, 760, 430, 26, "PG_Lilac", roll=-32)
+    shed_box("Shed_Roof_R", 0, 175, 455, 760, 430, 26, "PG_Lilac", roll=32)
+    shed_box("Shed_Roof_Ridge", 0, 0, 560, 770, 44, 36, "White")
+    point_light("Shed_Interior_Light", shed_pt(0, 0, 290), (1.0, 0.55, 0.85), 3500, 900)
+    # Tall pink-gold beacon spotlight so the shed & King Boar read clearly from The Set
+    beacon_pos = shed_pt(500, 0, 1900)
+    spot_light("Shed_Beacon_Spot", beacon_pos, look_rot(beacon_pos, shed_pt(250, 0, 120)),
+               (1.0, 0.55, 0.88), 14000, 3200, 32, shadows=False)
+    label_text("PRINCESS SHED", shed_pt(0, 0, 640), 55, yaw=shed_yaw)
+
+    # Princess spawns inside the shed; King Boar spawns guarding right out front
+    target_point("PrincessSpawn", shed_pt(-20, 0, 16), shed_yaw, ("PrincessSpawn",))
+    target_point("KingBoarSpawn", shed_pt(680, 0, 0), shed_yaw, ("KingBoarSpawn",))
+
+    # Decorative pastel posts framing the clearing (skip the approach gate and the shed footprint behind)
+    for i in range(14):
+        ang = i * (360.0 / 14.0)
+        if abs(((ang - gate) + 180) % 360 - 180) < 42:
             continue
-        x, y = pc[0] + pr * math.cos(math.radians(ang)), pc[1] + pr * math.sin(math.radians(ang))
+        x, y = pc[0] + 920.0 * math.cos(math.radians(ang)), pc[1] + 920.0 * math.sin(math.radians(ang))
+        if math.hypot(x - shed_x, y - shed_y) < 520.0:
+            continue
         cyl("Romance_Post_%02d" % i, (x, y, 0), 25, 130, "PG_Mint")
     # rainbow arch over the main path (bead arch, 5 bands)
     for b, m in enumerate(("Landmark", "POI", "Breadcrumb", "PG_Mint", "PG_Sky")):
@@ -461,7 +537,7 @@ def s_pg():
         if k >= 30:
             break
         x, y = rnd.uniform(-3200, 5200), rnd.uniform(-4200, 4200)
-        if not far_from((x, y), [STAGE_C], STAGE_R + 200) or not far_from((x, y), [PEN_C], PEN_R + 200) or abs(y) < 350:
+        if not far_from((x, y), [STAGE_C], STAGE_R + 200) or not far_from((x, y), [pc, (shed_x, shed_y)], pr + 300) or abs(y) < 350:
             continue
         h = rnd.uniform(150, 320)
         cyl("Flower_%02d_Stem" % k, (x, y, 0), 15, h, "PG_Mint")

@@ -216,7 +216,7 @@ All beats happen on `Lvl_DirectorsCut` via `ADCGameMode::GoToBeat(1..5)` and `UD
 | Beat | Trigger | Sublevels | Weapon | Quest (`Id` / Title / Target / `EventTag`) | Gameplay |
 |---|---|---|---|---|---|
 | **1** | Game start (`IntroDelay`) | `DC_Light_Day`, `DC_Set_Hunt` | Sword (`BP_DC_Sword`) | `Q_HuntBoars` — `"Boars killed"` (`0/10`, `Kill.Boar`) | Normal boar spawns (`MaxAlive=5`). Interrupts at **7/10** kills! |
-| **2** | 7/10 boars killed | `DC_Light_Day`, `DC_Set_Hunt`, `DC_Set_NoMeat` | Sword (`BP_DC_Sword`) | `Q_CollectMeat` — `"Boar meat collected"` (`0/5`, `Collect.Meat`) | Boars drop `ADCBoarMeatPickup`. Kill #2 (and every 4th after) drops no meat and triggers the `"this one got no meat"` joke. |
+| **2** | 7/10 boars killed | `DC_Light_Day`, `DC_Set_Hunt`, `DC_Set_NoMeat` | Sword (`BP_DC_Sword`) | `Q_CollectMeat` — `"Bacon collected"` (`0/5`, `Collect.Meat`) | Boars drop `ADCBoarMeatPickup` (7th boar drops #1). Kill #3 in Beat 2 (and every 4th after) drops no meat and triggers the `"this one got no meat"` joke. |
 | **3** | 5/5 boar meat collected | `DC_Light_Day`, `DC_Set_Hunt`, `DC_Set_FilmCrew` | Gun (`BP_ShooterWeapon_Rifle`) | `Q_HyperspawnBoars` — `"Boars eliminated"` (`0/100`, `Kill.Boar`) | Sword replaced by gun; spawner enters hyperspawn (`MaxAlive=12`, auto-aggro, 25 HP boars). |
 | **4** | 100/100 boars eliminated | `DC_Light_PG`, `DC_Set_Hunt`, `DC_Set_PG` | Gun (`BP_ShooterWeapon_Rifle`) | 4a: `Q_DefeatKingBoar` — `"Defeat the King Boar"` (`0/1`, `Kill.KingBoar`)<br>4b: `Q_RescuePrincess` — `"Rescue the Princess"` (`0/1`, `Rescue.Princess`) | Pastel romance set. Giant crowned `ADCKingBoar` guards `ADCPrincess`; killing him unlocks her to rescue the Princess. |
 | **5** | Princess rescued | `DC_Light_Boss`, `DC_Set_Boss` | Gun (`BP_ShooterWeapon_Rifle`) | `Q_DefeatDirector` — `"Defeat the Director"` (`0/1`, `Kill.Director`) | Director enters the arena, calls you a bad actor, and fights you (`ADCDirectorBoss`). |
@@ -249,23 +249,23 @@ The Director is deadpan and sarcastic: a weary auteur unimpressed by his lead ac
 | `L1_Intro_03` | After 02 | [sarcastic] Fortunately, we have you. And a sword. Apparently that was the entire budget. |
 | `L1_Intro_04` | After 03, quest starts when it ends | Fight ten boars. Exactly ten. We're making cinema, not a census. [sighs] And... action. |
 | `L1_FirstHit` | First hit on a boar | Ooh, contact. [deadpan] The boar is acting hurt. Very convincing. Somebody nominate the boar. |
-| `L1_FirstKill` | 1/10 | [deadpan] One down. Hold that pose... no. Not that one. Keep going. |
+| `L1_FirstKill` | 2/10 | [deadpan] Two down. Hold that pose... no. Not that one. Keep going. |
 | `L1_Half` | 5/10 | Five. Halfway. [sarcastic] The audience is on the edge of their seats. Mostly because the seats are broken. |
 | `L1_PlayerHurt` | First time the player is below 50% HP | Try not to die. The insurance on this production is... [sighs] aspirational. |
 | `L1_PlayerDied` | Player death | [exasperated] CUT! Someone get the actor back to their mark. [sighs] With feeling this time. |
 | `L1_Idle` | No kill for 30 s | [deadpan] Hello? The boars are over there. I can see them from up here. I can see everything from up here. |
 
-### Beat 2: Breakfast / Bacon (At 7/10 Kills -> Collect 5 Boar Meat + No Meat Joke)
+### Beat 2: Breakfast / Bacon (At 7/10 Kills -> Collect 5 Bacon + No Meat Joke)
 
 | Row ID | Trigger | Voice line |
 |---|---|---|
-| `B2_Intro_01` | At 7/10 boar kills | [interrupting] Hold it! Stop hitting them for one second. [sighs] All this boar fighting is making me starving. |
-| `B2_Intro_02` | After `B2_Intro_01` (primary) | I skipped breakfast for this shoot. I want bacon. Crispy bacon. Bring me five slabs of ham right now. |
-| `B2_Intro_02_Alt` | After `B2_Intro_01` (alternate) | [deadpan] Forget the ten boars, the script is changing. Go butcher five cuts of boar meat for my breakfast. |
-| `B2_FirstMeat` | 1/5 meat collected | Ooh, yes, look at that marbling. Put it on the craft services table. Four more. |
+| `B2_Intro_01` | At 7/10 boar kills | [interrupting] Hold it! Wait... did that boar just drop a piece of meat? Look at that. |
+| `B2_Intro_02` | After `B2_Intro_01` (primary) | [excited] I skipped breakfast for this shoot, and now I want bacon! Forget the ten boars, bring me five pieces of bacon right now. |
+| `B2_Intro_02_Alt` | After `B2_Intro_01` (alternate) | [deadpan] Actually, I skipped breakfast and that looks delicious. Script change: forget the ten boars, get me five pieces of bacon. |
+| `B2_FirstMeat` | 2/5 bacon collected | Ooh, yes, look at that marbling. Put it on the craft services table. Three more. |
 | `B2_NoMeat_01` | Boar drops no meat (primary) | [deadpan] Wait... seriously? This one got no meat. What is it, stuffed with sawdust? |
 | `B2_NoMeat_02` | Boar drops no meat (alternate) | [sarcastic] Another hollow boar. This one got no meat either. Who did our prop catering, an origami club? |
-| `B2_AlmostDone` | 4/5 meat collected | Four out of five. One more ham and I can finally eat like a real auteur. |
+| `B2_AlmostDone` | 4/5 bacon collected | Four out of five. One more piece of bacon and I can finally eat like a real auteur. |
 
 ### Beat 3: Too Boring! Sword -> Gun, Hyperspawn, Kill 100 Boars
 

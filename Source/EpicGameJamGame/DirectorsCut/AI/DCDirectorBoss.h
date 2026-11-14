@@ -51,7 +51,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Boss|Audio")
 	TObjectPtr<USoundBase> AttackSound;
 
-	/** When he takes damage (at most every 0.15 s; the rifle hits 10 times a second) */
+	/** When he takes damage (at most every 0.15 s) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Boss|Audio")
 	TObjectPtr<USoundBase> HitSound;
 

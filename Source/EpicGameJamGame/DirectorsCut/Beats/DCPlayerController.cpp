@@ -1,6 +1,7 @@
 // Director's Cut - player controller.
 
 #include "Beats/DCPlayerController.h"
+#include "Beats/DCGameMode.h"
 #include "Blueprint/UserWidget.h"
 #include "CheckpointSubsystem.h"
 #include "Engine/LocalPlayer.h"
@@ -124,12 +125,20 @@ void ADCPlayerController::OnPawnDestroyed(AActor* DestroyedActor)
 	FTransform SpawnTransform;
 	bool bHaveSpawn = false;
 
-	if (UCheckpointSubsystem* Checkpoints = World->GetSubsystem<UCheckpointSubsystem>())
+	if (ADCGameMode* DCGM = Cast<ADCGameMode>(GM))
 	{
-		if (Checkpoints->HasActiveCheckpoint())
+		bHaveSpawn = DCGM->GetBeatRespawnTransform(SpawnTransform);
+	}
+
+	if (!bHaveSpawn)
+	{
+		if (UCheckpointSubsystem* Checkpoints = World->GetSubsystem<UCheckpointSubsystem>())
 		{
-			SpawnTransform = Checkpoints->GetRespawnTransform();
-			bHaveSpawn = true;
+			if (Checkpoints->HasActiveCheckpoint())
+			{
+				SpawnTransform = Checkpoints->GetRespawnTransform();
+				bHaveSpawn = true;
+			}
 		}
 	}
 

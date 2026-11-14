@@ -21,8 +21,8 @@ ADCPrincess::ADCPrincess()
 
 	RescueTrigger = CreateDefaultSubobject<USphereComponent>(TEXT("Rescue Trigger"));
 	RescueTrigger->SetupAttachment(Root);
-	RescueTrigger->SetRelativeLocation(FVector(0.0f, 0.0f, 120.0f));
-	RescueTrigger->InitSphereRadius(280.0f);
+	RescueTrigger->SetRelativeLocation(FVector(0.0f, 0.0f, 100.0f));
+	RescueTrigger->InitSphereRadius(165.0f);
 	RescueTrigger->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	RescueTrigger->SetCollisionResponseToAllChannels(ECR_Ignore);
 	RescueTrigger->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
@@ -48,9 +48,9 @@ ADCPrincess::ADCPrincess()
 
 	PrincessLabel = CreateDefaultSubobject<UTextRenderComponent>(TEXT("Princess Label"));
 	PrincessLabel->SetupAttachment(Root);
-	PrincessLabel->SetRelativeLocation(FVector(0.0f, 0.0f, 340.0f));
+	PrincessLabel->SetRelativeLocation(FVector(0.0f, 0.0f, 215.0f));
 	PrincessLabel->SetHorizontalAlignment(EHTA_Center);
-	PrincessLabel->SetWorldSize(42.0f);
+	PrincessLabel->SetWorldSize(36.0f);
 	PrincessLabel->SetText(FText::FromString(TEXT("PRINCESS (GUARDED)")));
 	PrincessLabel->SetTextRenderColor(FColor(255, 130, 210));
 	PrincessLabel->SetUsingAbsoluteRotation(true);

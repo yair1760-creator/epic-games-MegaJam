@@ -38,7 +38,11 @@ public:
 
 	/** Gets angry when the player comes this close */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="King Boar", meta=(ClampMin=0, Units="cm"))
-	float GuardRadius = 1800.0f;
+	float GuardRadius = 2200.0f;
+
+	/** Enraged charge speed once King Boar drops below 50% HP */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="King Boar", meta=(ClampMin=0, Units="CentimetersPerSecond"))
+	float EnragedChargeSpeed = 880.0f;
 
 protected:
 
@@ -48,4 +52,8 @@ protected:
 
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaSeconds) override;
+
+private:
+
+	bool bEnraged = false;
 };
