@@ -1,0 +1,5 @@
+Director’s Cut — First-person shotgun sprite
+
+12 FPS animation grid. Idle until fire input. Play once: Muzzle Flash for 2 ticks, Peak Recoil for 1 tick, Recovery for 2 ticks, then Idle. Time from animation start: 0 ms, 166.67 ms, 250 ms, 416.67 ms (Idle). Hard cuts between held drawings. Use full-canvas 1920 × 1080 transparent PNGs with identical screen-space placement.
+
+Reference GIF timings: 160 ms flash, 80 ms peak recoil, 160 ms recovery. The idle holds bookend the preview.

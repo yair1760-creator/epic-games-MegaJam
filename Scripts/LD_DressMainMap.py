@@ -5,11 +5,16 @@
 #   - Taisho's apple trees around the village edges and the meadow border
 #   - the Forgive Me Father style floor (SM_DC_SetGround) over the meadow, paths and village square
 #   - the round wooden stage floor (SM_DC_SetStage) over the lilac disc "THE SET"
+#   - the village notice board (SM_DC_NoticeBoard: Boar King wanted poster + quest "!") over the greybox board
+#   - the village well (SM_DC_Well) over the greybox cylinder, and in DC_Set_Hunt the sword rack (SM_DC_SwordRack)
+#     with three SM_DC_Sword over the greybox rack
+#   - the butcher stall (SM_DC_ButcherStall) over the greybox stall, and in the DC_Set_NoMeat sublevel the SOLD OUT and
+#     HA HA HA signs (SM_DC_SoldOutSign, SM_DC_LaughSign) over the greybox boards and text
 # Run inside the editor (Lvl_DirectorsCut open):
 #   exec(open(r"D:\EpicGameJam\EpicGameJamGame\EpicGameJamGame\Scripts\LD_DressMainMap.py").read())
-#   dress_main_map()            # or dress_main_map("houses") / ("hunt") / ("props") / ("trees") / ("ground") / ("stage")
+#   dress_main_map()            # or dress_main_map("houses") / ("hunt") / ("props") / ("trees") / ("ground") / ("stage") / ("stall") / ("notice") / ("village")
 # Re-runnable: clears DC/Village_Flats, DC/SetDressing_Props and DC/SetDressing_Trees (persistent level) and the Hunt_HayProp_* actors first.
-# DC_Set_Hunt only gets its greybox hay bales swapped for the real ones; no other sublevel is touched.
+# DC_Set_Hunt only gets its greybox hay bales swapped for the real ones and the sword rack; DC_Set_NoMeat only gets the two signs. No other sublevel is touched.
 # Note: re-running LD_BuildDirectorsCut's village / hunt stages would bring the greybox back - run this again afterwards.
 import unreal, math, os, random
 
@@ -233,6 +238,157 @@ def dress_stage():
     return {"at": [round(o.x), round(o.y), round(o.z - e.z)], "size_cm": [round(2 * e.x), round(2 * e.y), round(2 * e.z)]}
 
 
+STALL = (-2500, 2800)                  # the butcher stall (same as LD_BuildDirectorsCut)
+STALL_DIR = "/Game/DirectorsCut/Environment/ButcherStall"
+
+
+def _visual_only(a):
+    c = a.static_mesh_component
+    c.set_collision_enabled(unreal.CollisionEnabled.NO_COLLISION)
+    c.set_editor_property("can_ever_affect_navigation", False)
+
+
+def _hide(a):
+    """greybox piece goes invisible; it keeps its collision and its place on the nav mesh"""
+    if a.get_class().get_name() == "TextRenderActor":
+        a.text_render.set_editor_property("visible", False)
+    else:
+        a.static_mesh_component.set_editor_property("visible", False)
+
+
+def dress_stall():
+    """The butcher stall and its two joke signs (Meshy pictures + Scripts/Blender_BuildButcherStall.py).
+    Persistent level: SM_DC_ButcherStall over the greybox counter / posts / roof, and its name board SM_DC_ButcherSign
+    ("BUTCHER") above the awning (DC/SetDressing_Stall).
+    DC_Set_NoMeat sublevel (beat 2): SM_DC_SoldOutSign and SM_DC_LaughSign over the greybox boards, poles and text,
+    spawned into that sublevel so they still stream in with the joke. Visual only: the greybox goes invisible."""
+    sx, sy = STALL
+    CURRENT_FOLDER[0] = "DC/SetDressing_Stall"
+    clear_folder("DC/SetDressing_Stall")
+    a = EAS.spawn_actor_from_object(unreal.load_asset(STALL_DIR + "/SM_DC_ButcherStall"), V(sx, sy, 0), R())
+    _visual_only(a)
+    _finish(a, "Stall_ButcherStall")
+    n = EAS.spawn_actor_from_object(unreal.load_asset(STALL_DIR + "/SM_DC_ButcherSign"), V(sx, sy, 0), R())   # name board, same origin
+    _visual_only(n)
+    _finish(n, "Stall_ButcherSign")
+    hidden = []
+    grey_main = ["POI_ButcherStall_Counter", "ButcherStall_Roof"] + ["ButcherStall_Post_%d" % j for j in range(4)]
+    grey_nomeat = ["SoldOut_Board", "SIGN_SOLD_OUT", "LaughSign_Board", "LaughSign_Pole_0", "LaughSign_Pole_1", "SIGN_HA_HA_HA"]
+    for x in EAS.get_all_level_actors():
+        lvl = x.get_level().get_outer().get_name()
+        if (lvl == MAIN and x.get_actor_label() in grey_main) or (lvl == "DC_Set_NoMeat" and x.get_actor_label() in grey_nomeat):
+            _hide(x)
+            hidden.append(x.get_actor_label())
+    LES.set_current_level_by_name("DC_Set_NoMeat")
+    try:
+        for x in EAS.get_all_level_actors():
+            if x.get_level().get_outer().get_name() == "DC_Set_NoMeat" and x.get_actor_label().startswith("NoMeat_Sign_"):
+                EAS.destroy_actor(x)
+        for label, asset, loc in (("NoMeat_Sign_SoldOut", "SM_DC_SoldOutSign", (sx, sy - 225, 180)),     # hangs over the counter front
+                                  ("NoMeat_Sign_Laugh", "SM_DC_LaughSign", (sx, sy + 300, 0))):          # towers behind the stall
+            s = EAS.spawn_actor_from_object(unreal.load_asset(STALL_DIR + "/" + asset), V(*loc), R())
+            _visual_only(s)
+            s.set_actor_label(label)
+            s.set_folder_path("DC/Set_NoMeat")
+    finally:
+        LES.set_current_level_by_name(MAIN)
+    return {"hidden_greybox": sorted(hidden)}
+
+
+def dress_notice():
+    """The village notice board (Meshy poster + Scripts/Blender_BuildNoticeBoard.py): an inked plank board with the
+    Boar King wanted poster over the greybox board, and a floating quest-giver "!" (one camera-facing sprite) (POI_NoticeBoard + its two posts).
+    Persistent level, DC/SetDressing_Notice. Visual only: the greybox goes invisible but keeps its collision."""
+    CURRENT_FOLDER[0] = "DC/SetDressing_Notice"
+    clear_folder("DC/SetDressing_Notice")
+    board = next((x for x in EAS.get_all_level_actors() if x.get_actor_label() == "POI_NoticeBoard"), None)
+    assert board, "POI_NoticeBoard not found"
+    o, e = board.get_actor_bounds(False)
+    a = EAS.spawn_actor_from_object(unreal.load_asset("/Game/DirectorsCut/Environment/NoticeBoard/SM_DC_NoticeBoard"), V(o.x, o.y, 0), R())
+    _visual_only(a)
+    _finish(a, "Notice_WantedBoard")
+    # the quest-giver "!": ONE camera-facing sprite, so it reads as a single mark from every side and from above
+    tex = unreal.load_asset("/Game/DirectorsCut/Environment/NoticeBoard/T_DC_QuestMark")
+    q = EAS.spawn_actor_from_class(unreal.DCSpriteActor, V(o.x, o.y, 305), R(yaw=180))
+    spr = q.get_editor_property("sprite")
+    for prop in ("front_texture", "side_texture", "back_texture"):
+        spr.set_editor_property(prop, tex)
+    for prop in ("front_size", "side_size"):
+        spr.set_editor_property(prop, unreal.Vector2D(57.5, 115.0))
+    spr.set_editor_property("cast_shadow", False)
+    spr.set_editor_property("pivot_at_bottom", True)
+    _finish(q, "Notice_QuestMark")
+    hidden = []
+    for x in EAS.get_all_level_actors():
+        if x.get_level().get_outer().get_name() == MAIN and x.get_actor_label() in ("POI_NoticeBoard", "Notice_PostL", "Notice_PostR"):
+            _hide(x)
+            hidden.append(x.get_actor_label())
+    return {"at": [round(o.x), round(o.y), 0], "hidden_greybox": sorted(hidden)}
+
+
+VILLAGE_DIR = "/Game/DirectorsCut/Environment/Village"
+RACK_SWORD_SCALE = 1.6                 # the game sword is 95 cm; on the rack it is shown bigger so it reads from the spawn
+RACK_SWORD_LEAN = 10.0                 # degrees the swords lean back onto the rail
+
+
+def dress_village(sword_roll=None, sword_flip=True):
+    """The village well and the sword rack (Meshy stone picture + Scripts/Blender_BuildVillageProps.py).
+    Persistent level: SM_DC_Well over the greybox cylinder "Well" (DC/SetDressing_Village).
+    DC_Set_Hunt sublevel: SM_DC_SwordRack over the greybox rack base, and three of the game's SM_DC_Sword standing in it
+    instead of the three white sticks, spawned into that sublevel so they still stream with the hunt set.
+    Visual only: the greybox goes invisible but keeps its collision."""
+    CURRENT_FOLDER[0] = "DC/SetDressing_Village"
+    clear_folder("DC/SetDressing_Village")
+    acts = EAS.get_all_level_actors()
+    well = next((x for x in acts if x.get_actor_label() == "Well" and x.get_level().get_outer().get_name() == MAIN), None)
+    assert well, "greybox Well not found"
+    o, e = well.get_actor_bounds(False)
+    a = EAS.spawn_actor_from_object(unreal.load_asset(VILLAGE_DIR + "/SM_DC_Well"), V(o.x, o.y, 0), R())
+    _visual_only(a)
+    _finish(a, "Village_Well")
+    _hide(well)
+    hidden = ["Well"]
+
+    hunt = [x for x in acts if x.get_level().get_outer().get_name() == "DC_Set_Hunt"]
+    base = next((x for x in hunt if x.get_actor_label() == "SwordRack_Base"), None)
+    assert base, "greybox SwordRack_Base not found in DC_Set_Hunt"
+    bo, be = base.get_actor_bounds(False)
+    sticks = sorted([x for x in hunt if x.get_actor_label().startswith("SwordRack_Sword_")], key=lambda x: x.get_actor_label())
+    for x in [base] + sticks:
+        _hide(x)
+        hidden.append(x.get_actor_label())
+    LES.set_current_level_by_name("DC_Set_Hunt")
+    try:
+        for x in hunt:
+            if x.get_actor_label().startswith("Hunt_Rack"):
+                EAS.destroy_actor(x)
+        r = EAS.spawn_actor_from_object(unreal.load_asset(VILLAGE_DIR + "/SM_DC_SwordRack"), V(bo.x, bo.y, 0), R())
+        _visual_only(r)
+        r.set_actor_label("Hunt_Rack")
+        r.set_folder_path("DC/Set_Hunt")
+        sword = unreal.load_asset("/Game/DirectorsCut/Combat/Sword/SM_DC_Sword")
+        # the weapon's own material turns black on a static prop out in the level: use the inked prop material
+        # with the sword's colour picture instead (MI_DC_Sword_Prop). sword_flip: blade down, hilt up.
+        sword_mi = unreal.load_asset(VILLAGE_DIR + "/MI_DC_Sword_Prop")
+        half = 47.5 * RACK_SWORD_SCALE                       # the sword model is 95 cm long, centred on its origin
+        lean = math.radians(RACK_SWORD_LEAN)
+        roll = (RACK_SWORD_LEAN if sword_roll is None else sword_roll) + (180.0 if sword_flip else 0.0)
+        for j, st in enumerate(sticks):
+            so, _ = st.get_actor_bounds(False)
+            # tip on the base board (42 cm up, 5 cm behind the rack centre), leaning back onto the rail
+            loc = V(bo.x - 5 - half * math.sin(lean), so.y, 40 + half * math.cos(lean))
+            sw = EAS.spawn_actor_from_object(sword, loc, R(roll=roll, pitch=0, yaw=90))
+            sw.set_actor_scale3d(V(RACK_SWORD_SCALE, RACK_SWORD_SCALE, RACK_SWORD_SCALE))
+            _visual_only(sw)
+            if sword_mi:
+                sw.static_mesh_component.set_material(0, sword_mi)
+            sw.set_actor_label("Hunt_RackSword_%d" % j)
+            sw.set_folder_path("DC/Set_Hunt")
+    finally:
+        LES.set_current_level_by_name(MAIN)
+    return {"well_at": [round(o.x), round(o.y)], "rack_at": [round(bo.x), round(bo.y)], "swords": len(sticks), "hidden_greybox": sorted(hidden)}
+
+
 def dress_main_map(which="all"):
     _check_world()
     # no ensure_materials(): it re-saves the lead's shared MI_LD_* materials; the ones used here already exist
@@ -248,6 +404,12 @@ def dress_main_map(which="all"):
             out["ground_hidden_greybox"] = dress_ground()
         if which in ("all", "stage"):
             out["stage"] = dress_stage()
+        if which in ("all", "stall"):
+            out["stall"] = dress_stall()
+        if which in ("all", "notice"):
+            out["notice"] = dress_notice()
+        if which in ("all", "village"):
+            out["village"] = dress_village()
         if which in ("all", "trees"):
             out["apple_trees"] = dress_trees()
     w = UES.get_editor_world()
