@@ -248,9 +248,13 @@ STALL_DIR = "/Game/DirectorsCut/Environment/ButcherStall"
 
 
 def _visual_only(a):
+    """No collision on a dressing mesh. The profile must be set LAST and by name: set_collision_enabled() alone was
+    silently undone by the property edit that followed it, and every imported mesh carries an auto-made convex hull
+    (found on the watchtower, whose hull blocked its own ramp)."""
     c = a.static_mesh_component
-    c.set_collision_enabled(unreal.CollisionEnabled.NO_COLLISION)
     c.set_editor_property("can_ever_affect_navigation", False)
+    c.set_collision_profile_name("NoCollision")
+    assert str(c.get_collision_profile_name()) == "NoCollision", a.get_actor_label()
 
 
 def _hide(a):
@@ -536,8 +540,8 @@ def dress_watchtower():
     clear_folder("DC/SetDressing_Watchtower")
     a = EAS.spawn_actor_from_object(unreal.load_asset("/Game/DirectorsCut/Environment/Watchtower/SM_DC_Watchtower"),
                                     V(WATCHTOWER[0], WATCHTOWER[1], 0), R())
-    _visual_only(a)
     _finish(a, "Watchtower_Skin")
+    _visual_only(a)
     hidden = []
     for x in EAS.get_all_level_actors():
         if x.get_level().get_outer().get_name() == MAIN and x.get_actor_label() in WATCHTOWER_GREYBOX:
