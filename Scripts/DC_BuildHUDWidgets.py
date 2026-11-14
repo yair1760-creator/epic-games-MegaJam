@@ -360,6 +360,47 @@ def build_quest_tracker():
     finish(bp)
 
 
+def build_ammo_counter():
+    bp = recreate_wbp("WBP_AmmoCounter", unreal.DCAmmoCounterWidget)
+    outer, inner = make_framed_panel(bp, "AmmoFrame", pad=(12, 8, 14, 8), bg_color=SLATE_BG, gold_thickness=2, ink_thickness=3)
+    col = add(bp, unreal.VerticalBox, "AmmoColumn", inner)
+
+    hdr = add(bp, unreal.TextBlock, "StatusText", col)
+    style_text(hdr, "PROP SHOTGUN  |  R RELOAD", 10, GOLD, font_key="Font_Mono", outline_size=1)
+    hdr.get_editor_property("slot").set_padding(unreal.Margin(0, 0, 0, 4))
+
+    row = add(bp, unreal.HorizontalBox, "AmmoRow", col)
+
+    sb = add(bp, unreal.SizeBox, "BarBox", row)
+    sb.set_width_override(150)
+    sb.set_height_override(18)
+    box_slot(sb, (0, 0, 12, 0))
+
+    bar_ink = add(bp, unreal.Border, "BarInk", sb)
+    bar_ink.set_editor_property("brush_color", INK)
+    bar_ink.set_editor_property("padding", unreal.Margin(2, 2, 2, 2))
+
+    bar = add(bp, unreal.ProgressBar, "AmmoBar", bar_ink)
+    bar.set_editor_property("percent", 1.0)
+    bar.set_editor_property("fill_color_and_opacity", WHITE)
+    pstyle = bar.get_editor_property("widget_style")
+    bg_b = unreal.SlateBrush()
+    bg_b.draw_as = unreal.SlateBrushDrawType.BOX
+    bg_b.tint_color = unreal.SlateColor(specified_color=TRACK_BG)
+    fill_b = unreal.SlateBrush()
+    fill_b.draw_as = unreal.SlateBrushDrawType.BOX
+    fill_b.tint_color = unreal.SlateColor(specified_color=GOLD)
+    pstyle.background_image = bg_b
+    pstyle.fill_image = fill_b
+    bar.set_editor_property("widget_style", pstyle)
+
+    ammo_txt = add(bp, unreal.TextBlock, "AmmoText", row)
+    style_text(ammo_txt, "8/8", 24, CREAM, font_key="Font_Display", outline_size=2)
+    box_slot(ammo_txt)
+
+    finish(bp)
+
+
 def build_subtitles():
     bp = recreate_wbp("WBP_Subtitles", unreal.DCSubtitlesWidget)
     sb = add(bp, unreal.SizeBox, "Frame")
@@ -432,6 +473,7 @@ def build_hud():
 
     canvas_slot(add(bp, _cls("WBP_QuestTracker"), "QuestTracker", root), (1, 0), (-36, 36))
     canvas_slot(add(bp, _cls("WBP_HealthBar"), "HealthBar", root), (0, 1), (36, -36))
+    canvas_slot(add(bp, _cls("WBP_AmmoCounter"), "AmmoCounter", root), (1, 1), (-36, -36))
     canvas_slot(add(bp, _cls("WBP_Subtitles"), "Subtitles", root), (0.5, 1), (0, -44))
 
     cross = add(bp, unreal.Image, "Crosshair", root)
@@ -688,12 +730,13 @@ def main():
     import_ui_fonts()
 
     # Delete parent HUD first so child WBPs can be recreated cleanly without stale references
-    for name in ("WBP_DCHUD", "WBP_StartScreen", "WBP_PauseMenu", "WBP_DeathScreen", "WBP_CutScreen", "WBP_Subtitles", "WBP_QuestTracker", "WBP_HealthBar"):
+    for name in ("WBP_DCHUD", "WBP_StartScreen", "WBP_PauseMenu", "WBP_DeathScreen", "WBP_CutScreen", "WBP_Subtitles", "WBP_QuestTracker", "WBP_AmmoCounter", "WBP_HealthBar"):
         pkg = "%s/%s" % (FOLDER, name)
         if EAL.does_asset_exist(pkg):
             EAL.delete_asset(pkg)
 
     build_health_bar()
+    build_ammo_counter()
     build_quest_tracker()
     build_subtitles()
     build_hud()

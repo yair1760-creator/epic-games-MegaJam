@@ -30,6 +30,7 @@
 #include "Combat/DCSwordWeapon.h"
 #include "Narrator/DCNarratorSubsystem.h"
 #include "Quest/DCQuestSubsystem.h"
+#include "UI/DCAmmoCounterWidget.h"
 #include "UI/DCDeathScreenWidget.h"
 #include "UI/DCHUDWidget.h"
 #include "UI/DCPauseMenuWidget.h"
@@ -240,10 +241,12 @@ bool FDCRunFullQuestFlowCommand::Update()
 	UDCHUDWidget* HUD = GM->GetHUDWidget();
 	UDCQuestTrackerWidget* Tracker = HUD ? HUD->GetQuestTracker() : nullptr;
 	UDCSubtitlesWidget* Subs = HUD ? HUD->GetSubtitles() : nullptr;
+	UDCAmmoCounterWidget* Ammo = HUD ? HUD->GetAmmoCounter() : nullptr;
 	Test->TestNotNull(TEXT("WBP_DCHUD should be created on BeginPlay"), HUD);
 	Test->TestNotNull(TEXT("WBP_QuestTracker should be bound on HUD"), Tracker);
 	Test->TestNotNull(TEXT("WBP_Subtitles should be bound on HUD"), Subs);
 	Test->TestNotNull(TEXT("WBP_HealthBar should be bound on HUD"), HUD ? HUD->GetHealthBar() : nullptr);
+	Test->TestNotNull(TEXT("WBP_AmmoCounter should be bound on HUD"), Ammo);
 
 	// Verify alternating line helper works cleanly
 	Narrator->Interrupt();
@@ -268,6 +271,10 @@ bool FDCRunFullQuestFlowCommand::Update()
 		Test->TestEqual(TEXT("HUD QuestTracker shows 0/10"), Tracker->GetDisplayedCount(), FString(TEXT("0/10")));
 	}
 	Test->TestTrue(TEXT("Beat 1 player holds ADCSwordWeapon"), Player->GetCurrentWeapon() && Player->GetCurrentWeapon()->IsA<ADCSwordWeapon>());
+	if (Ammo)
+	{
+		Test->TestEqual(TEXT("AmmoCounter is collapsed while holding Sword"), Ammo->GetVisibility(), ESlateVisibility::Collapsed);
+	}
 
 	for (int32 i = 1; i <= 6; ++i)
 	{
@@ -370,6 +377,11 @@ bool FDCRunFullQuestFlowCommand::Update()
 	}
 	Test->TestTrue(TEXT("Beat 3 player holds ADCShotgunWeapon"),
 		Player->GetCurrentWeapon() && Player->GetCurrentWeapon()->IsA<ADCShotgunWeapon>());
+	if (Ammo)
+	{
+		Test->TestEqual(TEXT("AmmoCounter is visible in Beat 3"), Ammo->GetVisibility(), ESlateVisibility::HitTestInvisible);
+		Test->TestEqual(TEXT("AmmoCounter shows 8/8 before firing"), Ammo->GetDisplayedAmmo(), FString(TEXT("8/8")));
+	}
 	if (ADCShotgunWeapon* Shotgun = Cast<ADCShotgunWeapon>(Player->GetCurrentWeapon()))
 	{
 		int32 ProjectilesBefore = 0;
@@ -379,10 +391,17 @@ bool FDCRunFullQuestFlowCommand::Update()
 		Shotgun->StartFiring();
 		Shotgun->StopFiring();
 		Test->TestEqual(TEXT("Shotgun blast consumes 1 shell"), Shotgun->GetBulletCount(), BulletsBefore - 1);
+		if (Ammo)
+		{
+			Test->TestEqual(TEXT("AmmoCounter updates to 7/8 after firing"), Ammo->GetDisplayedAmmo(), FString(TEXT("7/8")));
+		}
 
 		int32 ProjectilesAfter = 0;
 		for (TActorIterator<AShooterProjectile> It(World); It; ++It) { ++ProjectilesAfter; }
 		Test->TestEqual(TEXT("Shotgun blast spawns PelletCount projectiles"), ProjectilesAfter - ProjectilesBefore, Shotgun->GetPelletCount());
+
+		Shotgun->StartReload();
+		Test->TestTrue(TEXT("Shotgun enters reloading state"), Shotgun->IsReloading());
 	}
 
 	bool bAnyHyperspawning = false;
@@ -403,6 +422,10 @@ bool FDCRunFullQuestFlowCommand::Update()
 	Test->TestTrue(TEXT("Beat 4 loads DC_Set_PG"), DCFlowTestInternal::IsSublevelActive(World, FName("DC_Set_PG")));
 	Test->TestTrue(TEXT("Beat 4 swaps back to ADCSwordWeapon"),
 		Player->GetCurrentWeapon() && Player->GetCurrentWeapon()->IsA<ADCSwordWeapon>());
+	if (Ammo)
+	{
+		Test->TestEqual(TEXT("AmmoCounter collapses again on Beat 4 Sword"), Ammo->GetVisibility(), ESlateVisibility::Collapsed);
+	}
 	Test->TestEqual(TEXT("Beat 4a quest is Q_DefeatKingBoar"), Quest->GetActiveQuestId(), FName("Q_DefeatKingBoar"));
 	Test->TestEqual(TEXT("Beat 4a quest target is 1"), Quest->GetTarget(), 1);
 	Test->TestEqual(TEXT("Beat 4 music is M_Romance"), GM->GetActiveMusicAsset() ? GM->GetActiveMusicAsset()->GetFName() : NAME_None, FName("M_Romance"));

@@ -6,6 +6,7 @@
 #include "Blueprint/UserWidget.h"
 #include "DCHUDWidget.generated.h"
 
+class UDCAmmoCounterWidget;
 class UDCHealthBarWidget;
 class UDCQuestTrackerWidget;
 class UDCSubtitlesWidget;
@@ -27,6 +28,9 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly, Category="HUD", meta=(BindWidget))
 	TObjectPtr<UDCHealthBarWidget> HealthBar;
+
+	UPROPERTY(BlueprintReadOnly, Category="HUD", meta=(BindWidgetOptional))
+	TObjectPtr<UDCAmmoCounterWidget> AmmoCounter;
 
 	UPROPERTY(BlueprintReadOnly, Category="HUD", meta=(BindWidget))
 	TObjectPtr<UDCSubtitlesWidget> Subtitles;
@@ -54,5 +58,6 @@ public:
 	UWidget* GetCrosshair() const { return Crosshair; }
 	UDCQuestTrackerWidget* GetQuestTracker() const { return QuestTracker; }
 	UDCHealthBarWidget* GetHealthBar() const { return HealthBar; }
+	UDCAmmoCounterWidget* GetAmmoCounter() const { return AmmoCounter; }
 	UDCSubtitlesWidget* GetSubtitles() const { return Subtitles; }
 };
