@@ -243,3 +243,14 @@ Taisho's three drawings are rebuilt as real 3D models painted with the drawings 
 | `SM_DC_AppleTree02_3D` | flared trunk + 5 branches (drawn bark), leaf-painted canopy core, 4 crossed cards of the drawn leafy outline, fallen apples, grass skirt | 5.2 m tall |
 
 Materials: `MI_DC_*_3D` on `M_DC_InkedProp` (lit, masked, two-sided). The `DC Prop ...` classes now show the 3D mesh by default (`bUse3DModel`; off = the 2D camera-facing card), so every placed copy (main map, hunt set, test map) switched without re-placing anything. Collision is still the invisible capsule (hay blocks, tree trunk blocks, grass none), so the nav mesh is unchanged.
+
+### 12c. Film-set stage floor (Meshy + Blender)
+
+`SM_DC_SetFloor` (`/Game/DirectorsCut/Environment/SetFloor`, material `MI_DC_SetFloor` on `M_DC_InkedProp`): a round wooden stage platform with plank boards, a wooden rim and four gaffer-tape marks, 24 m across and 20 cm tall - the same footprint and height as the grey plinth `POI_TheSet_Plinth` ("THE SET") in the middle of the playable level, which it is meant to replace.
+
+- **Made with Meshy:** text-to-3D, meshy-t2.5 smart topology (5 credits) + texture pass (10 credits). The untouched download is in `Art/Meshy/SetFloor/Source/`.
+- **Adjusted in Blender:** `Scripts/Blender_AdjustSetFloor.py` (`blender -b --python ... -- preview`): joins the parts, merges doubles, fixes normals, centres it with the bottom at z = 0, makes the footprint a true circle, scales it to 24 m x 20 cm (the squash also flattens the top: plank steps are under 1 cm), triangulates and exports `Art/Meshy/SetFloor/Export/SM_DC_SetFloor.glb` + `.blend` for hand edits.
+- **Collision:** complex-as-simple, so the player and boars walk on the real surface.
+- **Not placed in any map yet.** To use it: put it at the plinth's spot (1000, 0, 0) and hide or delete `POI_TheSet_Plinth`, then rebuild nav.
+- Limits: planks are wide (about 1-2 m) because one model covers 24 m, and its 2K texture is soft up close; the look is painted wood rather than strong ink lines.
+- Screenshots: `Docs/Screenshots/SetFloor_Top.png`, `SetFloor_Side.png`.
