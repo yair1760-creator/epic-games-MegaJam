@@ -290,3 +290,5 @@ Four models in `/Game/DirectorsCut/Environment/ButcherStall`, built by `Scripts/
 - **Checked in play:** stall alone in beat 1; with `DC_Set_NoMeat` loaded both signs appear and read correctly; nav still reaches the stall front.
 - Limits: the SOLD OUT letters look grey when the awning's shadow falls on the board; the meat hooks and empty plate of beat 2 are still greybox; nothing is on the counter (no meat, cleaver or scales).
 - Screenshots: `Docs/Screenshots/ButcherStall_Beat1.png`, `ButcherStall_Beat2_Close.png`, `ButcherStall_Beat2_Far.png`.
+
+**Merge note (2026-11-14):** Saar's commit `b10990e` and the stall work both changed `Lvl_DirectorsCut.umap`. Our version of the level was kept, and Saar's one level change was re-created by hand exactly as his `LD_BuildDirectorsCut.py` does it: the `BoarWanderArea` trigger box (centre 0, 0, 500; extent 5700 x 4700 x 500; tag `BoarWanderArea`; folder `DC/Gameplay`) and `DC_BoarSpawner.wander_area` pointing at it. Checked in play: a spawned boar has the area set.
