@@ -255,7 +255,8 @@ def _hide(a):
 
 def dress_stall():
     """The butcher stall and its two joke signs (Meshy pictures + Scripts/Blender_BuildButcherStall.py).
-    Persistent level: SM_DC_ButcherStall over the greybox counter / posts / roof (DC/SetDressing_Stall).
+    Persistent level: SM_DC_ButcherStall over the greybox counter / posts / roof, and its name board SM_DC_ButcherSign
+    ("BUTCHER") above the awning (DC/SetDressing_Stall).
     DC_Set_NoMeat sublevel (beat 2): SM_DC_SoldOutSign and SM_DC_LaughSign over the greybox boards, poles and text,
     spawned into that sublevel so they still stream in with the joke. Visual only: the greybox goes invisible."""
     sx, sy = STALL
@@ -264,6 +265,9 @@ def dress_stall():
     a = EAS.spawn_actor_from_object(unreal.load_asset(STALL_DIR + "/SM_DC_ButcherStall"), V(sx, sy, 0), R())
     _visual_only(a)
     _finish(a, "Stall_ButcherStall")
+    n = EAS.spawn_actor_from_object(unreal.load_asset(STALL_DIR + "/SM_DC_ButcherSign"), V(sx, sy, 0), R())   # name board, same origin
+    _visual_only(n)
+    _finish(n, "Stall_ButcherSign")
     hidden = []
     grey_main = ["POI_ButcherStall_Counter", "ButcherStall_Roof"] + ["ButcherStall_Post_%d" % j for j in range(4)]
     grey_nomeat = ["SoldOut_Board", "SIGN_SOLD_OUT", "LaughSign_Board", "LaughSign_Pole_0", "LaughSign_Pole_1", "SIGN_HA_HA_HA"]

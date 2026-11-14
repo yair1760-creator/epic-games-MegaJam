@@ -10,7 +10,9 @@
 #                               (materials M_Stall_Wood, M_Stall_Awning). Same footprint as the greybox stall.
 #      SM_DC_SoldOutSign.glb    hanging plank board, white inked "SOLD OUT" (beat 2)        + T_DC_SoldOutSign.png
 #      SM_DC_LaughSign.glb      tall two-pole billboard, red "HA HA HA" (beat 2)             + T_DC_LaughSign.png
-#      T_DC_Stall_Awning.png, ButcherStall.blend (all three, for hand edits)
+#      SM_DC_ButcherSign.glb    the stall's name board "BUTCHER" above the back of the awning + T_DC_ButcherSign.png
+#                               (Source/Butcher_meshy_image.png; same origin as the stall, always visible)
+#      T_DC_Stall_Awning.png, ButcherStall.blend (all four, for hand edits)
 # Axes: Blender (x, y) = Unreal (100 x, -100 y). The stall's customer side is Unreal -Y = Blender +Y.
 import bpy, bmesh, math, os, shutil, sys
 import numpy as np
@@ -93,6 +95,11 @@ ha = load_px(os.path.join(SRC, "HaHaHa_meshy_image.png"))
 HA_W, HA_H = ha.shape[1], ha.shape[0]
 save_px(resize(ha, 2048, 1024), os.path.join(OUT, "T_DC_LaughSign.png"))
 
+# BUTCHER texture: the Meshy picture as it is, resampled to a power of two
+bu = load_px(os.path.join(SRC, "Butcher_meshy_image.png"))
+BU_W, BU_H = bu.shape[1], bu.shape[0]
+save_px(resize(bu, 2048, 1024), os.path.join(OUT, "T_DC_ButcherSign.png"))
+
 
 # ---------------------------------------------------------------- mesh helpers
 class Mesh:
@@ -152,7 +159,8 @@ WOOD_TEX = os.path.join(ROOT, "Art", "Meshy", "SetFloor", "Export", "T_DC_SetSta
 MATS = {"M_Stall_Wood": material("M_Stall_Wood", WOOD_TEX),
         "M_Stall_Awning": material("M_Stall_Awning", os.path.join(OUT, "T_DC_Stall_Awning.png")),
         "M_SoldOutSign": material("M_SoldOutSign", os.path.join(OUT, "T_DC_SoldOutSign.png")),
-        "M_LaughSign": material("M_LaughSign", os.path.join(OUT, "T_DC_LaughSign.png"))}
+        "M_LaughSign": material("M_LaughSign", os.path.join(OUT, "T_DC_LaughSign.png")),
+        "M_ButcherSign": material("M_ButcherSign", os.path.join(OUT, "T_DC_ButcherSign.png"))}
 
 
 def wood_h(p, ax):
@@ -265,8 +273,37 @@ for pxx in (-5.0, 5.0):
     lg.face([(a[0], a[1], PT), (b[0], a[1], PT), (b[0], b[1], PT), (a[0], b[1], PT)], strip, "M_LaughSign", (0, 0, 1))
 laugh_ob = lg.finish()
 
+# ---------------------------------------------------------------- 4: BUTCHER (the stall's name board, on two stubs above the back of the awning;
+#                                                                     same origin as the stall, so it is placed at the stall's spot)
+def bu_uv(u, v):                      # pixels of the original Meshy picture, v down
+    return (u / BU_W, 1.0 - v / BU_H)
+
+
+bs = Mesh("SM_DC_ButcherSign", ["M_ButcherSign"])
+NW = 5.4
+NH = NW * (592 - 172) / (1352 - 24)   # the middle three planks of the picture -> about 1.7 m
+NZ0, NY1, NT = 3.55, -1.75, 0.10      # bottom edge, front face, thickness
+nx0, nx1, ny0 = -NW / 2, NW / 2, NY1 - NT
+bs.face([(nx1, NY1, NZ0 + NH), (nx0, NY1, NZ0 + NH), (nx0, NY1, NZ0), (nx1, NY1, NZ0)],
+        [bu_uv(24, 172), bu_uv(1352, 172), bu_uv(1352, 592), bu_uv(24, 592)], "M_ButcherSign", (0, 1, 0))
+for i in range(3):                    # back: plain plank strips
+    za, zb = NZ0 + NH * i / 3, NZ0 + NH * (i + 1) / 3
+    bs.face([(nx0, ny0, zb), (nx1, ny0, zb), (nx1, ny0, za), (nx0, ny0, za)],
+            [bu_uv(330, 600), bu_uv(1340, 600), bu_uv(1340, 718), bu_uv(330, 718)], "M_ButcherSign", (0, -1, 0))
+nstrip = [bu_uv(340, 60), bu_uv(1040, 60), bu_uv(1040, 150), bu_uv(340, 150)]
+bs.face([(nx0, ny0, NZ0 + NH), (nx1, ny0, NZ0 + NH), (nx1, NY1, NZ0 + NH), (nx0, NY1, NZ0 + NH)], nstrip, "M_ButcherSign", (0, 0, 1))
+bs.face([(nx0, ny0, NZ0), (nx1, ny0, NZ0), (nx1, NY1, NZ0), (nx0, NY1, NZ0)], nstrip, "M_ButcherSign", (0, 0, -1))
+bs.face([(nx0, ny0, NZ0), (nx0, ny0, NZ0 + NH), (nx0, NY1, NZ0 + NH), (nx0, NY1, NZ0)], nstrip, "M_ButcherSign", (-1, 0, 0))
+bs.face([(nx1, ny0, NZ0), (nx1, ny0, NZ0 + NH), (nx1, NY1, NZ0 + NH), (nx1, NY1, NZ0)], nstrip, "M_ButcherSign", (1, 0, 0))
+for sx_ in (-2.1, 2.1):               # stubs from the back beam up through the cloth
+    a, b = (sx_ - 0.09, ny0 - 0.16), (sx_ + 0.09, ny0)
+    for (p, q, out) in (((a[0], a[1]), (b[0], a[1]), (0, -1, 0)), ((a[0], b[1]), (b[0], b[1]), (0, 1, 0)),
+                        ((a[0], a[1]), (a[0], b[1]), (-1, 0, 0)), ((b[0], a[1]), (b[0], b[1]), (1, 0, 0))):
+        bs.face([(p[0], p[1], 3.05), (p[0], p[1], NZ0 + 0.9), (q[0], q[1], NZ0 + 0.9), (q[0], q[1], 3.05)], nstrip, "M_ButcherSign", out)
+butcher_ob = bs.finish()
+
 # ---------------------------------------------------------------- export
-for ob in (stall, soldout_ob, laugh_ob):
+for ob in (stall, soldout_ob, laugh_ob, butcher_ob):
     bpy.ops.object.select_all(action="DESELECT")
     ob.select_set(True)
     bpy.context.view_layer.objects.active = ob

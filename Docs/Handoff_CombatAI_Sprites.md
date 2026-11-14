@@ -276,15 +276,16 @@ Materials: `MI_DC_*_3D` on `M_DC_InkedProp` (lit, masked, two-sided). The `DC Pr
 
 ### 12e. Butcher stall, SOLD OUT and HA HA HA signs (Meshy pictures + Blender)
 
-Three models in `/Game/DirectorsCut/Environment/ButcherStall`, built by `Scripts/Blender_BuildButcherStall.py` (`blender -b --python ... -- preview`) and placed by `dress_main_map("stall")`:
+Four models in `/Game/DirectorsCut/Environment/ButcherStall`, built by `Scripts/Blender_BuildButcherStall.py` (`blender -b --python ... -- preview`) and placed by `dress_main_map("stall")`:
 
 | Mesh | What | Where it lives |
 |---|---|---|
 | `SM_DC_ButcherStall` | plank counter (8 x 4 x 1.1 m), 4 posts, beams, sloped red-and-white striped awning with a scalloped front edge | `Lvl_DirectorsCut`, `Stall_ButcherStall` in `DC/SetDressing_Stall` (always there) |
+| `SM_DC_ButcherSign` | the stall's name board: brown planks with cream "BUTCHER", a cleaver and a ham, 5.4 x 1.7 m on two stubs above the back of the awning | `Lvl_DirectorsCut`, `Stall_ButcherSign` in `DC/SetDressing_Stall` (always there) |
 | `SM_DC_SoldOutSign` | plank board with white inked "SOLD OUT", hanging on two ropes over the counter front | `DC_Set_NoMeat` sublevel, `NoMeat_Sign_SoldOut` (beat 2 only) |
 | `SM_DC_LaughSign` | 12.6 m dark billboard on two poles with red dripping "HA HA HA", top at 11.2 m, behind the stall | `DC_Set_NoMeat` sublevel, `NoMeat_Sign_Laugh` (beat 2 only) |
 
-- **Meshy (18 credits):** three text-to-image pictures (nano-banana-2) in `Art/Meshy/ButcherStall/Source`: awning cloth, SOLD OUT board, HA HA HA board. The SOLD OUT board came out as a photo, so only its letters are used: the script cuts them out, outlines them in ink and puts them on the stage's inked plank picture. All wood reuses `MI_DC_SetStage`.
+- **Meshy (24 credits):** four text-to-image pictures (nano-banana-2) in `Art/Meshy/ButcherStall/Source`: awning cloth, SOLD OUT board, HA HA HA board, BUTCHER board. The SOLD OUT board came out as a photo, so only its letters are used: the script cuts them out, outlines them in ink and puts them on the stage's inked plank picture. All wood reuses `MI_DC_SetStage`.
 - **Greybox:** the old counter, posts, roof, sign boards, poles and the two text actors are invisible, not deleted (12 actors), so collision and the nav mesh are unchanged. The new meshes have no collision.
 - **Checked in play:** stall alone in beat 1; with `DC_Set_NoMeat` loaded both signs appear and read correctly; nav still reaches the stall front.
 - Limits: the SOLD OUT letters look grey when the awning's shadow falls on the board; the meat hooks and empty plate of beat 2 are still greybox; nothing is on the counter (no meat, cleaver or scales).
