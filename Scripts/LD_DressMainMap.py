@@ -2,10 +2,11 @@
 #   - the 4 greybox village houses (cube + chamfer roof) become Taisho's painted house_01 as film-set flats
 #   - Taisho's grass tufts scattered over the meadow, hay bales at farm spots around the village
 #   - the hunt set's 10 greybox hay bales (yellow cylinders) become Taisho's hay bale cut-outs
+#   - Taisho's apple trees around the village edges and the meadow border
 # Run inside the editor (Lvl_DirectorsCut open):
 #   exec(open(r"D:\EpicGameJam\EpicGameJamGame\EpicGameJamGame\Scripts\LD_DressMainMap.py").read())
-#   dress_main_map()            # or dress_main_map("houses") / ("hunt") / ("props")
-# Re-runnable: clears DC/Village_Flats and DC/SetDressing_Props (persistent level) and the Hunt_HayProp_* actors first.
+#   dress_main_map()            # or dress_main_map("houses") / ("hunt") / ("props") / ("trees")
+# Re-runnable: clears DC/Village_Flats, DC/SetDressing_Props and DC/SetDressing_Trees (persistent level) and the Hunt_HayProp_* actors first.
 # DC_Set_Hunt only gets its greybox hay bales swapped for the real ones; no other sublevel is touched.
 # Note: re-running LD_BuildDirectorsCut's village / hunt stages would bring the greybox back - run this again afterwards.
 import unreal, math, os, random
@@ -165,6 +166,27 @@ def dress_hunt_hay():
         LES.set_current_level_by_name(MAIN)
 
 
+def dress_trees(max_trees=9):
+    """Taisho's apple trees around the village edges and the meadow border (DC/SetDressing_Trees, persistent level)."""
+    CURRENT_FOLDER[0] = "DC/SetDressing_Trees"
+    clear_folder("DC/SetDressing_Trees")
+    blockers = _blockers()
+    taken = [(a.get_actor_location().x, a.get_actor_location().y) for a in EAS.get_all_level_actors()
+             if a.get_actor_label().startswith(("Prop_HayBale_", "Hunt_HayProp_", "Edge_Pine_"))]
+    spots = [(-5550, 3350), (-4450, 3500), (-3650, 4150), (-4100, -3350), (-3600, -4300), (-1300, 4400), (1500, 4450),
+             (-1700, -4450), (2300, -4400), (5300, 2900), (5300, -2700), (-2600, 4500), (3800, 4450)]
+    rng = random.Random(202)
+    n = 0
+    for x, y in spots:
+        if n >= max_trees:
+            break
+        if not _free(x, y, blockers, extra=200) or any((x - tx) ** 2 + (y - ty) ** 2 < 450 ** 2 for tx, ty in taken):
+            continue
+        _finish(EAS.spawn_actor_from_class(unreal.DCProp_AppleTree02, V(x, y, 0), R(yaw=rng.uniform(0, 360))), "Prop_AppleTree_%d" % n)
+        taken.append((x, y)); n += 1
+    return n
+
+
 def dress_main_map(which="all"):
     _check_world()
     # no ensure_materials(): it re-saves the lead's shared MI_LD_* materials; the ones used here already exist
@@ -176,6 +198,8 @@ def dress_main_map(which="all"):
             out["hunt_hay"] = dress_hunt_hay()
         if which in ("all", "props"):
             out.update(dress_props())
+        if which in ("all", "trees"):
+            out["apple_trees"] = dress_trees()
     w = UES.get_editor_world()
     unreal.SystemLibrary.execute_console_command(w, "RebuildNavigation")   # hay bales block: refresh the static nav mesh
     return out
