@@ -4,7 +4,7 @@
 #   - the hunt set's 10 greybox hay bales (yellow cylinders) become Taisho's hay bale cut-outs
 #   - Taisho's apple trees around the village edges and the meadow border
 #   - the Forgive Me Father style floor (SM_DC_SetGround) over the meadow, paths and village square
-#   - the round wooden stage floor (SM_DC_SetFloor) over the lilac disc "THE SET"
+#   - the round wooden stage floor (SM_DC_SetStage) over the lilac disc "THE SET"
 # Run inside the editor (Lvl_DirectorsCut open):
 #   exec(open(r"D:\EpicGameJam\EpicGameJamGame\EpicGameJamGame\Scripts\LD_DressMainMap.py").read())
 #   dress_main_map()            # or dress_main_map("houses") / ("hunt") / ("props") / ("trees") / ("ground") / ("stage")
@@ -213,17 +213,17 @@ def dress_ground():
 
 
 def dress_stage():
-    """The round wooden stage floor (SM_DC_SetFloor, Meshy + Scripts/Blender_AdjustSetFloor.py) over the lilac disc
+    """The round wooden stage floor (SM_DC_SetStage: Meshy plank picture + Scripts/Blender_BuildSetStage.py) over the lilac disc
     "THE SET" (POI_TheSet_Plinth). Visual only: the disc goes invisible but keeps its collision and nav."""
     CURRENT_FOLDER[0] = "DC/SetDressing_Stage"
     clear_folder("DC/SetDressing_Stage")
     plinth = next((x for x in EAS.get_all_level_actors() if x.get_actor_label() == "POI_TheSet_Plinth"), None)
     assert plinth, "POI_TheSet_Plinth not found"
     o, e = plinth.get_actor_bounds(False)
-    sm_asset = unreal.load_asset("/Game/DirectorsCut/Environment/SetFloor/SM_DC_SetFloor")
+    sm_asset = unreal.load_asset("/Game/DirectorsCut/Environment/SetFloor/SM_DC_SetStage")   # inked planks (Blender_BuildSetStage.py)
     b = sm_asset.get_bounding_box()
     a = EAS.spawn_actor_from_object(sm_asset, V(o.x, o.y, o.z - e.z), R())
-    # stretch the model to the disc's exact footprint and height (it was built 24 m x 20 cm; the disc is 40 cm tall)
+    # fit the model to the disc exactly (it is built to the same 24 m x 40 cm, so the scale is ~1)
     a.set_actor_scale3d(V(2 * e.x / (b.max.x - b.min.x), 2 * e.y / (b.max.y - b.min.y), 2 * e.z / (b.max.z - b.min.z)))
     c = a.static_mesh_component
     c.set_collision_enabled(unreal.CollisionEnabled.NO_COLLISION)

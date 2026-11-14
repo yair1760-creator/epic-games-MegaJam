@@ -244,16 +244,16 @@ Taisho's three drawings are rebuilt as real 3D models painted with the drawings 
 
 Materials: `MI_DC_*_3D` on `M_DC_InkedProp` (lit, masked, two-sided). The `DC Prop ...` classes now show the 3D mesh by default (`bUse3DModel`; off = the 2D camera-facing card), so every placed copy (main map, hunt set, test map) switched without re-placing anything. Collision is still the invisible capsule (hay blocks, tree trunk blocks, grass none), so the nav mesh is unchanged.
 
-### 12c. Film-set stage floor (Meshy + Blender)
+### 12c. Round film-set stage (Meshy picture + Blender)
 
-`SM_DC_SetFloor` (`/Game/DirectorsCut/Environment/SetFloor`, material `MI_DC_SetFloor` on `M_DC_InkedProp`): a round wooden stage platform with plank boards, a wooden rim and four gaffer-tape marks, 24 m across and 20 cm tall - the same footprint and height as the grey plinth `POI_TheSet_Plinth` ("THE SET") in the middle of the playable level, which it is meant to replace.
+`SM_DC_SetStage` (`/Game/DirectorsCut/Environment/SetFloor`, material `MI_DC_SetStage` on `M_DC_InkedProp`, texture `T_DC_SetStage_Planks`): the round wooden stage in the middle of the platform, in the Forgive Me Father comic style (inked floorboards, nails, scratches). 24 m across and 40 cm tall - the same footprint and height as the grey plinth `POI_TheSet_Plinth` ("THE SET") it covers.
 
-- **Made with Meshy:** text-to-3D, meshy-t2.5 smart topology (5 credits) + texture pass (10 credits). The untouched download is in `Art/Meshy/SetFloor/Source/`.
-- **Adjusted in Blender:** `Scripts/Blender_AdjustSetFloor.py` (`blender -b --python ... -- preview`): joins the parts, merges doubles, fixes normals, centres it with the bottom at z = 0, makes the footprint a true circle, scales it to 24 m x 20 cm (the squash also flattens the top: plank steps are under 1 cm), triangulates and exports `Art/Meshy/SetFloor/Export/SM_DC_SetFloor.glb` + `.blend` for hand edits.
-- **Collision:** complex-as-simple, so the player and boars walk on the real surface.
-- **Placed on the playable level (2026-11-14):** `Stage_SetFloor` in `DC/SetDressing_Stage`, via `dress_main_map("stage")`: stretched to the disc's exact footprint and 40 cm height, no collision; `POI_TheSet_Plinth` is invisible but still collides and carries the nav mesh. In play the player can walk onto it and nav reaches its centre.
-- Limits: planks are wide (about 1-2 m) because one model covers 24 m, and its 2K texture is soft up close; the look is painted wood rather than strong ink lines.
-- Screenshots: `Docs/Screenshots/SetFloor_Top.png`, `SetFloor_Side.png`.
+- **Made with Meshy:** one text-to-image plank picture (nano-banana-2, 6 credits): `Art/Meshy/SetFloor/Source/Planks_meshy_image.png`.
+- **Built in Blender:** `Scripts/Blender_BuildSetStage.py` (`blender -b --python ... -- preview`): a round platform with 30 cm planks running across the top (the picture repeats every 2.4 m), a ring of boards around the top edge and one board all the way round the side. Exports `Art/Meshy/SetFloor/Export/SM_DC_SetStage.glb` + `.blend` for hand edits.
+- **Placed on the playable level (2026-11-14):** `Stage_SetFloor` in `DC/SetDressing_Stage`, via `dress_main_map("stage")`: no collision of its own; `POI_TheSet_Plinth` is invisible but still collides and carries the nav mesh. Checked in play: the player walks onto it and nav reaches its centre.
+- Limits: from far away the 2.4 m repeat of the picture shows as a faint grid; there are no gaffer-tape marks or other stage dressing on it yet.
+- Screenshots: `Docs/Screenshots/SetStage_Play_Approach.png`, `SetStage_Play_On.png`.
+- **Superseded:** the first attempt `SM_DC_SetFloor` / `MI_DC_SetFloor` / `T_DC_SetFloor` (a Meshy 3D model stretched to 24 m by `Scripts/Blender_AdjustSetFloor.py`: orange, soft, 1-2 m planks) is still in the project but no longer used anywhere - safe to delete.
 
 ### 12d. The whole platform's floor (Meshy + Blender)
 
