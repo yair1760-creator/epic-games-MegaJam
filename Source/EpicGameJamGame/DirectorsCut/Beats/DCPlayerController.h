@@ -6,13 +6,14 @@
 #include "GameFramework/PlayerController.h"
 #include "DCPlayerController.generated.h"
 
+class UDCPauseMenuWidget;
 class UInputMappingContext;
 class UUserWidget;
 
 /**
  *  Player controller for Lvl_DirectorsCut.
  *  Applies Enhanced Input mapping contexts, tags the possessed pawn as "Player",
- *  and respawns at the active checkpoint or PlayerStart_Village while keeping quest progress.
+ *  toggles the Esc/P pause menu, and respawns at the active checkpoint or PlayerStart_Village while keeping quest progress.
  */
 UCLASS()
 class EPICGAMEJAMGAME_API ADCPlayerController : public APlayerController
@@ -22,6 +23,18 @@ class EPICGAMEJAMGAME_API ADCPlayerController : public APlayerController
 public:
 
 	ADCPlayerController();
+
+	UFUNCTION(BlueprintCallable, Category="Pause")
+	void TogglePauseMenu();
+
+	UFUNCTION(BlueprintCallable, Category="Pause")
+	void SetPauseMenuOpen(bool bOpen);
+
+	UFUNCTION(BlueprintPure, Category="Pause")
+	bool IsPauseMenuOpen() const { return bPauseMenuOpen; }
+
+	UFUNCTION(BlueprintPure, Category="Pause")
+	UDCPauseMenuWidget* GetPauseMenuWidget() const { return PauseMenuWidget; }
 
 protected:
 
@@ -39,6 +52,15 @@ protected:
 
 	UPROPERTY(Transient)
 	TObjectPtr<UUserWidget> MobileControlsWidget;
+
+	/** Pause menu widget spawned on ESC / P (WBP_PauseMenu) */
+	UPROPERTY(EditDefaultsOnly, Category="UI")
+	TSubclassOf<UDCPauseMenuWidget> PauseMenuWidgetClass;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UDCPauseMenuWidget> PauseMenuWidget;
+
+	bool bPauseMenuOpen = false;
 
 	UPROPERTY(EditAnywhere, Config, Category="Input|Touch Controls")
 	bool bForceTouchControls = false;

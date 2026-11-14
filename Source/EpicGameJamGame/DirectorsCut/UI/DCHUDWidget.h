@@ -9,6 +9,7 @@
 class UDCHealthBarWidget;
 class UDCQuestTrackerWidget;
 class UDCSubtitlesWidget;
+class UTextBlock;
 
 /**
  *  The single HUD added to the screen by ADCGameMode. WBP_DCHUD holds one instance of each HUD part;
@@ -32,6 +33,20 @@ protected:
 
 	UPROPERTY(BlueprintReadOnly, Category="HUD", meta=(BindWidgetOptional))
 	TObjectPtr<UWidget> Crosshair;
+
+	/** Optional top-left viewfinder slate label ("REC | SCENE 1: BOAR HUNT") */
+	UPROPERTY(BlueprintReadOnly, Category="HUD", meta=(BindWidgetOptional))
+	TObjectPtr<UTextBlock> TakeText;
+
+	virtual void NativeConstruct() override;
+	virtual void NativeDestruct() override;
+
+private:
+
+	UFUNCTION()
+	void HandleBeatChanged(int32 Beat);
+
+	void RefreshTakeLabel(int32 Beat);
 
 public:
 

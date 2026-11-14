@@ -21,6 +21,7 @@
 #include "GameFramework/PlayerController.h"
 #include "HAL/IConsoleManager.h"
 #include "Kismet/GameplayStatics.h"
+#include "Misc/App.h"
 #include "Misc/PackageName.h"
 #include "Narrator/DCNarratorSubsystem.h"
 #include "Quest/DCQuestSubsystem.h"
@@ -29,6 +30,7 @@
 #include "Sound/SoundBase.h"
 #include "TimerManager.h"
 #include "UI/DCHUDWidget.h"
+#include "UI/DCStartScreenWidget.h"
 #include "UI/DCVictoryWidget.h"
 #include "UObject/ConstructorHelpers.h"
 #include "EpicGameJamGame.h"
@@ -45,6 +47,11 @@ ADCGameMode::ADCGameMode()
 		SwordWeaponClass = SwordBP.Class;
 	}
 	GunWeaponClass = ADCShotgunWeapon::StaticClass();
+	static ConstructorHelpers::FClassFinder<UDCStartScreenWidget> StartScreenBP(TEXT("/Game/DirectorsCut/UI/WBP_StartScreen"));
+	if (StartScreenBP.Succeeded())
+	{
+		StartScreenWidgetClass = StartScreenBP.Class;
+	}
 	static ConstructorHelpers::FClassFinder<UDCVictoryWidget> CutScreenBP(TEXT("/Game/DirectorsCut/UI/WBP_CutScreen"));
 	if (CutScreenBP.Succeeded())
 	{
@@ -95,8 +102,16 @@ void ADCGameMode::BeginPlay()
 		HandlePossessedPawnChanged(nullptr, PC->GetPawn());
 	}
 
-	UpdateMusicForBeat(CurrentBeat);
-	GetWorldTimerManager().SetTimer(IntroTimer, this, &ADCGameMode::StartIntro, FMath::Max(IntroDelay, 0.01f), false);
+	const bool bSkipTitle = !bShowStartScreen || GIsAutomationTesting || FApp::IsUnattended();
+	if (bSkipTitle)
+	{
+		UpdateMusicForBeat(CurrentBeat);
+		GetWorldTimerManager().SetTimer(IntroTimer, this, &ADCGameMode::StartIntro, FMath::Max(IntroDelay, 0.01f), false);
+	}
+	else
+	{
+		ShowStartScreen();
+	}
 }
 
 void ADCGameMode::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -485,7 +500,14 @@ void ADCGameMode::StartBeat(int32 Beat)
 
 	bVictoryPending = false;
 	bVictoryShown = false;
+	bStartScreenShown = false;
+	bMusicDucked = false;
 	GetWorldTimerManager().ClearTimer(MusicUnduckTimer);
+	if (StartScreenWidget)
+	{
+		StartScreenWidget->RemoveFromParent();
+		StartScreenWidget = nullptr;
+	}
 	if (VictoryMusicComponent)
 	{
 		VictoryMusicComponent->Stop();
@@ -502,6 +524,10 @@ void ADCGameMode::StartBeat(int32 Beat)
 	}
 	if (APlayerController* PC = GetWorld()->GetFirstPlayerController())
 	{
+		if (ADCPlayerController* DCPC = Cast<ADCPlayerController>(PC))
+		{
+			DCPC->SetPauseMenuOpen(false);
+		}
 		PC->SetIgnoreMoveInput(false);
 		PC->SetIgnoreLookInput(false);
 		PC->SetInputMode(FInputModeGameOnly());
@@ -870,6 +896,10 @@ void ADCGameMode::ShowVictoryScene()
 	}
 
 	APlayerController* PC = GetWorld()->GetFirstPlayerController();
+	if (ADCPlayerController* DCPC = Cast<ADCPlayerController>(PC))
+	{
+		DCPC->SetPauseMenuOpen(false);
+	}
 	if (!VictoryWidget && PC)
 	{
 		TSubclassOf<UDCVictoryWidget> WidgetCls = VictoryWidgetClass ? VictoryWidgetClass : TSubclassOf<UDCVictoryWidget>(UDCVictoryWidget::StaticClass());
@@ -938,6 +968,104 @@ void ADCGameMode::ShowVictoryScene()
 
 	OnVictoryTriggered.Broadcast();
 	UE_LOG(LogEpicGameJamGame, Log, TEXT("Victory scene displayed (THAT'S A WRAP!)"));
+}
+
+FString ADCGameMode::GetBeatDisplayName(int32 Beat) const
+{
+	switch (Beat)
+	{
+	case 1: return TEXT("SCENE 1: BOAR HUNT");
+	case 2: return TEXT("SCENE 2: BREAKFAST");
+	case 3: return TEXT("SCENE 3: ACTION BLOCKBUSTER");
+	case 4: return TEXT("SCENE 4: RATED PG ROMANCE");
+	case 5: return TEXT("SCENE 5: FINAL CUT");
+	default: return FString::Printf(TEXT("SCENE %d"), Beat);
+	}
+}
+
+void ADCGameMode::ShowStartScreen()
+{
+	if (bStartScreenShown || bVictoryShown)
+	{
+		return;
+	}
+
+	APlayerController* PC = GetWorld()->GetFirstPlayerController();
+	if (!PC)
+	{
+		return;
+	}
+
+	bStartScreenShown = true;
+	GetWorldTimerManager().ClearTimer(IntroTimer);
+
+	if (HUDWidget)
+	{
+		HUDWidget->SetVisibility(ESlateVisibility::Collapsed);
+	}
+
+	TSubclassOf<UDCStartScreenWidget> WidgetCls = StartScreenWidgetClass ? StartScreenWidgetClass : TSubclassOf<UDCStartScreenWidget>(UDCStartScreenWidget::StaticClass());
+	StartScreenWidget = CreateWidget<UDCStartScreenWidget>(PC, WidgetCls);
+	if (StartScreenWidget)
+	{
+		StartScreenWidget->AddToViewport(80);
+	}
+
+	PC->SetIgnoreMoveInput(true);
+	PC->SetIgnoreLookInput(true);
+	FInputModeUIOnly Mode;
+	if (StartScreenWidget)
+	{
+		if (UWidget* FocusTarget = StartScreenWidget->GetInitialFocusWidget())
+		{
+			Mode.SetWidgetToFocus(FocusTarget->TakeWidget());
+		}
+	}
+	Mode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+	PC->SetInputMode(Mode);
+	PC->bShowMouseCursor = true;
+
+	bMusicDucked = true;
+	UpdateMusicForBeat(CurrentBeat);
+	RefreshMusicDucking();
+}
+
+void ADCGameMode::StartFromTitle()
+{
+	if (!bStartScreenShown)
+	{
+		return;
+	}
+
+	bStartScreenShown = false;
+	RunStartTime = GetWorld()->GetTimeSeconds();
+
+	if (StartScreenWidget)
+	{
+		StartScreenWidget->RemoveFromParent();
+		StartScreenWidget = nullptr;
+	}
+	if (HUDWidget)
+	{
+		HUDWidget->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+	}
+
+	if (APlayerController* PC = GetWorld()->GetFirstPlayerController())
+	{
+		PC->SetIgnoreMoveInput(false);
+		PC->SetIgnoreLookInput(false);
+		PC->SetInputMode(FInputModeGameOnly());
+		PC->bShowMouseCursor = false;
+	}
+
+	if (USoundBase* CutSFX = CutSound ? CutSound.Get() : (FPackageName::DoesPackageExist(TEXT("/Game/DirectorsCut/Audio/SFX/S_Cut")) ? LoadObject<USoundBase>(nullptr, TEXT("/Game/DirectorsCut/Audio/SFX/S_Cut")) : nullptr))
+	{
+		UDCFXLibrary::PlayUISound(this, CutSFX, 0.85f);
+	}
+
+	bMusicDucked = false;
+	RefreshMusicDucking();
+	GetWorldTimerManager().SetTimer(IntroTimer, this, &ADCGameMode::StartIntro, FMath::Max(IntroDelay, 0.01f), false);
 }
 
 void ADCGameMode::EquipBeatWeapon(bool bUseGun)

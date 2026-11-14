@@ -6,7 +6,9 @@
 #include "Misc/AutomationTest.h"
 #include "Tests/AutomationCommon.h"
 #include "Engine/DataTable.h"
+#include "Engine/Font.h"
 #include "Engine/LevelStreaming.h"
+#include "Engine/Texture2D.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
 #include "GameFramework/PlayerController.h"
@@ -19,6 +21,7 @@
 #include "AI/DCDirectorBoss.h"
 #include "AI/DCKingBoar.h"
 #include "Beats/DCGameMode.h"
+#include "Beats/DCPlayerController.h"
 #include "Beats/DCPrincess.h"
 #include "Beats/DCShedDoors.h"
 #include "Combat/DCBoarMeatPickup.h"
@@ -28,7 +31,9 @@
 #include "Narrator/DCNarratorSubsystem.h"
 #include "Quest/DCQuestSubsystem.h"
 #include "UI/DCHUDWidget.h"
+#include "UI/DCPauseMenuWidget.h"
 #include "UI/DCQuestTrackerWidget.h"
+#include "UI/DCStartScreenWidget.h"
 #include "UI/DCSubtitlesWidget.h"
 #include "UI/DCVictoryWidget.h"
 #include "ShooterCharacter.h"
@@ -113,6 +118,31 @@ bool FDCNarratorAuditTest::RunTest(const FString& Parameters)
 			TestEqual(*FString::Printf(TEXT("Music asset %s looping state"), M.Path), Cue->IsLooping(), M.bShouldLoop);
 			TestTrue(*FString::Printf(TEXT("Music asset %s duration > 0"), M.Path), Cue->GetDuration() > 0.0f);
 		}
+	}
+
+	const TCHAR* ExpectedUITextures[] = {
+		TEXT("/Game/DirectorsCut/UI/Art/T_DC_Director_Portrait.T_DC_Director_Portrait"),
+		TEXT("/Game/DirectorsCut/UI/Art/T_DC_UI_ClapperBar.T_DC_UI_ClapperBar"),
+		TEXT("/Game/DirectorsCut/UI/Art/T_DC_UI_HeartIcon.T_DC_UI_HeartIcon"),
+		TEXT("/Game/DirectorsCut/UI/Art/T_DC_UI_SlateIcon.T_DC_UI_SlateIcon"),
+		TEXT("/Game/DirectorsCut/UI/Art/T_DC_UI_Crosshair.T_DC_UI_Crosshair"),
+	};
+	for (const TCHAR* TexPath : ExpectedUITextures)
+	{
+		UTexture2D* Tex = LoadObject<UTexture2D>(nullptr, TexPath);
+		TestNotNull(*FString::Printf(TEXT("UI texture %s must exist"), TexPath), Tex);
+	}
+
+	const TCHAR* ExpectedUIFonts[] = {
+		TEXT("/Game/DirectorsCut/UI/Fonts/Font_Display.Font_Display"),
+		TEXT("/Game/DirectorsCut/UI/Fonts/Font_Condensed.Font_Condensed"),
+		TEXT("/Game/DirectorsCut/UI/Fonts/Font_Body.Font_Body"),
+		TEXT("/Game/DirectorsCut/UI/Fonts/Font_Mono.Font_Mono"),
+	};
+	for (const TCHAR* FontPath : ExpectedUIFonts)
+	{
+		UFont* FontAsset = LoadObject<UFont>(nullptr, FontPath);
+		TestNotNull(*FString::Printf(TEXT("UI font %s must exist"), FontPath), FontAsset);
 	}
 
 	return true;
@@ -457,7 +487,34 @@ bool FDCRunFullQuestFlowCommand::Update()
 	GM->StartBeat(1);
 	Test->TestFalse(TEXT("StartBeat resets victory state"), GM->IsVictoryShown());
 
-	Test->AddInfo(TEXT("[DC_TEST] All 5 beats, quests, weapon swaps, pickups, Princess, Director Boss, B5 respawn, and Victory passed!"));
+	// Verify Start Screen and Pause Menu flow
+	GM->ShowStartScreen();
+	Test->TestTrue(TEXT("Start screen shows on ShowStartScreen"), GM->IsStartScreenShown());
+	Test->TestNotNull(TEXT("Start screen widget is created"), GM->GetStartScreenWidget());
+	if (ADCPlayerController* DCPC = Cast<ADCPlayerController>(World->GetFirstPlayerController()))
+	{
+		DCPC->SetPauseMenuOpen(true);
+		Test->TestFalse(TEXT("Pause menu cannot open while Start screen is shown"), DCPC->IsPauseMenuOpen());
+	}
+	GM->StartFromTitle();
+	Test->TestFalse(TEXT("StartFromTitle dismisses Start screen"), GM->IsStartScreenShown());
+	Test->TestEqual(TEXT("HUD becomes visible after StartFromTitle"), HUD->GetVisibility(), ESlateVisibility::SelfHitTestInvisible);
+
+	if (ADCPlayerController* DCPC = Cast<ADCPlayerController>(World->GetFirstPlayerController()))
+	{
+		DCPC->SetPauseMenuOpen(true);
+		Test->TestTrue(TEXT("SetPauseMenuOpen(true) opens Pause menu"), DCPC->IsPauseMenuOpen());
+		Test->TestNotNull(TEXT("Pause menu widget is created"), DCPC->GetPauseMenuWidget());
+		Test->TestTrue(TEXT("Game is paused while Pause menu is open"), UGameplayStatics::IsGamePaused(World));
+
+		DCPC->SetPauseMenuOpen(false);
+		Test->TestFalse(TEXT("SetPauseMenuOpen(false) closes Pause menu"), DCPC->IsPauseMenuOpen());
+		Test->TestFalse(TEXT("Game resumes after closing Pause menu"), UGameplayStatics::IsGamePaused(World));
+	}
+
+	GM->StartBeat(1);
+
+	Test->AddInfo(TEXT("[DC_TEST] All 5 beats, quests, weapon swaps, pickups, Princess, Director Boss, B5 respawn, Start/Pause, and Victory passed!"));
 	return true;
 }
 

@@ -11,9 +11,11 @@
 #include "EpicGameJamGameCameraManager.h"
 #include "GameFramework/GameModeBase.h"
 #include "GameFramework/PlayerStart.h"
+#include "InputCoreTypes.h"
 #include "InputMappingContext.h"
 #include "Kismet/GameplayStatics.h"
 #include "ShooterCharacter.h"
+#include "UI/DCPauseMenuWidget.h"
 #include "UObject/ConstructorHelpers.h"
 #include "Widgets/Input/SVirtualJoystick.h"
 
@@ -37,6 +39,12 @@ ADCPlayerController::ADCPlayerController()
 	if (MouseLookIMC.Succeeded())
 	{
 		MobileExcludedMappingContexts.Add(MouseLookIMC.Object);
+	}
+
+	static ConstructorHelpers::FClassFinder<UDCPauseMenuWidget> PauseBP(TEXT("/Game/DirectorsCut/UI/WBP_PauseMenu"));
+	if (PauseBP.Succeeded())
+	{
+		PauseMenuWidgetClass = PauseBP.Class;
 	}
 }
 
@@ -81,6 +89,88 @@ void ADCPlayerController::SetupInputComponent()
 				}
 			}
 		}
+
+		if (InputComponent)
+		{
+			InputComponent->BindKey(EKeys::Escape, IE_Pressed, this, &ADCPlayerController::TogglePauseMenu).bExecuteWhenPaused = true;
+			InputComponent->BindKey(EKeys::P, IE_Pressed, this, &ADCPlayerController::TogglePauseMenu).bExecuteWhenPaused = true;
+		}
+	}
+}
+
+void ADCPlayerController::TogglePauseMenu()
+{
+	SetPauseMenuOpen(!bPauseMenuOpen);
+}
+
+void ADCPlayerController::SetPauseMenuOpen(bool bOpen)
+{
+	if (bOpen == bPauseMenuOpen)
+	{
+		return;
+	}
+
+	UWorld* World = GetWorld();
+	if (!World || !IsLocalPlayerController())
+	{
+		return;
+	}
+
+	if (bOpen)
+	{
+		if (const ADCGameMode* GM = World->GetAuthGameMode<ADCGameMode>())
+		{
+			if (GM->IsVictoryShown() || GM->IsStartScreenShown())
+			{
+				return;
+			}
+		}
+
+		bPauseMenuOpen = true;
+		UGameplayStatics::SetGamePaused(World, true);
+
+		if (!PauseMenuWidget)
+		{
+			TSubclassOf<UDCPauseMenuWidget> WidgetCls = PauseMenuWidgetClass ? PauseMenuWidgetClass : TSubclassOf<UDCPauseMenuWidget>(UDCPauseMenuWidget::StaticClass());
+			PauseMenuWidget = CreateWidget<UDCPauseMenuWidget>(this, WidgetCls);
+		}
+		if (PauseMenuWidget)
+		{
+			PauseMenuWidget->RefreshStatus();
+			if (!PauseMenuWidget->IsInViewport())
+			{
+				PauseMenuWidget->AddToViewport(90);
+			}
+		}
+
+		SetIgnoreMoveInput(true);
+		SetIgnoreLookInput(true);
+		FInputModeGameAndUI Mode;
+		if (PauseMenuWidget)
+		{
+			if (UWidget* FocusTarget = PauseMenuWidget->GetInitialFocusWidget())
+			{
+				Mode.SetWidgetToFocus(FocusTarget->TakeWidget());
+			}
+		}
+		Mode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+		Mode.SetHideCursorDuringCapture(false);
+		SetInputMode(Mode);
+		bShowMouseCursor = true;
+	}
+	else
+	{
+		bPauseMenuOpen = false;
+		if (PauseMenuWidget)
+		{
+			PauseMenuWidget->RemoveFromParent();
+			PauseMenuWidget = nullptr;
+		}
+		UGameplayStatics::SetGamePaused(World, false);
+		SetIgnoreMoveInput(false);
+		SetIgnoreLookInput(false);
+		SetInputMode(FInputModeGameOnly());
+		bShowMouseCursor = false;
 	}
 }
 

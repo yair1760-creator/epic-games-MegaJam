@@ -15,6 +15,7 @@ class ADCPrincess;
 class UAudioComponent;
 class UDCHealthComponent;
 class UDCHUDWidget;
+class UDCStartScreenWidget;
 class UDCVictoryWidget;
 class ULevelStreaming;
 class USoundBase;
@@ -68,6 +69,10 @@ public:
 	UFUNCTION(BlueprintPure, Category="Beats")
 	int32 GetCurrentBeat() const { return CurrentBeat; }
 
+	/** Human-readable scene title for HUD / Pause menu */
+	UFUNCTION(BlueprintPure, Category="Beats")
+	FString GetBeatDisplayName(int32 Beat) const;
+
 	UFUNCTION(BlueprintPure, Category="Beats|Audio")
 	USoundBase* GetActiveMusicAsset() const { return ActiveMusicAsset; }
 
@@ -75,7 +80,21 @@ public:
 	UDCHUDWidget* GetHUDWidget() const { return HUDWidget; }
 
 	UFUNCTION(BlueprintPure, Category="UI")
+	UDCStartScreenWidget* GetStartScreenWidget() const { return StartScreenWidget; }
+
+	UFUNCTION(BlueprintPure, Category="UI")
 	UDCVictoryWidget* GetVictoryWidget() const { return VictoryWidget; }
+
+	UFUNCTION(BlueprintPure, Category="Beats|Start")
+	bool IsStartScreenShown() const { return bStartScreenShown; }
+
+	/** Shows the Title / Start slate before Beat 1 starts. */
+	UFUNCTION(BlueprintCallable, Category="Beats|Start")
+	void ShowStartScreen();
+
+	/** Dismisses the Title / Start slate and begins Beat 1 ("ACTION!"). */
+	UFUNCTION(BlueprintCallable, Category="Beats|Start")
+	void StartFromTitle();
 
 	UFUNCTION(BlueprintPure, Category="Beats|Victory")
 	bool IsVictoryShown() const { return bVictoryShown; }
@@ -106,6 +125,17 @@ protected:
 
 	UPROPERTY(Transient)
 	TObjectPtr<UDCHUDWidget> HUDWidget;
+
+	/** Title / Start slate shown on launch before Beat 1 begins (WBP_StartScreen) */
+	UPROPERTY(EditDefaultsOnly, Category="UI")
+	TSubclassOf<UDCStartScreenWidget> StartScreenWidgetClass;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UDCStartScreenWidget> StartScreenWidget;
+
+	/** Show the Start / Title slate on BeginPlay (skipped automatically in automated/unattended runs) */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Beats|Start")
+	bool bShowStartScreen = true;
 
 	/** Victory / wrap screen shown after defeating The Director (WBP_CutScreen) */
 	UPROPERTY(EditDefaultsOnly, Category="UI")
@@ -255,6 +285,7 @@ private:
 	bool bPlayedFirstHit = false;
 	bool bPlayedPlayerHurt = false;
 	bool bPendingBeat5 = false;
+	bool bStartScreenShown = false;
 	bool bVictoryPending = false;
 	bool bVictoryShown = false;
 	bool bMusicDucked = false;
