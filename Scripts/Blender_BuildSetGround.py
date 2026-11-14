@@ -32,6 +32,8 @@ PATHS = [(-2700.0, 0.0, 2650.0, 175.0, 0.0, 5.0), (3900.0, 0.0, 1850.0, 175.0, 0
          (-2250.0, 1100.0, 1278.05, 175.0, 102.804, 5.0), (2250.0, 1650.0, 1001.47, 175.0, 49.764, 5.0),
          (2100.0, -1850.0, 1089.41, 175.0, -64.799, 5.0), (-1000.0, -2200.0, 2350.0, 175.0, -90.0, 5.0)]
 LIFT = 0.6                      # cm above the greybox surface it covers
+PATH_STEP = 0.5                 # cm: every path strip sits this much above the one before it. The strips overlap at the
+                                # junctions; at the same height the two overlapping faces flicker (z-fighting) as the camera moves
 
 
 def set_engine(scn):
@@ -181,7 +183,7 @@ uvl = bm.loops.layers.uv.new("UVMap")
 MATS = ["Grass", "Dirt", "Cobble"]
 
 
-def rect(cx, cy, hl, hw, yaw, top, mat, cells):
+def rect(cx, cy, hl, hw, yaw, top, mat, cells, extra=0.0):
     """rotated rectangle in Unreal cm -> Blender metres (x, -y); UVs in world metres / tile size so every piece lines up"""
     c, s = math.cos(math.radians(yaw)), math.sin(math.radians(yaw))
     tile = TILE_M[mat]
@@ -192,7 +194,7 @@ def rect(cx, cy, hl, hw, yaw, top, mat, cells):
             for (a, b) in ((i, j), (i + 1, j), (i + 1, j + 1), (i, j + 1)):
                 lx, ly = -hl + 2 * hl * a / nx, -hw + 2 * hw * b / ny
                 ux, uy = cx + lx * c - ly * s, cy + lx * s + ly * c            # Unreal cm
-                pts.append((ux / 100.0, -uy / 100.0, (top + LIFT) / 100.0))
+                pts.append((ux / 100.0, -uy / 100.0, (top + LIFT + extra) / 100.0))
                 if mat == "Dirt":                                             # ruts run along the path, one picture across its width
                     uvs.append((lx / 100.0 / tile / REPEAT[mat][0], (ly + hw) / (2 * hw) / REPEAT[mat][1]))
                 else:
@@ -205,8 +207,8 @@ def rect(cx, cy, hl, hw, yaw, top, mat, cells):
 
 rect(*MEADOW, "Grass", (12, 10))
 rect(*SQUARE, "Cobble", (3, 5))
-for p in PATHS:
-    rect(*p, "Dirt", (max(1, int(p[2] / 500)), 1))
+for k, p in enumerate(PATHS):
+    rect(*p, "Dirt", (max(1, int(p[2] / 500)), 1), extra=k * PATH_STEP)
 bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=1e-4)
 bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
 up = sum(1 for f in bm.faces if f.normal.z > 0.5)
