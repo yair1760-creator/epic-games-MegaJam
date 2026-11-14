@@ -311,7 +311,7 @@ Four models in `/Game/DirectorsCut/Environment/ButcherStall`, built by `Scripts/
 - Walk bob and idle sway only while idle; the shot drawings keep their exact drawn placement.
 - Tunables on the weapon (`Shotgun|2D View`): `bUseSpriteView` (off = the old 3D gun), `AnimFPS`, `FlashTicks`, `RecoilTicks`, `RecoveryTicks`, `SpriteScreenScale`, `WalkBobPixels`, `IdleSwayPixels`, `EdgeBleedPixels`. For tests: `GetSpritePose()`, `GetShotElapsed()`, `GetShotAnimDuration()`.
 - Checked in play (`DC.SwapWeapon Gun`): pose changes measured at 0 / 168 / 251 / 418 ms; a second click 200 ms into the animation does not restart it; swapping back to the sword removes the shotgun layer.
-- Limits: no reload drawing (the idle frame stays up while reloading); the pellets still leave from the hidden 3D gun's muzzle, not from the drawn barrel; Saar's automation tests were not re-run.
+- Limits (the reload drawing was added later, see section 20): the pellets still leave from the hidden 3D gun's muzzle, not from the drawn barrel; Saar's automation tests were not re-run.
 - Screenshots: `Docs/Screenshots/Shotgun2D_Idle.png`, `Shotgun2D_Flash.png`, `Shotgun2D_Recoil.png`, `Shotgun2D_Recovery.png`.
 
 ## 14. Village notice board: Boar King wanted poster (Meshy picture + Blender)
@@ -422,3 +422,22 @@ The project had no loading screen at all, so there was nothing to reuse; this ad
 - **Tunables** (config properties on the subsystem): `AnimFPS`, `MinimumDisplaySeconds`, `IconScale`, `BackdropColor`.
 - **Verified during actual map loads** in a standalone game (`UnrealEditor.exe <project> -game`, then `open Lvl_DirectorsCut`): the log line `DCLoadingScreen: '<map>' loaded after 1.00 s; boar drawn 184 times, 12 frame switches, 8 of 8 drawings shown` is written at the end of every load, and window captures taken mid-load show different drawings with the text unchanged (`Docs/Screenshots/Loading_FrameA.png`, `Loading_FrameB.png`).
 - Limits: **it does not show in Play-In-Editor** (the engine's movie player only runs in a standalone or packaged game); the level currently loads in about a second on this machine, so the minimum time is what you mostly see; beat changes inside the level stream sublevels and do not show it; no packaged build was tested.
+
+## 20. 2D shotgun reload (designer frames, 12 fps)
+
+When a reload starts (R, or a click on an empty magazine: `ADCShotgunWeapon::StartReload`), the shotgun plays the designer's drawn reload once on the same full-screen sprite layer as the shot animation.
+
+| Frame | Starts | Held |
+|---|---|---|
+| `T_Shotgun_Reload_01` | 0 ms, on the reload event itself | 3 ticks (250 ms) |
+| `T_Shotgun_Reload_02` (pullback) | 250 ms | 2 ticks (167 ms) |
+| `T_Shotgun_Reload_01` again (the designer's 03 is the same artwork) | 417 ms | 2 ticks (167 ms) |
+| `T_Shotgun_Idle` | 583 ms | until the next animation |
+
+- **Replaces Saar's reload motion.** His version (poses `ReloadDrop / ReloadLoad / ReloadPump / ReloadSettle`) moved, scaled and tilted the existing shot frames over the whole 1.5 s reload. The designer's spec asks for held drawings with hard cuts and no tweening, on the normal canvas, scale and anchor, so that motion is gone. His reload event, timer, ammo counter and "RELOADING..." HUD are unchanged.
+- Art: `Art/Player/ShotgunReload` (4 PNGs, PSD, GIF and `Timing.txt` under `Reference`). `Shotgun_Reload_01.png` and `_03.png` are byte-identical to each other and to `Shotgun_03_Peak_Recoil.png`; `Shotgun_Reload_00_Idle.png` is byte-identical to `Shotgun_01_Idle.png`. So only two textures were imported (`T_Shotgun_Reload_01`, `T_Shotgun_Reload_02`); frame 03 points at the 01 texture and Idle at the existing idle texture.
+- Tunables (`Shotgun|2D View|Reload`): `SpriteReload01/02/03`, `Reload01Ticks` (3), `Reload02Ticks` (2), `Reload03Ticks` (2). Poses for tests: `Reload01`, `Reload02`, `Reload03`; `GetReloadAnimDuration()` = 0.583 s; `IsPlayingReloadAnim()` is true only while the three drawings are up.
+- **The reload itself still takes `ReloadTime` (1.5 s)**: the drawings finish at 0.583 s and the gun shows Idle for the remaining 0.9 s while it cannot fire yet (the HUD still says RELOADING). Shorten `ReloadTime` to about 0.6 s if the two should end together.
+- Saar's automation test for the reload was updated to the new pose names and times (same checks). The automation tests were not run.
+- **Checked in play:** pose changes measured at 0 / 261 / 424 / 615 ms (R), 0 / 251 / 421 / 592 ms (click on empty), within one game frame of the grid; a second R during the reload does not restart it.
+- Screenshots: `Docs/Screenshots/Shotgun2D_Reload_01.png`, `Shotgun2D_Reload_02.png`.

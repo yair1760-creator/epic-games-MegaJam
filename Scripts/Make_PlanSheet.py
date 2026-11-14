@@ -323,7 +323,7 @@ BACKLOG = [
  (17, "Set dressing: butcher stall", "Art", "Beat 2 meat hooks and the empty plate are still greybox; nothing is on the counter (no meat, cleaver, scales)", "Same method as the stall: Blender + a Meshy picture", "Medium"),
  (17, "Set dressing: butcher stall", "Art", "SOLD OUT letters look grey when the awning shadow falls on the board", "Turn off shadow casting on the awning edge or brighten the sign material", "Low"),
  (17, "Set dressing: butcher stall", "Audio", "No laugh track or sting when the HA HA HA sign appears in beat 2", "Hook the beat 2 sublevel load", "Medium"),
- (19, "2D shotgun view", "Art", "No reload drawing: the idle frame stays on screen during the 1.5 s reload", "One or two reload frames from the designer; same tick grid", "Medium"),
+ (19, "2D shotgun view", "Design", "The drawn reload ends at 0.58 s but the reload lasts 1.5 s: the gun shows Idle for 0.9 s while it still cannot fire", "Shorten ReloadTime to about 0.6 s, or ask the designer for a longer reload loop", "Medium"),
  (19, "2D shotgun view", "Code", "Pellets leave from the hidden 3D gun muzzle, not from the drawn barrel", "Fire from the camera centre while the 2D view is on", "Low"),
  (19, "2D shotgun view", "Audio", "Blast is still the template grenade launcher sound", "Use one of the fal shotgun takes once picked", "Medium"),
  (17, "Set dressing: notice board", "Animation", "The quest mark over the notice board is static (no bob or spin) and never goes away", "Slow bob in a small actor class; hide it once the King Boar quest starts or ends", "Low"),
