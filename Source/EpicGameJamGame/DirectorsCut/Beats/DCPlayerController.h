@@ -6,14 +6,14 @@
 #include "GameFramework/PlayerController.h"
 #include "DCPlayerController.generated.h"
 
-class UDCPauseMenuWidget;
 class UInputMappingContext;
 class UUserWidget;
+class UDCPauseMenuWidget;
 
 /**
  *  Player controller for Lvl_DirectorsCut.
  *  Applies Enhanced Input mapping contexts, tags the possessed pawn as "Player",
- *  toggles the Esc/P pause menu, and respawns at the active checkpoint or PlayerStart_Village while keeping quest progress.
+ *  and respawns at the active checkpoint or PlayerStart_Village while keeping quest progress.
  */
 UCLASS()
 class EPICGAMEJAMGAME_API ADCPlayerController : public APlayerController
@@ -24,19 +24,36 @@ public:
 
 	ADCPlayerController();
 
-	UFUNCTION(BlueprintCallable, Category="Pause")
+	// ---------------- pause menu (Esc)
+
+	/** Esc: pause the game and show the pause menu, or close it again */
+	UFUNCTION(BlueprintCallable, Category="Director's Cut|Pause")
 	void TogglePauseMenu();
 
-	UFUNCTION(BlueprintCallable, Category="Pause")
-	void SetPauseMenuOpen(bool bOpen);
+	UFUNCTION(BlueprintCallable, Category="Director's Cut|Pause")
+	void OpenPauseMenu();
 
-	UFUNCTION(BlueprintPure, Category="Pause")
-	bool IsPauseMenuOpen() const { return bPauseMenuOpen; }
+	/** RESUME: hide the menu and carry on */
+	UFUNCTION(BlueprintCallable, Category="Director's Cut|Pause")
+	void ClosePauseMenu();
 
-	UFUNCTION(BlueprintPure, Category="Pause")
-	UDCPauseMenuWidget* GetPauseMenuWidget() const { return PauseMenuWidget; }
+	/** QUIT: leave the game (same as the victory screen's Quit) */
+	UFUNCTION(BlueprintCallable, Category="Director's Cut|Pause")
+	void QuitFromPauseMenu();
+
+	UFUNCTION(BlueprintPure, Category="Director's Cut|Pause")
+	bool IsPauseMenuOpen() const { return PauseWidget != nullptr; }
+
+	UFUNCTION(BlueprintPure, Category="Director's Cut|Pause")
+	UDCPauseMenuWidget* GetPauseMenuWidget() const { return PauseWidget; }
 
 protected:
+
+	UPROPERTY(EditAnywhere, Category="Director's Cut|Pause")
+	TSubclassOf<UDCPauseMenuWidget> PauseMenuWidgetClass;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UDCPauseMenuWidget> PauseWidget;
 
 	/** Input mapping contexts always applied for this player */
 	UPROPERTY(EditAnywhere, Category="Input|Input Mappings")
@@ -52,15 +69,6 @@ protected:
 
 	UPROPERTY(Transient)
 	TObjectPtr<UUserWidget> MobileControlsWidget;
-
-	/** Pause menu widget spawned on ESC / P (WBP_PauseMenu) */
-	UPROPERTY(EditDefaultsOnly, Category="UI")
-	TSubclassOf<UDCPauseMenuWidget> PauseMenuWidgetClass;
-
-	UPROPERTY(Transient)
-	TObjectPtr<UDCPauseMenuWidget> PauseMenuWidget;
-
-	bool bPauseMenuOpen = false;
 
 	UPROPERTY(EditAnywhere, Config, Category="Input|Touch Controls")
 	bool bForceTouchControls = false;

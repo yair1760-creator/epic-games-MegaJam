@@ -549,118 +549,6 @@ def build_cut_screen():
     finish(bp)
 
 
-def build_start_screen():
-    bp = recreate_wbp("WBP_StartScreen", unreal.DCStartScreenWidget)
-    root = add(bp, unreal.CanvasPanel, "Root")
-
-    backdrop = add(bp, unreal.Border, "Backdrop", root)
-    backdrop.set_editor_property("brush_color", unreal.LinearColor(0.015, 0.01, 0.02, 0.68))
-    fill_canvas_slot(backdrop)
-    add_letterbox(bp, root, 62)
-
-    card_outer, card_inner = make_framed_panel(bp, "Card", root, pad=(0, 0, 0, 0), bg_color=SLATE_CARD, gold_thickness=3, ink_thickness=4)
-    canvas_slot(card_outer, (0.5, 0.5), (0, 0))
-
-    card_vbox = add(bp, unreal.VerticalBox, "CardStack", card_inner)
-    add_clapper_strip(bp, "ClapperTop", card_vbox, height=22).get_editor_property("slot").set_horizontal_alignment(unreal.HorizontalAlignment.H_ALIGN_FILL)
-
-    body = add(bp, unreal.Border, "CardBody", card_vbox)
-    body.set_editor_property("brush_color", unreal.LinearColor(0, 0, 0, 0))
-    body.set_editor_property("padding", unreal.Margin(54, 34, 54, 38))
-
-    col = add(bp, unreal.VerticalBox, "Column", body)
-
-    p_wrap = add(bp, unreal.Border, "DirectorFrame", col)
-    p_wrap.set_editor_property("brush_color", GOLD)
-    p_wrap.set_editor_property("padding", unreal.Margin(3, 3, 3, 3))
-    ps = p_wrap.get_editor_property("slot")
-    ps.set_horizontal_alignment(unreal.HorizontalAlignment.H_ALIGN_CENTER)
-    ps.set_padding(unreal.Margin(0, 0, 0, 14))
-    p_img = add(bp, unreal.Image, "DirectorPortrait", p_wrap)
-    pb = p_img.get_editor_property("brush")
-    pb.resource_object = TEXTURES["T_DC_Director_Portrait"]
-    pb.image_size = unreal.Vector2D(108, 108)
-    p_img.set_editor_property("brush", pb)
-
-    def stext(name, value, size, color, bottom_pad, font_key="Font_Body", outline=2):
-        tb = add(bp, unreal.TextBlock, name, col)
-        style_text(tb, value, size, color, font_key=font_key, outline_size=outline, justify=unreal.TextJustify.CENTER)
-        s = tb.get_editor_property("slot")
-        s.set_horizontal_alignment(unreal.HorizontalAlignment.H_ALIGN_CENTER)
-        s.set_padding(unreal.Margin(0, 0, 0, bottom_pad))
-        return tb
-
-    stext("SlateHeader", "PRODUCTION SLATE  |  SCENE 1  |  TAKE 1", 13, RED_BRIGHT, 6, font_key="Font_Mono", outline=1)
-    stext("TitleText", "DIRECTOR'S CUT", 58, GOLD, 8, font_key="Font_Display", outline=3)
-    stext("SubtitleText", "A TOTALLY NORMAL FANTASY QUEST... UNTIL THE DIRECTOR CHANGES HIS MIND", 20, CREAM, 18, font_key="Font_Condensed", outline=2)
-    stext("ControlsText", "WASD Move   |   SPACE Jump   |   LMB Attack   |   R Reload   |   ESC / P Pause", 14, SILVER, 28, font_key="Font_Mono", outline=1)
-
-    row = add(bp, unreal.HorizontalBox, "ButtonsRow", col)
-    row.get_editor_property("slot").set_horizontal_alignment(unreal.HorizontalAlignment.H_ALIGN_CENTER)
-
-    for bname, lname, label, base_c, hov_c, pre_c in (
-        ("StartButton", "StartLabel", "ACTION! (START)", unreal.LinearColor(0.16, 0.54, 0.22, 1), unreal.LinearColor(0.22, 0.70, 0.30, 1), unreal.LinearColor(0.12, 0.40, 0.16, 1)),
-        ("QuitButton", "QuitLabel", "QUIT", unreal.LinearColor(0.62, 0.14, 0.14, 1), unreal.LinearColor(0.80, 0.20, 0.20, 1), unreal.LinearColor(0.45, 0.10, 0.10, 1)),
-    ):
-        btn = add(bp, unreal.Button, bname, row)
-        style_button(btn, base_c, hov_c, pre_c)
-        lbl = add(bp, unreal.TextBlock, lname, btn)
-        style_text(lbl, label, 22, WHITE, font_key="Font_Display", outline_size=2)
-        btn.get_editor_property("slot").set_padding(unreal.Margin(14, 0, 14, 0))
-
-    finish(bp)
-
-
-def build_pause_menu():
-    bp = recreate_wbp("WBP_PauseMenu", unreal.UDCPauseMenuWidget if hasattr(unreal, "UDCPauseMenuWidget") else unreal.DCPauseMenuWidget)
-    root = add(bp, unreal.CanvasPanel, "Root")
-
-    backdrop = add(bp, unreal.Border, "Backdrop", root)
-    backdrop.set_editor_property("brush_color", BACKDROP)
-    fill_canvas_slot(backdrop)
-    add_letterbox(bp, root, 52)
-
-    card_outer, card_inner = make_framed_panel(bp, "Card", root, pad=(0, 0, 0, 0), bg_color=SLATE_CARD, gold_thickness=3, ink_thickness=4)
-    canvas_slot(card_outer, (0.5, 0.5), (0, 0))
-
-    card_vbox = add(bp, unreal.VerticalBox, "CardStack", card_inner)
-    add_clapper_strip(bp, "ClapperTop", card_vbox, height=20).get_editor_property("slot").set_horizontal_alignment(unreal.HorizontalAlignment.H_ALIGN_FILL)
-
-    body = add(bp, unreal.Border, "CardBody", card_vbox)
-    body.set_editor_property("brush_color", unreal.LinearColor(0, 0, 0, 0))
-    body.set_editor_property("padding", unreal.Margin(48, 32, 48, 36))
-
-    col = add(bp, unreal.VerticalBox, "Column", body)
-
-    def ptext(name, value, size, color, bottom_pad, font_key="Font_Body", outline=2):
-        tb = add(bp, unreal.TextBlock, name, col)
-        style_text(tb, value, size, color, font_key=font_key, outline_size=outline, justify=unreal.TextJustify.CENTER)
-        s = tb.get_editor_property("slot")
-        s.set_horizontal_alignment(unreal.HorizontalAlignment.H_ALIGN_CENTER)
-        s.set_padding(unreal.Margin(0, 0, 0, bottom_pad))
-        return tb
-
-    ptext("TitleText", "CUT!  -  ON HOLD", 48, GOLD, 10, font_key="Font_Display", outline=3)
-    ptext("StatusText", "SCENE 1: BOAR HUNT   |   Boars killed: 0/10", 16, CREAM, 14, font_key="Font_Mono", outline=1)
-    ptext("ControlsText", "WASD Move   |   SPACE Jump   |   LMB Attack   |   R Reload   |   ESC / P Resume", 14, SILVER, 26, font_key="Font_Mono", outline=1)
-
-    row = add(bp, unreal.HorizontalBox, "ButtonsRow", col)
-    row.get_editor_property("slot").set_horizontal_alignment(unreal.HorizontalAlignment.H_ALIGN_CENTER)
-
-    for bname, lname, label, base_c, hov_c, pre_c in (
-        ("ResumeButton", "ResumeLabel", "RESUME", unreal.LinearColor(0.16, 0.54, 0.22, 1), unreal.LinearColor(0.22, 0.70, 0.30, 1), unreal.LinearColor(0.12, 0.40, 0.16, 1)),
-        ("RestartButton", "RestartLabel", "RESTART", unreal.LinearColor(0.74, 0.48, 0.12, 1), unreal.LinearColor(0.90, 0.62, 0.18, 1), unreal.LinearColor(0.54, 0.34, 0.08, 1)),
-        ("QuitButton", "QuitLabel", "QUIT", unreal.LinearColor(0.62, 0.14, 0.14, 1), unreal.LinearColor(0.80, 0.20, 0.20, 1), unreal.LinearColor(0.45, 0.10, 0.10, 1)),
-    ):
-        btn = add(bp, unreal.Button, bname, row)
-        style_button(btn, base_c, hov_c, pre_c)
-        lbl = add(bp, unreal.TextBlock, lname, btn)
-        style_text(lbl, label, 20, WHITE, font_key="Font_Display", outline_size=2)
-        btn.get_editor_property("slot").set_padding(unreal.Margin(10, 0, 10, 0))
-
-    finish(bp)
-
-
 def build_death_screen():
     bp = recreate_wbp("WBP_DeathScreen", unreal.DCDeathScreenWidget)
     root = add(bp, unreal.CanvasPanel, "Root")
@@ -708,21 +596,11 @@ def assign_to_blueprints():
     gm_gen = unreal.load_class(None, GAME_MODE + "." + GAME_MODE.rsplit("/", 1)[-1] + "_C")
     gm_cdo = unreal.get_default_object(gm_gen)
     gm_cdo.set_editor_property("hud_widget_class", _cls("WBP_DCHUD"))
-    gm_cdo.set_editor_property("start_screen_widget_class", _cls("WBP_StartScreen"))
     gm_cdo.set_editor_property("death_screen_widget_class", _cls("WBP_DeathScreen"))
     gm_cdo.set_editor_property("victory_widget_class", _cls("WBP_CutScreen"))
     unreal.BlueprintEditorLibrary.compile_blueprint(gm)
     unreal.EditorLoadingAndSavingUtils.save_packages([gm.get_outermost()], False)
-    LOG.append("SET  BP_DCGameMode -> WBP_DCHUD, WBP_StartScreen, WBP_DeathScreen, WBP_CutScreen")
-
-    pc = _obj(PLAYER_CTRL)
-    if pc:
-        pc_gen = unreal.load_class(None, PLAYER_CTRL + "." + PLAYER_CTRL.rsplit("/", 1)[-1] + "_C")
-        pc_cdo = unreal.get_default_object(pc_gen)
-        pc_cdo.set_editor_property("pause_menu_widget_class", _cls("WBP_PauseMenu"))
-        unreal.BlueprintEditorLibrary.compile_blueprint(pc)
-        unreal.EditorLoadingAndSavingUtils.save_packages([pc.get_outermost()], False)
-        LOG.append("SET  BP_DCPlayerController -> WBP_PauseMenu")
+    LOG.append("SET  BP_DCGameMode -> WBP_DCHUD, WBP_DeathScreen, WBP_CutScreen")
 
 
 def main():
@@ -730,7 +608,7 @@ def main():
     import_ui_fonts()
 
     # Delete parent HUD first so child WBPs can be recreated cleanly without stale references
-    for name in ("WBP_DCHUD", "WBP_StartScreen", "WBP_PauseMenu", "WBP_DeathScreen", "WBP_CutScreen", "WBP_Subtitles", "WBP_QuestTracker", "WBP_AmmoCounter", "WBP_HealthBar"):
+    for name in ("WBP_DCHUD", "WBP_DeathScreen", "WBP_CutScreen", "WBP_Subtitles", "WBP_QuestTracker", "WBP_AmmoCounter", "WBP_HealthBar"):
         pkg = "%s/%s" % (FOLDER, name)
         if EAL.does_asset_exist(pkg):
             EAL.delete_asset(pkg)
@@ -741,8 +619,6 @@ def main():
     build_subtitles()
     build_hud()
     build_cut_screen()
-    build_start_screen()
-    build_pause_menu()
     build_death_screen()
     assign_to_blueprints()
 

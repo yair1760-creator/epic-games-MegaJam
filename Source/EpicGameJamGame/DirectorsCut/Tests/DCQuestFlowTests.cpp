@@ -37,9 +37,9 @@
 #include "UI/DCDeathScreenWidget.h"
 #include "UI/DCHealthBarWidget.h"
 #include "UI/DCHUDWidget.h"
-#include "UI/DCPauseMenuWidget.h"
+#include "UI/DCMainMenuGameMode.h"
+#include "UI/DCMenuWidgets.h"
 #include "UI/DCQuestTrackerWidget.h"
-#include "UI/DCStartScreenWidget.h"
 #include "UI/DCSubtitlesWidget.h"
 #include "UI/DCVictoryWidget.h"
 #include "ShooterCharacter.h"
@@ -562,28 +562,16 @@ bool FDCRunFullQuestFlowCommand::Update()
 	GM->StartBeat(1);
 	Test->TestFalse(TEXT("StartBeat resets victory state"), GM->IsVictoryShown());
 
-	// Verify Start Screen and Pause Menu flow
-	GM->ShowStartScreen();
-	Test->TestTrue(TEXT("Start screen shows on ShowStartScreen"), GM->IsStartScreenShown());
-	Test->TestNotNull(TEXT("Start screen widget is created"), GM->GetStartScreenWidget());
+	// Verify Pause Menu flow (Rated PG for Pig UI)
 	if (ADCPlayerController* DCPC = Cast<ADCPlayerController>(World->GetFirstPlayerController()))
 	{
-		DCPC->SetPauseMenuOpen(true);
-		Test->TestFalse(TEXT("Pause menu cannot open while Start screen is shown"), DCPC->IsPauseMenuOpen());
-	}
-	GM->StartFromTitle();
-	Test->TestFalse(TEXT("StartFromTitle dismisses Start screen"), GM->IsStartScreenShown());
-	Test->TestEqual(TEXT("HUD becomes visible after StartFromTitle"), HUD->GetVisibility(), ESlateVisibility::SelfHitTestInvisible);
-
-	if (ADCPlayerController* DCPC = Cast<ADCPlayerController>(World->GetFirstPlayerController()))
-	{
-		DCPC->SetPauseMenuOpen(true);
-		Test->TestTrue(TEXT("SetPauseMenuOpen(true) opens Pause menu"), DCPC->IsPauseMenuOpen());
+		DCPC->OpenPauseMenu();
+		Test->TestTrue(TEXT("OpenPauseMenu opens Pause menu"), DCPC->IsPauseMenuOpen());
 		Test->TestNotNull(TEXT("Pause menu widget is created"), DCPC->GetPauseMenuWidget());
 		Test->TestTrue(TEXT("Game is paused while Pause menu is open"), UGameplayStatics::IsGamePaused(World));
 
-		DCPC->SetPauseMenuOpen(false);
-		Test->TestFalse(TEXT("SetPauseMenuOpen(false) closes Pause menu"), DCPC->IsPauseMenuOpen());
+		DCPC->ClosePauseMenu();
+		Test->TestFalse(TEXT("ClosePauseMenu closes Pause menu"), DCPC->IsPauseMenuOpen());
 		Test->TestFalse(TEXT("Game resumes after closing Pause menu"), UGameplayStatics::IsGamePaused(World));
 	}
 
@@ -616,7 +604,7 @@ bool FDCRunFullQuestFlowCommand::Update()
 		}
 		if (ADCPlayerController* DCPC = Cast<ADCPlayerController>(World->GetFirstPlayerController()))
 		{
-			DCPC->SetPauseMenuOpen(true);
+			DCPC->OpenPauseMenu();
 			Test->TestFalse(TEXT("Pause menu cannot open while Death slate is shown"), DCPC->IsPauseMenuOpen());
 		}
 
@@ -721,10 +709,12 @@ bool FDCStartHealthRegenTestCommand::Update()
 		return true;
 	}
 
-	// Clear any boars and spawners so stray AI bites don't interfere with the 5s no-damage window
+	// Pause spawners and clear any stray boars so AI bites don't interfere with the 5s no-damage window
+	// (StopSpawning instead of Destroy so subsequent tests on the same loaded map still have spawners)
 	for (TActorIterator<ADCBoarSpawner> It(World); It; ++It)
 	{
-		It->Destroy();
+		It->SetHyperspawnMode(false);
+		It->StopSpawning(true);
 	}
 	for (TActorIterator<ADCBoar> It(World); It; ++It)
 	{

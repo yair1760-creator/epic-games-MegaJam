@@ -20,6 +20,7 @@ public class EpicGameJamGame : ModuleRules
 			"UMG",
 			"Slate",
 			"SlateCore",
+			"MoviePlayer",
 			"Paper2D",
 			"Niagara"
 		});

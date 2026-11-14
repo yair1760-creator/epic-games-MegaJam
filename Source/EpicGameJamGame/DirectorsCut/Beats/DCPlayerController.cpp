@@ -11,11 +11,13 @@
 #include "EpicGameJamGameCameraManager.h"
 #include "GameFramework/GameModeBase.h"
 #include "GameFramework/PlayerStart.h"
-#include "InputCoreTypes.h"
 #include "InputMappingContext.h"
 #include "Kismet/GameplayStatics.h"
+#include "Kismet/KismetSystemLibrary.h"
+#include "Components/Widget.h"
+#include "InputCoreTypes.h"
+#include "UI/DCMenuWidgets.h"
 #include "ShooterCharacter.h"
-#include "UI/DCPauseMenuWidget.h"
 #include "UObject/ConstructorHelpers.h"
 #include "Widgets/Input/SVirtualJoystick.h"
 
@@ -40,17 +42,18 @@ ADCPlayerController::ADCPlayerController()
 	{
 		MobileExcludedMappingContexts.Add(MouseLookIMC.Object);
 	}
-
-	static ConstructorHelpers::FClassFinder<UDCPauseMenuWidget> PauseBP(TEXT("/Game/DirectorsCut/UI/WBP_PauseMenu"));
-	if (PauseBP.Succeeded())
-	{
-		PauseMenuWidgetClass = PauseBP.Class;
-	}
 }
 
 void ADCPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
+
+	// arriving from the main menu (UI-only input, visible cursor): hand the mouse back to the game
+	if (IsLocalPlayerController())
+	{
+		SetInputMode(FInputModeGameOnly());
+		bShowMouseCursor = false;
+	}
 
 	if (IsLocalPlayerController() && ShouldUseTouchControls() && MobileControlsWidgetClass)
 	{
@@ -65,6 +68,14 @@ void ADCPlayerController::BeginPlay()
 void ADCPlayerController::SetupInputComponent()
 {
 	Super::SetupInputComponent();
+
+	// pause menu: Esc. Inside the editor Esc ends the Play session, so P does the same job there.
+	if (InputComponent)
+	{
+		InputComponent->BindKey(EKeys::Escape, IE_Pressed, this, &ADCPlayerController::TogglePauseMenu).bExecuteWhenPaused = true;
+		InputComponent->BindKey(EKeys::P, IE_Pressed, this, &ADCPlayerController::TogglePauseMenu).bExecuteWhenPaused = true;
+		InputComponent->BindKey(EKeys::Gamepad_Special_Right, IE_Pressed, this, &ADCPlayerController::TogglePauseMenu).bExecuteWhenPaused = true;
+	}
 
 	if (IsLocalPlayerController())
 	{
@@ -89,88 +100,6 @@ void ADCPlayerController::SetupInputComponent()
 				}
 			}
 		}
-
-		if (InputComponent)
-		{
-			InputComponent->BindKey(EKeys::Escape, IE_Pressed, this, &ADCPlayerController::TogglePauseMenu).bExecuteWhenPaused = true;
-			InputComponent->BindKey(EKeys::P, IE_Pressed, this, &ADCPlayerController::TogglePauseMenu).bExecuteWhenPaused = true;
-		}
-	}
-}
-
-void ADCPlayerController::TogglePauseMenu()
-{
-	SetPauseMenuOpen(!bPauseMenuOpen);
-}
-
-void ADCPlayerController::SetPauseMenuOpen(bool bOpen)
-{
-	if (bOpen == bPauseMenuOpen)
-	{
-		return;
-	}
-
-	UWorld* World = GetWorld();
-	if (!World || !IsLocalPlayerController())
-	{
-		return;
-	}
-
-	if (bOpen)
-	{
-		if (const ADCGameMode* GM = World->GetAuthGameMode<ADCGameMode>())
-		{
-			if (GM->IsVictoryShown() || GM->IsStartScreenShown() || GM->IsDeathScreenShown())
-			{
-				return;
-			}
-		}
-
-		bPauseMenuOpen = true;
-		UGameplayStatics::SetGamePaused(World, true);
-
-		if (!PauseMenuWidget)
-		{
-			TSubclassOf<UDCPauseMenuWidget> WidgetCls = PauseMenuWidgetClass ? PauseMenuWidgetClass : TSubclassOf<UDCPauseMenuWidget>(UDCPauseMenuWidget::StaticClass());
-			PauseMenuWidget = CreateWidget<UDCPauseMenuWidget>(this, WidgetCls);
-		}
-		if (PauseMenuWidget)
-		{
-			PauseMenuWidget->RefreshStatus();
-			if (!PauseMenuWidget->IsInViewport())
-			{
-				PauseMenuWidget->AddToViewport(90);
-			}
-		}
-
-		SetIgnoreMoveInput(true);
-		SetIgnoreLookInput(true);
-		FInputModeGameAndUI Mode;
-		if (PauseMenuWidget)
-		{
-			if (UWidget* FocusTarget = PauseMenuWidget->GetInitialFocusWidget())
-			{
-				Mode.SetWidgetToFocus(FocusTarget->TakeWidget());
-			}
-		}
-		Mode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
-		Mode.SetHideCursorDuringCapture(false);
-		SetInputMode(Mode);
-		bShowMouseCursor = true;
-	}
-	else
-	{
-		bPauseMenuOpen = false;
-		if (PauseMenuWidget)
-		{
-			PauseMenuWidget->RemoveFromParent();
-			PauseMenuWidget = nullptr;
-		}
-		UGameplayStatics::SetGamePaused(World, false);
-		SetIgnoreMoveInput(false);
-		SetIgnoreLookInput(false);
-		SetInputMode(FInputModeGameOnly());
-		bShowMouseCursor = false;
 	}
 }
 
@@ -269,4 +198,75 @@ void ADCPlayerController::OnPawnDestroyed(AActor* DestroyedActor)
 bool ADCPlayerController::ShouldUseTouchControls() const
 {
 	return SVirtualJoystick::ShouldDisplayTouchInterface() || bForceTouchControls;
+}
+
+// ---------------------------------------------------------------- pause menu
+
+void ADCPlayerController::TogglePauseMenu()
+{
+	if (PauseWidget)
+	{
+		ClosePauseMenu();
+	}
+	else
+	{
+		OpenPauseMenu();
+	}
+}
+
+void ADCPlayerController::OpenPauseMenu()
+{
+	// not while another full-screen UI owns the mouse (the victory screen) or death slate is active, and not twice
+	if (PauseWidget || !IsLocalPlayerController() || bShowMouseCursor || IsPaused())
+	{
+		return;
+	}
+
+	if (const ADCGameMode* GM = GetWorld() ? GetWorld()->GetAuthGameMode<ADCGameMode>() : nullptr)
+	{
+		if (GM->IsVictoryShown() || GM->IsDeathScreenShown())
+		{
+			return;
+		}
+	}
+
+	TSubclassOf<UDCPauseMenuWidget> WidgetCls = PauseMenuWidgetClass ? PauseMenuWidgetClass : TSubclassOf<UDCPauseMenuWidget>(UDCPauseMenuWidget::StaticClass());
+	PauseWidget = CreateWidget<UDCPauseMenuWidget>(this, WidgetCls);
+	if (!PauseWidget)
+	{
+		return;
+	}
+	PauseWidget->AddToViewport(200);      // above the HUD and the 2D weapon layer
+	PauseWidget->OnResume.AddUniqueDynamic(this, &ADCPlayerController::ClosePauseMenu);
+	PauseWidget->OnQuit.AddUniqueDynamic(this, &ADCPlayerController::QuitFromPauseMenu);
+
+	SetPause(true);
+
+	FInputModeUIOnly Mode;
+	if (UWidget* Focus = PauseWidget->GetInitialFocusWidget())
+	{
+		Mode.SetWidgetToFocus(Focus->TakeWidget());
+	}
+	Mode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+	SetInputMode(Mode);
+	bShowMouseCursor = true;
+}
+
+void ADCPlayerController::ClosePauseMenu()
+{
+	if (!PauseWidget)
+	{
+		return;
+	}
+	PauseWidget->RemoveFromParent();
+	PauseWidget = nullptr;
+
+	SetPause(false);
+	SetInputMode(FInputModeGameOnly());
+	bShowMouseCursor = false;
+}
+
+void ADCPlayerController::QuitFromPauseMenu()
+{
+	UKismetSystemLibrary::QuitGame(this, this, EQuitPreference::Quit, false);
 }

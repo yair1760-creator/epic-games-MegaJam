@@ -343,3 +343,82 @@ Two models in `/Game/DirectorsCut/Environment/Village`, built by `Scripts/Blende
 - Screenshots: `Docs/Screenshots/Village_Well.png`, `Village_SwordRack.png`, `Village_SwordRack_Side.png`.
 
 **Crash note (2026-11-14 19:25):** the editor crashed (`Assertion failed: !bPostTickComponentUpdate`, call stack in the level editor's interactive tools) at the moment a script started Play while the level was being edited by hand in the viewport. Unsaved hand edits to `Lvl_DirectorsCut` and `DC_Set_Hunt` (a group actor, moved backdrop pieces) were recovered from the 19:24 autosave. Avoid starting Play from a script while someone is dragging things in the viewport; editor-view captures (`SceneCaptureToolset`) are safe.
+
+## 16. Film cameras and boom mics around the level (Taisho's Meshy models, cleaned in Blender)
+
+Taisho's film reel camera and boom mic are placed all over the playable level so it reads as a real film set.
+
+**Why they looked torn:** the Meshy files are clean but extremely dense (camera 4.97 million triangles, boom mic 471 thousand, woodland slide 943 thousand). On import Unreal switched Nanite on and the game drew its coarse stand-in mesh (about 10 thousand triangles for the camera), which is what tore.
+
+**Clean-up:** `Scripts/Blender_CleanFilmSetModels.py` (`blender -b --python ... -- preview`, or `-- only=FilmCamera`):
+- reduces each model in Blender (camera 110k, boom mic 30k, slide 40k triangles), with smooth shading and hard edges kept above 40 degrees;
+- cuts the camera's round grass-and-rocks display base away, so the tripod stands on any floor;
+- puts the bottom centre at the origin and scales to level size (camera 2.05 m, boom mic 2.2 m, slide 1.36 m as delivered);
+- writes `Art/Meshy/FilmSet/Export/SM_DC_<Name>.glb` + `T_DC_<Name>.png` (colour picture only, 2048 px).
+
+**In Unreal:** `/Game/DirectorsCut/Environment/FilmSet`: `SM_DC_FilmCamera`, `SM_DC_BoomMic`, `SM_DC_WoodlandSlide`, each with `MI_DC_<Name>` on `M_DC_InkedProp`. **Nanite is switched off on these three meshes** so the cleaned mesh itself is drawn; keep it off if they are re-imported.
+
+**Placement:** `dress_main_map("filmset")` in `Scripts/LD_DressMainMap.py`:
+- persistent level, folder `DC/SetDressing_FilmSet`: 8 cameras (`FilmSet_Camera_*`: four around the stage, the village entrance, the butcher stall, the King Boar pen, a wide shot from the east meadow) and 4 boom mics (`FilmSet_BoomMic_*`: stage, village, stall, pen), each turned to face what it films (`FILM_CAMERAS`, `BOOM_MICS`, `CAM_YAW_OFFSET`, `MIC_YAW_OFFSET` at the top of the function);
+- **Layout after Yair's hand edits (2026-11-14 21:20):** 10 cameras and 3 boom mics: the Village and Stall cameras were moved, `FilmSet_Camera_Village2` and `Village4` were added either side of the main path, and the stall boom mic was removed. `FILM_CAMERAS` / `BOOM_MICS` in the script now hold that layout (a plain number in place of a target = the yaw set by hand), so re-running the zone rebuilds it. Each piece's invisible blocker was moved with it, the two new cameras got blockers, and the blocker left behind by the removed mic was deleted. Nav re-checked in the editor: stage, stall front, pen and sword pickup reachable, 6/6 boar spawns.
+- `DC_Set_FilmCrew` sublevel (beat 3): the greybox dolly camera and boom mic are hidden and replaced by the real models (`FilmCrew_Prop_Camera`, `FilmCrew_Prop_BoomMic`);
+- every piece has an invisible blocking cylinder (`*_Blocker`), so the player and boars walk around it; all pieces are off the six dirt paths.
+
+**Checked (editor view, not in Play):** close-ups show no tearing; nav paths from the spawn to the stage, stall front, pen, east meadow and sword pickup are valid and all 6 boar spawn points are reachable.
+
+- Not used yet: `SM_DC_WoodlandSlide` (only in the test map; it is 1.4 m tall and would need about 3x scale to replace the watchtower) and Taisho's brick wall picture (`/Game/DirectorsCut/Environment/Taisho/Wall`, test map only).
+- Left out on purpose: the modern cine camera from `taisho/3d-cameras` (cannot be used in the game). Do not merge that branch as a whole.
+- Test map: zone T behind the spawn shows the three cleaned models and the wall panel (`build_test_map("taisho")`).
+- Limits: the props are static (reels do not turn); the boom mic's cable lies outside its blocker; the realistic colour pictures are not redrawn in the inked style.
+- Screenshots: `Docs/Screenshots/FilmSet_Camera.png`, `FilmSet_BoomMic.png`, `FilmSet_Stage.png`, `FilmSet_Overview.png`, `FilmSet_Village.png`.
+
+## 17. Main menu and pause menu ("Rated PG for Pig" UI art)
+
+Both menus are built in C++ like the other DC widgets (no widget Blueprints), laid out in pixels of a 1920 x 1080 reference screen (UMG's default DPI scaling keeps the sizes on other resolutions).
+
+**Art:** `Art/UI/RatedPG` (5 transparent PNGs) -> `/Game/DirectorsCut/UI/Menu/`: `T_UI_Logo_RatedPGForPig`, `T_UI_Button_Start`, `T_UI_Button_Resume`, `T_UI_Button_Quit`, `T_UI_Pause_Panel` (UI group, no streaming).
+
+**Main menu**
+- Map `/Game/DirectorsCut/Maps/Lvl_MainMenu` (empty), game mode `ADCMainMenuGameMode` (`UI/DCMainMenuGameMode.h`), widget `UDCMainMenuWidget` (`UI/DCMenuWidgets.h`).
+- Logo centred in the upper middle, about 1000 px of visible width; START centred below it, about 320 px wide; dark flat backdrop.
+- START (click, or Enter / Space) opens `GameplayMap` = `/Game/DirectorsCut/Maps/Lvl_DirectorsCut`, the game's one playable map (it was `GameDefaultMap` and is the map every design doc names).
+- `Config/DefaultEngine.ini`: `GameDefaultMap` is now `Lvl_MainMenu`, so a packaged game starts on the menu. `EditorStartupMap` is unchanged. `Config/DefaultGame.ini`: both maps are in `MapsToCook` (the gameplay map is only named in code, so it would not be packaged otherwise) and `/Game/DirectorsCut/UI/Menu` is always cooked.
+
+**Pause menu**
+- `ADCPlayerController` (`Beats/DCPlayerController.h`): `TogglePauseMenu()`, `OpenPauseMenu()`, `ClosePauseMenu()`, `QuitFromPauseMenu()`, `IsPauseMenuOpen()`; widget `UDCPauseMenuWidget`.
+- **Esc** pauses the game, dims the view (60 % black) and shows the drawn PAUSED panel (about 480 px wide, aspect kept) with RESUME and QUIT on it. Esc again or RESUME carries on; QUIT closes the game, like the victory screen's Quit.
+- **Inside the editor Esc ends the Play session before the game sees it, so P does the same job there.** Gamepad Start also works.
+- It does not open while another screen owns the mouse (the victory screen).
+- Tunables are properties on the two widgets (sizes, offsets, dim amount, backdrop colour).
+
+**Checked in play (driven by script):** the menu map shows the menu with the cursor; START loads `Lvl_DirectorsCut` with the normal player, sword and no cursor; opening the pause menu pauses the game (game time stops), shows the cursor; closing it resumes. Real mouse clicks and real Esc / P key presses were not tested by hand, and there is no packaged build yet.
+
+- Limits: no hover or click sounds; no settings screen; QUIT on the pause menu leaves the game, it does not go back to the main menu; the main menu has no Quit button; `ProjectName` in `DefaultGame.ini` is still "First Person Template".
+- Screenshots: `Docs/Screenshots/Menu_Main.png`, `Menu_Pause.png`.
+
+## 18. Drawn HP bar ("Rated PG for Pig" UI art)
+
+The HUD health bar now shows the designer's two pictures instead of the plain red progress bar, following `Art/UI/HPBar/Reference/Implementation.txt`: `HP_Bar_Full` lies over `HP_Bar_Empty` at the same size and position, and only the full picture is clipped from the right. It is never resized.
+
+- **Art:** `Art/UI/HPBar` (PSD + note under `Reference`) -> `/Game/DirectorsCut/UI/HUD/T_UI_HPBar_Empty`, `T_UI_HPBar_Full` (640 x 112, UI group).
+- **Code:** `UDCHealthBarWidget` (`UI/DCHealthBarWidget.h`). On construct it adds the two pictures into the layout's own stack, hides the plain bar and the number, and resizes the frame to the bar (320 x 56 at the 1920 x 1080 reference, half the art's size). `WBP_HealthBar` and `DC_BuildHUDWidgets.py` are not changed; if a restyled layout has no such stack, the widget leaves it alone.
+- **Clip:** the visible width of the full picture = `TrackStartPx + (CurrentHealth / MaxHealth, clamped 0-1) x (TrackEndPx - TrackStartPx)`, with the inner track measured from the art at 27..615 px. So at 0 % the clip edge sits on the track's left end and at 100 % on its right end, and the frame is always whole. The clipping is done with the picture's UV region, so its pixels keep the same scale as the empty picture.
+- **Tunables** (`Health|Drawn Bar`): `bUseDrawnBar` (off = the old plain bar), `BarSize`, `TrackStartPx`, `TrackEndPx`, `bShowNumber`, the two textures. For tests: `GetFillClipFraction()`, `IsDrawnBarActive()`.
+- `HealthBar` is now an optional binding (it was required), so a layout without the plain progress bar is allowed.
+- **Checked in play:** screenshots at 100 %, 70 %, 35 %, 5 % and 0 % health and after respawn (back to full).
+- Limits: the bar jumps to the new value (no drain animation, no flash on the bar itself); the number is hidden.
+- Screenshots: `Docs/Screenshots/HPBar_100.png`, `HPBar_035.png`.
+
+## 19. Loading screen (running boar, "Rated PG for Pig" UI art)
+
+The project had no loading screen at all, so there was nothing to reuse; this adds one.
+
+- **Art:** `Art/UI/Loading` (`frames/Loading_Boar_01..08.png`, `overlay/Loading_Text.png`, PSD + note under `Reference`) -> `/Game/DirectorsCut/UI/Loading/T_UI_Loading_Boar_01..08`, `T_UI_Loading_Text` (256 x 212, UI group). The folder is always cooked, because the pictures are loaded by path.
+- **Code:** `UDCLoadingScreenSubsystem` (`UI/DCLoadingScreen.h`), a game-instance subsystem, so no map, game mode or Blueprint has to be set up. It listens to the engine's "map load starts" / "map load finished" events and shows a Slate widget through the engine's movie player (new module dependency `MoviePlayer`).
+- **Why the movie player:** while a map loads the game thread is blocked, so an ordinary HUD widget would freeze on one drawing. The movie player keeps drawing its widget on the loading thread, so the boar really runs during the load.
+- **Animation:** drawings 01..08 in ascending order at 12 per second (83.33 ms each, hard swaps, 0.67 s per loop), then straight back to 01, taken from the wall clock. `Loading_Text` is a second static layer on top for the whole screen. Both layers sit in one box of the 256 x 212 canvas shape, so they have the same size, anchor and position and the transparent padding is kept.
+- **Show / hide:** both layers go up when a map load begins and come down when the map is ready, but never before `MinimumDisplaySeconds` (1.0 s), so a very fast load still shows more than one full loop.
+- **Look:** centred on the screen at 1.5x (384 x 318 at the 1920 x 1080 reference), on the UI art's parchment colour, because the drawings are black silhouettes and would be invisible on black.
+- **Tunables** (config properties on the subsystem): `AnimFPS`, `MinimumDisplaySeconds`, `IconScale`, `BackdropColor`.
+- **Verified during actual map loads** in a standalone game (`UnrealEditor.exe <project> -game`, then `open Lvl_DirectorsCut`): the log line `DCLoadingScreen: '<map>' loaded after 1.00 s; boar drawn 184 times, 12 frame switches, 8 of 8 drawings shown` is written at the end of every load, and window captures taken mid-load show different drawings with the text unchanged (`Docs/Screenshots/Loading_FrameA.png`, `Loading_FrameB.png`).
+- Limits: **it does not show in Play-In-Editor** (the engine's movie player only runs in a standalone or packaged game); the level currently loads in about a second on this machine, so the minimum time is what you mostly see; beat changes inside the level stream sublevels and do not show it; no packaged build was tested.

@@ -16,7 +16,6 @@ class UAudioComponent;
 class UDCHealthComponent;
 class UDCHUDWidget;
 class UDCDeathScreenWidget;
-class UDCStartScreenWidget;
 class UDCVictoryWidget;
 class ULevelStreaming;
 class USoundBase;
@@ -81,24 +80,10 @@ public:
 	UDCHUDWidget* GetHUDWidget() const { return HUDWidget; }
 
 	UFUNCTION(BlueprintPure, Category="UI")
-	UDCStartScreenWidget* GetStartScreenWidget() const { return StartScreenWidget; }
-
-	UFUNCTION(BlueprintPure, Category="UI")
 	UDCDeathScreenWidget* GetDeathScreenWidget() const { return DeathScreenWidget; }
 
 	UFUNCTION(BlueprintPure, Category="UI")
 	UDCVictoryWidget* GetVictoryWidget() const { return VictoryWidget; }
-
-	UFUNCTION(BlueprintPure, Category="Beats|Start")
-	bool IsStartScreenShown() const { return bStartScreenShown; }
-
-	/** Shows the Title / Start slate before Beat 1 starts. */
-	UFUNCTION(BlueprintCallable, Category="Beats|Start")
-	void ShowStartScreen();
-
-	/** Dismisses the Title / Start slate and begins Beat 1 ("ACTION!"). */
-	UFUNCTION(BlueprintCallable, Category="Beats|Start")
-	void StartFromTitle();
 
 	UFUNCTION(BlueprintPure, Category="Beats|Death")
 	bool IsDeathScreenShown() const { return bDeathScreenShown; }
@@ -143,17 +128,6 @@ protected:
 
 	UPROPERTY(Transient)
 	TObjectPtr<UDCHUDWidget> HUDWidget;
-
-	/** Title / Start slate shown on launch before Beat 1 begins (WBP_StartScreen) */
-	UPROPERTY(EditDefaultsOnly, Category="UI")
-	TSubclassOf<UDCStartScreenWidget> StartScreenWidgetClass;
-
-	UPROPERTY(Transient)
-	TObjectPtr<UDCStartScreenWidget> StartScreenWidget;
-
-	/** Show the Start / Title slate on BeginPlay (skipped automatically in automated/unattended runs) */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Beats|Start")
-	bool bShowStartScreen = true;
 
 	/** Death / respawn slate shown when the player dies (WBP_DeathScreen) */
 	UPROPERTY(EditDefaultsOnly, Category="UI")
@@ -310,7 +284,6 @@ private:
 	bool bPlayedFirstHit = false;
 	bool bPlayedPlayerHurt = false;
 	bool bPendingBeat5 = false;
-	bool bStartScreenShown = false;
 	bool bDeathScreenShown = false;
 	bool bVictoryPending = false;
 	bool bVictoryShown = false;
