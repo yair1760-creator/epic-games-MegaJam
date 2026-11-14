@@ -328,6 +328,7 @@ BACKLOG = [
  (21, "Player death drawing", "Audio", "No sound of its own for the fall (only the existing CUT sound and death sound)", "Add a body-fall thud at the 250 ms cut", "Low"),
  (22, "Brick boundary walls", "Art", "The brick picture repeats visibly every 5 m (ivy patches, faint seams); the pine trees and the east scaffold in front of it are still greybox", "A seamless brick picture or 2-3 variants; replace the cone pines", "Low"),
  (23, "Woodland slide", "Art", "Sandy base does not match the meadow colour; the prop is decoration only (cannot be climbed)", "Tint the base to the meadow green, or sink it 5 cm; add collision if it should be climbable", "Low"),
+ (24, "Watchtower", "Test", "The plank skin was not walked in Play: ramp cleats stand 3 cm above the walkable surface", "Walk up the ramp once in Play; lower or remove the cleats if the feet visibly sink", "Medium"),
  (19, "2D shotgun view", "Code", "Pellets leave from the hidden 3D gun muzzle, not from the drawn barrel", "Fire from the camera centre while the 2D view is on", "Low"),
  (19, "2D shotgun view", "Audio", "Blast is still the template grenade launcher sound", "Use one of the fal shotgun takes once picked", "Medium"),
  (17, "Set dressing: notice board", "Animation", "The quest mark over the notice board is static (no bob or spin) and never goes away", "Slow bob in a small actor class; hide it once the King Boar quest starts or ends", "Low"),

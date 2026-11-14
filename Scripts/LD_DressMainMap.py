@@ -11,6 +11,7 @@
 #   - Taisho's film cameras and boom mics around the level (SM_DC_FilmCamera, SM_DC_BoomMic), and in DC_Set_FilmCrew
 #   - Taisho's brick wall picture on the four boundary walls (tiled brick skins over the greybox walls)
 #   - Taisho's woodland slide as a set prop in the meadow south of the village
+#   - the watchtower (SM_DC_Watchtower) as an inked plank skin over the greybox tower and its ramp
 #     the real models over the greybox dolly camera and boom mic
 #   - the butcher stall (SM_DC_ButcherStall) over the greybox stall, and in the DC_Set_NoMeat sublevel the SOLD OUT and
 #     HA HA HA signs (SM_DC_SoldOutSign, SM_DC_LaughSign) over the greybox boards and text
@@ -522,6 +523,30 @@ def dress_slide():
     return {"at": list(spot), "scale": SLIDE_SCALE, "yaw": SLIDE_YAW}
 
 
+WATCHTOWER = (2800, 3600)              # tower centre (same as LD_BuildDirectorsCut)
+WATCHTOWER_GREYBOX = ("Watchtower_Leg_0", "Watchtower_Leg_1", "Watchtower_Leg_2", "Watchtower_Leg_3", "POI_Watchtower_Platform",
+                      "Watchtower_Rail_0", "Watchtower_Rail_1", "Watchtower_Rail_2", "Watchtower_Ramp")
+
+
+def dress_watchtower():
+    """The watchtower as an inked plank skin (Scripts/Blender_BuildWatchtower.py), built to the exact greybox shape so
+    the visible ramp is the one the player walks on. Persistent level, DC/SetDressing_Watchtower.
+    Visual only: the nine greybox pieces go invisible but keep their collision."""
+    CURRENT_FOLDER[0] = "DC/SetDressing_Watchtower"
+    clear_folder("DC/SetDressing_Watchtower")
+    a = EAS.spawn_actor_from_object(unreal.load_asset("/Game/DirectorsCut/Environment/Watchtower/SM_DC_Watchtower"),
+                                    V(WATCHTOWER[0], WATCHTOWER[1], 0), R())
+    _visual_only(a)
+    _finish(a, "Watchtower_Skin")
+    hidden = []
+    for x in EAS.get_all_level_actors():
+        if x.get_level().get_outer().get_name() == MAIN and x.get_actor_label() in WATCHTOWER_GREYBOX:
+            _hide(x)
+            hidden.append(x.get_actor_label())
+    assert len(hidden) == len(WATCHTOWER_GREYBOX), "watchtower greybox found: %s" % sorted(hidden)
+    return {"at": [WATCHTOWER[0], WATCHTOWER[1], 0], "hidden_greybox": len(hidden)}
+
+
 def dress_main_map(which="all"):
     _check_world()
     # no ensure_materials(): it re-saves the lead's shared MI_LD_* materials; the ones used here already exist
@@ -549,6 +574,8 @@ def dress_main_map(which="all"):
             out["walls"] = dress_walls()
         if which in ("all", "slide"):
             out["slide"] = dress_slide()
+        if which in ("all", "watchtower"):
+            out["watchtower"] = dress_watchtower()
         if which in ("all", "trees"):
             out["apple_trees"] = dress_trees()
     w = UES.get_editor_world()

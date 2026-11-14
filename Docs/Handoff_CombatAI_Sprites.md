@@ -481,3 +481,13 @@ Taisho's woodland slide (`SM_DC_WoodlandSlide`, cleaned in section 17's Blender 
 - It was not used for the watchtower: the greybox watchtower has a 11 m walkable ramp, and the model's ramp is far shorter, so the visible ramp and the walkable one would not match.
 - Limits: its sandy base does not match the meadow colour; looked at with editor captures only, not in Play; nav mesh was rebuilt by the script but boar pathing around it was not watched.
 - Screenshots: `Docs/Screenshots/WoodlandSlide_Meadow.png`, `WoodlandSlide_Top.png`.
+
+## 24. Watchtower (inked plank skin over the greybox)
+
+The greybox watchtower at (2800, 3600) now looks like a plank tower: log legs with foot plates and knee braces, a plank deck with boxed-in rails on three sides, and the 11.7 m walk-up ramp as cross planks with cleats and side stringers. The look follows Taisho's woodland slide.
+
+- **Why built in Blender and not Taisho's slide or a new Meshy model:** the greybox ramp is long and walkable. Taisho's slide has a short steep ramp, and a generated model's proportions cannot be controlled, so in both cases the visible ramp would not be the one the player walks on. `Scripts/Blender_BuildWatchtower.py` uses the greybox numbers directly (1.2 cm bigger all round). No Meshy credits: all wood is the existing stage plank picture.
+- **In Unreal:** `/Game/DirectorsCut/Environment/Watchtower/SM_DC_Watchtower`, one slot with `MI_DC_SetStage`, Nanite off. `dress_main_map("watchtower")` places `Watchtower_Skin` (`DC/SetDressing_Watchtower`, no collision) and makes the nine greybox pieces invisible; they keep their collision, so walking up the ramp and standing on the deck are unchanged.
+- The knee braces start 3 m up, so the player still walks under the tower freely.
+- Limits: not walked in Play (editor captures only): the cleats stand 3 cm above the walkable surface, so feet may sink into them slightly; the ramp foot sinks a little into the ground like the greybox did; the editor-only label `LBL_Watchtower_(overview)` is still there.
+- Screenshots: `Docs/Screenshots/Watchtower_Ramp.png`, `Watchtower_Side.png`, `Watchtower_OnDeck.png`.
