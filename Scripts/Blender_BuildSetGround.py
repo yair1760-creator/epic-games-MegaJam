@@ -132,9 +132,41 @@ def seamless(px, name):
     return px, (1 if okx else 2), (1 if oky else 2)
 
 
+def sparse_grass():
+    """The meadow picture. The first one (Grass_meshy_image.png, tufts edge to edge) read as crowded in play, so the
+    meadow now uses a sparse Meshy picture (Grass_sparse_meshy_image.png: a few tufts on open ground), adjusted here:
+      - three shifted copies are laid over each other -> about 3x the tufts (the raw picture is too empty at 8 m)
+      - ink lines thickened to match the heavy outlines of the other surfaces
+      - ground colour set to the old picture's ground colour, so the meadow keeps its tone next to dirt and cobble
+    Same size and repeat (every 8 m) as the old texture, so the floor mesh and its UVs do not change."""
+    px = load_px(os.path.join(SRC, "Grass_sparse_meshy_image.png"))
+    old = load_px(os.path.join(SRC, "Grass_meshy_image.png"))
+    H, W = px.shape[:2]
+    bg = np.median(px[..., :3].reshape(-1, 3), axis=0)
+    out = px.copy()
+    for layer, (dy, dx) in ((px[:, ::-1], (int(H * 0.37), int(W * 0.21))), (px, (int(H * 0.71), int(W * 0.58)))):
+        b = np.roll(layer, (dy, dx), axis=(0, 1))
+        drawn = np.abs(b[..., :3] - bg).max(axis=2) > 0.10
+        for _ in range(2):                                     # take a small border with the drawing
+            drawn = drawn | np.roll(drawn, 1, 0) | np.roll(drawn, -1, 0) | np.roll(drawn, 1, 1) | np.roll(drawn, -1, 1)
+        out[drawn] = b[drawn]
+    ink = out[..., :3].max(axis=2) < 0.35                      # thicken the black lines by 1 px each way
+    thick = ink.copy()
+    for ax in (0, 1):
+        for sh in (1, -1):
+            thick |= np.roll(ink, sh, ax)
+    out[thick, :3] = np.minimum(out[thick, :3], 0.04)
+    target = np.percentile(old[..., :3].reshape(-1, 3), 80, axis=0)      # the old picture's open-ground colour
+    white = out[..., :3].min(axis=2) > 0.75                    # flowers stay white
+    rgb = out[..., :3] * (target / bg)
+    out[..., :3] = np.where(white[..., None], out[..., :3], np.clip(rgb, 0, 1))
+    print("GRASS bg", bg.round(3).tolist(), "-> ground", target.round(3).tolist())
+    return out
+
+
 # ---------------------------------------------------------------- 1 + 2: textures
 tex_paths, REPEAT = {}, {}
-sources = {"Grass": load_px(os.path.join(SRC, "Grass_meshy_image.png")), "Dirt": load_px(os.path.join(SRC, "Dirt_meshy_image.png")),
+sources = {"Grass": sparse_grass(), "Dirt": load_px(os.path.join(SRC, "Dirt_meshy_image.png")),
            "Cobble": photograph("Cobble")}
 for name, px in sources.items():
     t, rx, ry = seamless(px, name)

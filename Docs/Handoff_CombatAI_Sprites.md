@@ -261,12 +261,14 @@ Materials: `MI_DC_*_3D` on `M_DC_InkedProp` (lit, masked, two-sided). The `DC Pr
 
 | Surface | Covers | Texture | Made from |
 |---|---|---|---|
-| Grass | the meadow (`G_Meadow`) | `T_DC_Ground_Grass`, repeats every 8 m | Meshy text-to-image (nano-banana-2) |
+| Grass | the meadow (`G_Meadow`) | `T_DC_Ground_Grass`, repeats every 8 m | Meshy text-to-image (nano-banana-2): the sparse picture `Grass_sparse_meshy_image.png`, adjusted by the build script |
 | Dirt | the six paths (`Path_00..05`) | `T_DC_Ground_Dirt`, one picture across the 3.5 m path | Meshy text-to-image (nano-banana-2) |
 | Cobblestone | the village square (`G_VillageSquare`) | `T_DC_Ground_Cobble`, repeats every 6 m | Meshy text-to-3D tile (meshy-t2.5 + texture), photographed square-on in Blender and mirrored 2 x 2 |
 
 - `Scripts/Blender_BuildSetGround.py` builds it (`-- preview` renders checks): makes each texture seamless, then builds the floor to the level's own layout (the `MEADOW` / `SQUARE` / `PATHS` numbers at the top are the greybox pieces, read from the level on 2026-11-14). If paths move, update those numbers and re-run.
 - The mesh is **visual only**: it lies 0.6 cm above the greybox ground, which keeps doing collision and navigation. Place it at (0, 0, 0) with no rotation and collision off; hiding the greybox meshes is optional (they are fully covered).
-- Meshy credits: 45 for three 3D tiles (the grass tile failed - loose tufts only - and the dirt tile came out as a grey disc; both are kept unused in `Art/Meshy/Ground/Source`) + 12 for the two pictures that replaced them.
+- Meshy credits: 45 for three 3D tiles (the grass tile failed - loose tufts only - and the dirt tile came out as a grey disc; both are kept unused in `Art/Meshy/Ground/Source`) + 12 for the two pictures that replaced them. + 6 for the sparse grass picture.
 - **Placed on the playable level (2026-11-14):** `Ground_SetFloor` in `DC/SetDressing_Ground` (persistent level), via `dress_main_map("ground")` in `Scripts/LD_DressMainMap.py`. The greybox `G_Meadow`, `G_VillageSquare` and `Path_00..05` are set invisible but still collide and carry the nav mesh; in play the player stands at the same height and all 6 boar spawns are reachable. The backstage / tower-hill areas behind the backdrop and the lilac set disc are not covered.
 - Screenshots: `Docs/Screenshots/SetGround_*.png` (a temporary copy in the level, deleted afterwards).
+
+- **Sparser grass (2026-11-14):** the first grass picture (tufts edge to edge, `Grass_meshy_image.png`, kept unused) read as crowded in play. `sparse_grass()` in `Scripts/Blender_BuildSetGround.py` now builds the meadow texture from the sparse picture: three shifted copies laid over each other (about 27 tufts per 8 m), ink lines thickened, ground colour matched to the old picture. Only the texture changed; the floor mesh is the same. Limit: up close the 1024 px picture over 8 m shows stepped ink edges. Screenshots: `Docs/Screenshots/SetGround_Grass_Sparse_Meadow.png`, `SetGround_Grass_Sparse_Close.png`.
