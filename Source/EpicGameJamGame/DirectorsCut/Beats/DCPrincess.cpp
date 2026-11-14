@@ -4,13 +4,12 @@
 #include "Quest/DCQuestSubsystem.h"
 #include "Components/PointLightComponent.h"
 #include "Components/SphereComponent.h"
-#include "Components/StaticMeshComponent.h"
+#include "DirectorsCut/Rendering/DCBillboardSprite.h"
+#include "Engine/Texture2D.h"
 #include "Components/TextRenderComponent.h"
-#include "Engine/StaticMesh.h"
 #include "Engine/World.h"
 #include "GameFramework/Pawn.h"
 #include "Kismet/GameplayStatics.h"
-#include "Materials/MaterialInterface.h"
 #include "UObject/ConstructorHelpers.h"
 
 ADCPrincess::ADCPrincess()
@@ -28,35 +27,17 @@ ADCPrincess::ADCPrincess()
 	RescueTrigger->SetCollisionResponseToAllChannels(ECR_Ignore);
 	RescueTrigger->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
 
-	static ConstructorHelpers::FObjectFinder<UStaticMesh> Chamfer(TEXT("/Game/LevelPrototyping/Meshes/SM_ChamferCube.SM_ChamferCube"));
-	static ConstructorHelpers::FObjectFinder<UStaticMesh> Cyl(TEXT("/Game/LevelPrototyping/Meshes/SM_Cylinder.SM_Cylinder"));
-	static ConstructorHelpers::FObjectFinder<UMaterialInterface> PinkMat(TEXT("/Game/VerticalSlice/Materials/MI_LD_PG_Pink.MI_LD_PG_Pink"));
-	static ConstructorHelpers::FObjectFinder<UMaterialInterface> GoldMat(TEXT("/Game/VerticalSlice/Materials/MI_LD_Breadcrumb.MI_LD_Breadcrumb"));
-	static ConstructorHelpers::FObjectFinder<UMaterialInterface> WhiteMat(TEXT("/Game/VerticalSlice/Materials/MI_LD_White.MI_LD_White"));
-
-	PrincessDress = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Princess Dress"));
-	PrincessDress->SetupAttachment(Root);
-	PrincessDress->SetRelativeLocation(FVector(0.0f, 0.0f, 75.0f));
-	PrincessDress->SetRelativeScale3D(FVector(0.85f, 0.85f, 1.45f));
-	PrincessDress->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	if (Cyl.Succeeded()) PrincessDress->SetStaticMesh(Cyl.Object);
-	if (PinkMat.Succeeded()) PrincessDress->SetMaterial(0, PinkMat.Object);
-
-	PrincessHead = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Princess Head"));
-	PrincessHead->SetupAttachment(PrincessDress);
-	PrincessHead->SetRelativeLocation(FVector(0.0f, 0.0f, 80.0f));
-	PrincessHead->SetRelativeScale3D(FVector(0.55f, 0.55f, 0.4f));
-	PrincessHead->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	if (Chamfer.Succeeded()) PrincessHead->SetStaticMesh(Chamfer.Object);
-	if (WhiteMat.Succeeded()) PrincessHead->SetMaterial(0, WhiteMat.Object);
-
-	PrincessCrown = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Princess Crown"));
-	PrincessCrown->SetupAttachment(PrincessHead);
-	PrincessCrown->SetRelativeLocation(FVector(0.0f, 0.0f, 65.0f));
-	PrincessCrown->SetRelativeScale3D(FVector(0.6f, 0.6f, 0.45f));
-	PrincessCrown->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	if (Cyl.Succeeded()) PrincessCrown->SetStaticMesh(Cyl.Object);
-	if (GoldMat.Succeeded()) PrincessCrown->SetMaterial(0, GoldMat.Object);
+	// the janitor princess: a camera-facing card (1024 x 1536 drawing, about 1.9 m tall, feet on the ground)
+	PrincessSprite = CreateDefaultSubobject<UDCBillboardSprite>(TEXT("Princess Sprite"));
+	PrincessSprite->SetupAttachment(Root);
+	PrincessSprite->SetRelativeLocation(FVector(0.0f, 0.0f, -4.0f));   // boots sit ~2% above the drawing's bottom edge
+	PrincessSprite->FrontSize = FVector2D(127.0f, 190.0f);
+	PrincessSprite->bPivotAtBottom = true;
+	static ConstructorHelpers::FObjectFinder<UTexture2D> PrincessArt(TEXT("/Game/DirectorsCut/Characters/Princess/T_DC_Princess_Janitor.T_DC_Princess_Janitor"));
+	if (PrincessArt.Succeeded())
+	{
+		PrincessSprite->FrontTexture = PrincessArt.Object;
+	}
 
 	RomanceLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("Romance Light"));
 	RomanceLight->SetupAttachment(Root);
@@ -88,10 +69,6 @@ void ADCPrincess::Tick(float DeltaSeconds)
 	Super::Tick(DeltaSeconds);
 	BobTime += DeltaSeconds;
 
-	if (PrincessDress && !bRescued)
-	{
-		PrincessDress->SetRelativeLocation(FVector(0.0f, 0.0f, 75.0f + FMath::Sin(BobTime * 3.0f) * 8.0f));
-	}
 	if (PrincessLabel)
 	{
 		if (APawn* Player = UGameplayStatics::GetPlayerPawn(this, 0))

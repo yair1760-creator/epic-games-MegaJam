@@ -205,7 +205,7 @@ rows = [
   "Swap the cylinder/cube Princess for a camera-facing sprite (idle bob). Optional: shed door opens. NEEDS a Princess drawing; until then a placeholder.",
   "DirectorsCut/AI", "DirectorsCut/AI",
   "Place the Princess in the test map: sprite faces you and bobs.",
-  "No primitives on the Princess.", "9", 1, "Waiting art"),
+  "No primitives on the Princess.", "9", 1, "Done (review)"),
  (18, "P1 Audio + VFX hooks (code)", "A, B",
   "Editable sound / Niagara slots + playback on the sword (swing, hit, trail), boar (grunt, charge, squeal, death, death poof), player (hurt), boss (attack, hit, defeat). Empty slot = silent, so it works before the files exist.",
   "DirectorsCut/Combat, DirectorsCut/AI, Variant_Shooter", "DirectorsCut/Audio (slots only)",
@@ -222,7 +222,7 @@ rows = [
   "Walk around a boar: back/side frames show. Get hit during a CUT! fade: both show.",
   "Correct view per angle; flash never cancels another fade.", "9", 1.5, "In progress"),
 ]
-APPROVED = {1: "Approved", 2: "Approved", 3: "Approved", 4: "Approved", 5: "Approved", 6: "Approved", 7: "Approved", 8: "Approved", 9: "Approved", 10: "Approved", 11: "Approved", 13: "Approved", 14: "Approved", 15: "Approved", 18: "Approved"}   # approvals the user gave in chat (2026-11-13)
+APPROVED = {1: "Approved", 2: "Approved", 3: "Approved", 4: "Approved", 5: "Approved", 6: "Approved", 7: "Approved", 8: "Approved", 9: "Approved", 10: "Approved", 11: "Approved", 13: "Approved", 14: "Approved", 15: "Approved", 17: "Approved", 18: "Approved"}   # approvals the user gave in chat (2026-11-13)
 r = HR + 1
 for row in rows:
     done = row[10].startswith("Done")

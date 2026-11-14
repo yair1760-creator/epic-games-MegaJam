@@ -206,3 +206,26 @@ Frames are placeholders drawn by `Scripts/Make_PlaceholderFX.py` (`Art/FX`, impo
 **Tested in `Lvl_Test_CombatAI`** with `log LogDCCombat Verbose` (each sound logs `SFX 2D/3D <name>`): a sword kill played swing, hit, squeal, aggro, charge and death; an angry boar played bite and the player's hurt sound; the meat played its blip; the boss played shot, hit and defeat.
 
 **Packaging:** these sounds are referenced from C++ defaults, so `/Game/DirectorsCut/Audio` is in Project Settings → Packaging → Directories to Always Cook (`Config/DefaultGame.ini`, next to the Narrator folder). Any new sound or music placed in that folder ships automatically.
+
+## 12. Princess, bacon and set props (system 17 + Taisho's grass / hay)
+
+**Janitor Princess** (`ADCPrincess`, Beats): the cylinder dress, cube head and cylinder crown are replaced by one camera-facing sprite of the designer's drawing (`T_DC_Princess_Janitor`, 1024 x 1536, about 1.9 m tall, `PrincessSprite`). Rescue trigger, romance light, the "PRINCESS (GUARDED)" / "RESCUE THE PRINCESS!" label and all events are unchanged. The old bob animation was dropped (it moved the dress mesh).
+
+**Bacon pickup** (`ADCBoarMeatPickup`): now shows the designer's bacon (`/Game/DirectorsCut/Combat/Pickups/T_DC_Bacon`, 80 cm) instead of the placeholder ham.
+
+**Set props** (`DCSetProps.h`, Rendering): Taisho's grass and hay bale concepts (`Art/Meshy/Grass`, `Art/Meshy/HayBale`, flattened PSD -> PNG) as camera-facing cut-outs with their drawn wooden stands, like film-set props:
+
+| Class (drop in a level) | Texture | Size | Collision |
+|---|---|---|---|
+| `DC Prop Grass 01` | `T_DC_Prop_Grass01` | ~1.4 m wide, random 85-115% per copy | none |
+| `DC Prop Hay Bale 01` | `T_DC_Prop_HayBale01` | ~3 m wide | blocks player + boars (capsule), affects nav |
+| `DC Set Prop` | set Sprite -> Front Texture / Front Size per instance | any | `bBlocksPawns` |
+
+Textures are in `/Game/DirectorsCut/Environment/Props`. The test map has them in zone P (`Scripts/Test_BuildCombatAIMap.py`, `build_test_map("props")`): 16 grass tufts in the boar arena, 6 around the house, 2 hay bales and a janitor Princess by the house. **Main map (done 2026-11-14, on Yair's request):** `Scripts/LD_DressMainMap.py` (`dress_main_map()`, re-runnable):
+- the 4 greybox village houses (cube + chamfer roof) are now Taisho's painted house_01 as film-set flats facing the square, with plywood boards, braces and sandbags behind (`DC/Village_Flats`, persistent level);
+- the hunt set's 10 greybox hay bales (yellow cylinders in `DC_Set_Hunt`) are now `DC Prop Hay Bale 01` at the same spots, still in that sublevel (`Hunt_HayProp_*`);
+- 78 grass tufts over the meadow (off paths, POIs, boar spawns, set pieces) and 3 more hay bales around the village (`DC/SetDressing_Props`, persistent level);
+- nav mesh rebuilt; all 6 boar spawns are still reachable from the village. Only `Lvl_DirectorsCut` and `DC_Set_Hunt` were saved.
+Re-running the lead's `LD_BuildDirectorsCut.py` village / hunt stages would bring the greybox back; run `dress_main_map()` again afterwards.
+
+Screenshots: `Docs/Screenshots/Sys17_*.png` (`Sys17_Main_*` = the main map).

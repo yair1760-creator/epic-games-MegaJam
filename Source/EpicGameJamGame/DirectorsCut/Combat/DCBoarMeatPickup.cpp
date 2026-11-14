@@ -30,9 +30,9 @@ ADCBoarMeatPickup::ADCBoarMeatPickup()
 	Sprite = CreateDefaultSubobject<UDCBillboardSprite>(TEXT("Sprite"));
 	Sprite->SetupAttachment(CollisionSphere);
 	Sprite->SetRelativeLocation(FVector(0.0f, 0.0f, -30.0f));
-	Sprite->FrontSize = FVector2D(70.0f, 70.0f);
+	Sprite->FrontSize = FVector2D(80.0f, 80.0f);   // designer bacon (1042 px square, strips fill ~85%)
 	Sprite->bPivotAtBottom = true;
-	static ConstructorHelpers::FObjectFinder<UTexture2D> MeatArt(TEXT("/Game/DirectorsCut/Characters/Boar/Sprites/T_DC_BoarMeat_Placeholder.T_DC_BoarMeat_Placeholder"));
+	static ConstructorHelpers::FObjectFinder<UTexture2D> MeatArt(TEXT("/Game/DirectorsCut/Combat/Pickups/T_DC_Bacon.T_DC_Bacon"));
 	if (MeatArt.Succeeded())
 	{
 		Sprite->FrontTexture = MeatArt.Object;

@@ -41,7 +41,7 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components")
 	TObjectPtr<USphereComponent> CollisionSphere;
 
-	/** Camera-facing ham picture (T_DC_BoarMeat_Placeholder until the artist's meat sprite exists) */
+	/** Camera-facing bacon picture (designer drawing T_DC_Bacon) */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components")
 	TObjectPtr<UDCBillboardSprite> Sprite;
 
