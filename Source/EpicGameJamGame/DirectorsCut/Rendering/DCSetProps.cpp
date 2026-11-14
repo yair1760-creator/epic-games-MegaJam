@@ -70,3 +70,18 @@ ADCProp_HayBale01::ADCProp_HayBale01()
 	Blocker->InitCapsuleSize(115.0f, 85.0f);
 	Blocker->SetRelativeLocation(FVector(0.0f, 0.0f, 85.0f));
 }
+
+ADCProp_AppleTree02::ADCProp_AppleTree02()
+{
+	static ConstructorHelpers::FObjectFinder<UTexture2D> Art(TEXT("/Game/DirectorsCut/Environment/Props/T_DC_Prop_AppleTree02.T_DC_Prop_AppleTree02"));
+	if (Art.Succeeded())
+	{
+		Sprite->FrontTexture = Art.Object;
+	}
+	Sprite->FrontSize = FVector2D(525.0f, 550.0f);              // drawing 1467 x 1536
+	Sprite->SetRelativeLocation(FVector(0.0f, 0.0f, -40.0f));   // the drawn stand is ~8% above the drawing's bottom edge
+	bBlocksPawns = true;
+	Blocker->InitCapsuleSize(45.0f, 160.0f);                   // trunk only
+	Blocker->SetRelativeLocation(FVector(0.0f, 0.0f, 160.0f));
+	RandomScale = FVector2D(0.9f, 1.1f);
+}

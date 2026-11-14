@@ -219,12 +219,14 @@ Frames are placeholders drawn by `Scripts/Make_PlaceholderFX.py` (`Art/FX`, impo
 |---|---|---|---|
 | `DC Prop Grass 01` | `T_DC_Prop_Grass01` | ~1.4 m wide, random 85-115% per copy | none |
 | `DC Prop Hay Bale 01` | `T_DC_Prop_HayBale01` | ~3 m wide | blocks player + boars (capsule), affects nav |
+| `DC Prop Apple Tree 02` | `T_DC_Prop_AppleTree02` (Taisho's Apple_Tree_02) | ~5.5 m tall, random 90-110% | trunk only (walk under the canopy) |
 | `DC Set Prop` | set Sprite -> Front Texture / Front Size per instance | any | `bBlocksPawns` |
 
 Textures are in `/Game/DirectorsCut/Environment/Props`. The test map has them in zone P (`Scripts/Test_BuildCombatAIMap.py`, `build_test_map("props")`): 16 grass tufts in the boar arena, 6 around the house, 2 hay bales and a janitor Princess by the house. **Main map (done 2026-11-14, on Yair's request):** `Scripts/LD_DressMainMap.py` (`dress_main_map()`, re-runnable):
 - the 4 greybox village houses (cube + chamfer roof) are now Taisho's painted house_01 as film-set flats facing the square, with plywood boards, braces and sandbags behind (`DC/Village_Flats`, persistent level);
 - the hunt set's 10 greybox hay bales (yellow cylinders in `DC_Set_Hunt`) are now `DC Prop Hay Bale 01` at the same spots, still in that sublevel (`Hunt_HayProp_*`);
 - 78 grass tufts over the meadow (off paths, POIs, boar spawns, set pieces) and 3 more hay bales around the village (`DC/SetDressing_Props`, persistent level);
+- 5 apple trees behind the village houses and along the meadow border (`DC/SetDressing_Trees`, `dress_main_map("trees")`);
 - nav mesh rebuilt; all 6 boar spawns are still reachable from the village. Only `Lvl_DirectorsCut` and `DC_Set_Hunt` were saved.
 Re-running the lead's `LD_BuildDirectorsCut.py` village / hunt stages would bring the greybox back; run `dress_main_map()` again afterwards.
 

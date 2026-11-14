@@ -56,3 +56,12 @@ class EPICGAMEJAMGAME_API ADCProp_HayBale01 : public ADCSetProp
 public:
 	ADCProp_HayBale01();
 };
+
+/** Taisho's apple tree (Apple_Tree_02): ~5.5 m tall; only the trunk blocks, so you can walk under the canopy */
+UCLASS(DisplayName="DC Prop Apple Tree 02")
+class EPICGAMEJAMGAME_API ADCProp_AppleTree02 : public ADCSetProp
+{
+	GENERATED_BODY()
+public:
+	ADCProp_AppleTree02();
+};
