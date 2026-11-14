@@ -4,11 +4,11 @@
 # In : Art/Meshy/NoticeBoard/Source/Wanted_meshy_image.png   "WANTED / THE BOAR KING / REWARD: 10 XP" on torn parchment
 #      Art/Meshy/SetFloor/Export/T_DC_SetStage_Planks.png    inked planks (reused)
 # Out: Art/Meshy/NoticeBoard/Export/
-#      SM_DC_NoticeBoard.glb    plank board on two posts with a small cap, the poster nailed to the front, and a
-#                               yellow quest-giver "!" floating above it (a nod to classic kill-ten-boars quests)
-#                               materials: M_Notice_Wood, M_Notice_Poster, M_Notice_QuestMark
+#      SM_DC_NoticeBoard.glb    plank board on two posts with a small cap, the poster nailed to the front
+#                               materials: M_Notice_Wood, M_Notice_Poster
 #      T_DC_WantedPoster.png    the poster with the white around its torn edge cut away (alpha)
-#      T_DC_QuestMark.png       the "!" drawn here: flat yellow, thick ink outline (alpha)
+#      T_DC_QuestMark.png       the quest-giver "!" drawn here: flat yellow, thick ink outline (alpha). Shown in the
+#                               level as ONE camera-facing sprite over the board (a nod to classic kill-ten-boars quests)
 #      NoticeBoard.blend
 # Axes: Blender (x, y) = Unreal (100 x, -100 y). Origin = on the ground under the board's centre.
 # The board faces Unreal -X (towards the player spawn), so the poster is on the Blender -X side.
@@ -103,10 +103,9 @@ def material(name, tex_path, alpha=False):
     return m
 
 
-MATS = ["M_Notice_Wood", "M_Notice_Poster", "M_Notice_QuestMark"]
+MATS = ["M_Notice_Wood", "M_Notice_Poster"]
 MAT = {"M_Notice_Wood": material("M_Notice_Wood", WOOD_TEX),
-       "M_Notice_Poster": material("M_Notice_Poster", os.path.join(OUT, "T_DC_WantedPoster.png"), True),
-       "M_Notice_QuestMark": material("M_Notice_QuestMark", os.path.join(OUT, "T_DC_QuestMark.png"), True)}
+       "M_Notice_Poster": material("M_Notice_Poster", os.path.join(OUT, "T_DC_WantedPoster.png"), True)}
 bm = bmesh.new()
 uvl = bm.loops.layers.uv.new("UVMap")
 
@@ -163,15 +162,8 @@ for (dy, dz, u, v) in ((POSTER_W / 2, POSTER_H / 2, 0, 1), (-POSTER_W / 2, POSTE
     corners.append(((-0.075, ry, cz + rz), (u, v)))
 face([c[0] for c in corners], [c[1] for c in corners], "M_Notice_Poster", (-1, 0, 0))
 
-# the quest-giver mark: two crossed cut-out cards floating over the board
-QM_H = 1.15
-QM_W = QM_H * QW / QH
-qz0 = 3.05
-for ang in (0.0, 90.0):
-    c, s = math.cos(math.radians(ang)), math.sin(math.radians(ang))
-    a, b = (-s * QM_W / 2, c * QM_W / 2), (s * QM_W / 2, -c * QM_W / 2)   # left end, right end (seen from -X when ang = 0)
-    face([(a[0], a[1], qz0 + QM_H), (b[0], b[1], qz0 + QM_H), (b[0], b[1], qz0), (a[0], a[1], qz0)],
-         [(0, 1), (1, 1), (1, 0), (0, 0)], "M_Notice_QuestMark", (-c, -s, 0))
+# the quest-giver mark is NOT part of this mesh: two crossed cards looked like two marks from above and from
+# the side. It is one camera-facing sprite in the level instead (LD_DressMainMap.dress_notice, T_DC_QuestMark).
 
 bmesh.ops.triangulate(bm, faces=bm.faces)
 me = bpy.data.meshes.new("SM_DC_NoticeBoard")

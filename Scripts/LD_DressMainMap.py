@@ -295,7 +295,7 @@ def dress_stall():
 
 def dress_notice():
     """The village notice board (Meshy poster + Scripts/Blender_BuildNoticeBoard.py): an inked plank board with the
-    Boar King wanted poster and a floating quest-giver "!" over the greybox board (POI_NoticeBoard + its two posts).
+    Boar King wanted poster over the greybox board, and a floating quest-giver "!" (one camera-facing sprite) (POI_NoticeBoard + its two posts).
     Persistent level, DC/SetDressing_Notice. Visual only: the greybox goes invisible but keeps its collision."""
     CURRENT_FOLDER[0] = "DC/SetDressing_Notice"
     clear_folder("DC/SetDressing_Notice")
@@ -305,6 +305,17 @@ def dress_notice():
     a = EAS.spawn_actor_from_object(unreal.load_asset("/Game/DirectorsCut/Environment/NoticeBoard/SM_DC_NoticeBoard"), V(o.x, o.y, 0), R())
     _visual_only(a)
     _finish(a, "Notice_WantedBoard")
+    # the quest-giver "!": ONE camera-facing sprite, so it reads as a single mark from every side and from above
+    tex = unreal.load_asset("/Game/DirectorsCut/Environment/NoticeBoard/T_DC_QuestMark")
+    q = EAS.spawn_actor_from_class(unreal.DCSpriteActor, V(o.x, o.y, 305), R(yaw=180))
+    spr = q.get_editor_property("sprite")
+    for prop in ("front_texture", "side_texture", "back_texture"):
+        spr.set_editor_property(prop, tex)
+    for prop in ("front_size", "side_size"):
+        spr.set_editor_property(prop, unreal.Vector2D(57.5, 115.0))
+    spr.set_editor_property("cast_shadow", False)
+    spr.set_editor_property("pivot_at_bottom", True)
+    _finish(q, "Notice_QuestMark")
     hidden = []
     for x in EAS.get_all_level_actors():
         if x.get_level().get_outer().get_name() == MAIN and x.get_actor_label() in ("POI_NoticeBoard", "Notice_PostL", "Notice_PostR"):

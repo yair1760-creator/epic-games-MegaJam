@@ -320,7 +320,7 @@ Four models in `/Game/DirectorsCut/Environment/ButcherStall`, built by `Scripts/
 
 - **Board:** inked plank board on two posts with a small cap (wood = `MI_DC_SetStage`), same size and spot as the greybox board, facing the player spawn.
 - **Poster:** `T_DC_WantedPoster` / `MI_DC_WantedPoster`: torn parchment, "WANTED", an inked crowned boar, "THE BOAR KING", "REWARD: 10 XP". One Meshy text-to-image picture (nano-banana-2, 6 credits, `Art/Meshy/NoticeBoard/Source`); the build script cuts away the white outside the torn edge.
-- **Quest mark:** a yellow "!" floating over the board (two crossed cut-out cards, drawn by the script: `T_DC_QuestMark`). It is the nod to classic kill-ten-boars quests; no other game's logo, name or art is used.
+- **Quest mark:** a yellow "!" floating over the board: ONE camera-facing sprite (`Notice_QuestMark`, a `DCSpriteActor` using `T_DC_QuestMark`, drawn by the build script, 57.5 x 115 cm, no shadow). It was first two crossed cards inside the mesh, which read as two marks from above and from the side; that was removed. It is the nod to classic kill-ten-boars quests; no other game's logo, name or art is used. `MI_DC_QuestMark` is left over from the crossed cards and is unused.
 - Built by `Scripts/Blender_BuildNoticeBoard.py` (`blender -b --python ... -- preview`). The greybox board and posts are invisible, not deleted, so collision and nav are unchanged; the new mesh has no collision.
 - Limits: the "!" does not bob or spin and stays up for the whole game (it is not tied to the quest state); the back of the board is plain planks; the board is not interactive.
-- Screenshots: `Docs/Screenshots/NoticeBoard_Front.png`, `NoticeBoard_FromSpawn.png`.
+- Screenshots: `Docs/Screenshots/NoticeBoard_Front.png`, `NoticeBoard_FromSpawn.png`, `NoticeBoard_MarkFromBelow.png`.
