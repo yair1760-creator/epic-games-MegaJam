@@ -7,7 +7,7 @@
 #include "DCPrincess.generated.h"
 
 class USphereComponent;
-class UStaticMeshComponent;
+class UDCBillboardSprite;
 class UPointLightComponent;
 class UTextRenderComponent;
 
@@ -43,14 +43,9 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components")
 	TObjectPtr<USphereComponent> RescueTrigger;
 
+	/** The janitor princess (designer drawing T_DC_Princess_Janitor), always facing the player */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components")
-	TObjectPtr<UStaticMeshComponent> PrincessDress;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components")
-	TObjectPtr<UStaticMeshComponent> PrincessHead;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components")
-	TObjectPtr<UStaticMeshComponent> PrincessCrown;
+	TObjectPtr<UDCBillboardSprite> PrincessSprite;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components")
 	TObjectPtr<UPointLightComponent> RomanceLight;

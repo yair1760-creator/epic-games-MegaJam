@@ -6,7 +6,7 @@
 #   build_test_map()
 #
 # Re-runnable: every zone clears its own outliner folder (Test/<Zone>) before rebuilding.
-import unreal, math, os
+import unreal, math, os, random
 
 _SCRIPTS = r"D:\EpicGameJam\EpicGameJamGame\EpicGameJamGame\Scripts"
 exec(open(os.path.join(_SCRIPTS, "LD_BuildVerticalSlice.py")).read())   # shared greybox helpers + materials
@@ -237,7 +237,40 @@ def z_house():
     label_text("H  HOUSE 01 (film-set flat)", (fx + 120, fy, H + 80), 60, yaw=0, color=(255, 220, 140))
 
 
-ZONES = {"base": z_base, "light": z_light, "combat": z_combat, "boar": z_boar, "sprites": z_sprites, "house": z_house}
+def z_props():
+    """Taisho's grass + hay bale cut-outs (camera-facing set props) dressing the boar arena and the house, plus the janitor Princess."""
+    CURRENT_FOLDER[0] = "Test/P_Props"
+    clear_folder("Test/P_Props")
+    grass = getattr(unreal, "DCProp_Grass01", None)
+    hay = getattr(unreal, "DCProp_HayBale01", None)
+    princess = getattr(unreal, "DCPrincess", None)
+    rng = random.Random(1114)
+    if grass:
+        # boar arena: tufts inside the fence, kept off the rocks / stump and the west gate path
+        x0, y0, x1, y1 = ZONE_B
+        cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
+        avoid = [(cx - 800, cy + 400, 260), (cx + 600, cy - 450, 280), (cx + 1500, cy + 300, 200), (x0 + 250, 0, 450)]
+        n = 0
+        for _ in range(200):
+            if n >= 16:
+                break
+            x, y = rng.uniform(x0 + 200, x1 - 200), rng.uniform(y0 + 150, y1 - 150)
+            if any((x - ax) ** 2 + (y - ay) ** 2 < r * r for ax, ay, r in avoid):
+                continue
+            _finish(EAS.spawn_actor_from_class(grass, V(x, y, 2), R(yaw=rng.uniform(0, 360))), "P_Grass_Arena_%02d" % n)
+            n += 1
+        # around the house flat (zone H)
+        for i, (gx, gy) in enumerate([(-80, -2150), (-60, -2650), (150, -2300), (120, -2560), (-120, -1900), (260, -2050)]):
+            _finish(EAS.spawn_actor_from_class(grass, V(gx, gy, 0), R()), "P_Grass_House_%d" % i)
+    if hay:
+        for i, (hx, hy) in enumerate([(250, -2900), (420, -1850)]):
+            _finish(EAS.spawn_actor_from_class(hay, V(hx, hy, 0), R()), "P_HayBale_%d" % i)
+    if princess:
+        _finish(EAS.spawn_actor_from_class(princess, V(450, -2400, 0), R(yaw=180)), "P_Princess_Janitor")
+    label_text("P  SET PROPS (Taisho grass + hay) + janitor Princess", (520, -2400, 420), 50, yaw=180, color=(255, 200, 230))
+
+
+ZONES = {"base": z_base, "light": z_light, "combat": z_combat, "boar": z_boar, "sprites": z_sprites, "house": z_house, "props": z_props}
 
 
 def build_test_map(which="all"):
