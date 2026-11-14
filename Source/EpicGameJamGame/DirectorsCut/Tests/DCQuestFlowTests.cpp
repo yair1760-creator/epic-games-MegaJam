@@ -30,6 +30,7 @@
 #include "Combat/DCSwordWeapon.h"
 #include "Narrator/DCNarratorSubsystem.h"
 #include "Quest/DCQuestSubsystem.h"
+#include "UI/DCDeathScreenWidget.h"
 #include "UI/DCHUDWidget.h"
 #include "UI/DCPauseMenuWidget.h"
 #include "UI/DCQuestTrackerWidget.h"
@@ -512,9 +513,54 @@ bool FDCRunFullQuestFlowCommand::Update()
 		Test->TestFalse(TEXT("Game resumes after closing Pause menu"), UGameplayStatics::IsGamePaused(World));
 	}
 
+	// Verify "CUT! TAKE 2" Death Slate overlay and respawn dismissal while preserving quest progress
+	GM->StartBeat(1);
+	Quest->ReportEvent(FName("Kill.Boar"));
+	Test->TestEqual(TEXT("Pre-death Beat 1 progress is 1/10"), Quest->GetCurrent(), 1);
+	Test->TestEqual(TEXT("Initial take number is 1"), GM->GetCurrentTakeNumber(), 1);
+	Test->TestFalse(TEXT("Death screen starts hidden"), GM->IsDeathScreenShown());
+
+	if (AShooterCharacter* AlivePlayer = Cast<AShooterCharacter>(UGameplayStatics::GetPlayerPawn(World, 0)))
+	{
+		Narrator->Interrupt();
+		UGameplayStatics::ApplyDamage(AlivePlayer, AlivePlayer->GetMaxHP() + 50.0f, nullptr, nullptr, nullptr);
+		Test->TestTrue(TEXT("Player is dead after lethal damage"), AlivePlayer->IsDead());
+		Test->TestTrue(TEXT("Death screen shows on player death"), GM->IsDeathScreenShown());
+		Test->TestEqual(TEXT("Death increments take number to 2"), GM->GetCurrentTakeNumber(), 2);
+		Test->TestEqual(TEXT("Death triggers L1_PlayerDied line"), Narrator->GetCurrentLineId(), FName("L1_PlayerDied"));
+		if (UDCDeathScreenWidget* DeathWidget = GM->GetDeathScreenWidget())
+		{
+			Test->TestTrue(TEXT("Death slate title displays TAKE 2"), DeathWidget->GetTitleString().Contains(TEXT("TAKE 2")));
+		}
+		else
+		{
+			Test->AddError(TEXT("DeathScreenWidget was not created"));
+		}
+		if (HUD->GetCrosshair())
+		{
+			Test->TestEqual(TEXT("Crosshair hides while Death slate is active"), HUD->GetCrosshair()->GetVisibility(), ESlateVisibility::Collapsed);
+		}
+		if (ADCPlayerController* DCPC = Cast<ADCPlayerController>(World->GetFirstPlayerController()))
+		{
+			DCPC->SetPauseMenuOpen(true);
+			Test->TestFalse(TEXT("Pause menu cannot open while Death slate is shown"), DCPC->IsPauseMenuOpen());
+		}
+
+		// Simulate respawn timer completing (destroying dead pawn spawns fresh pawn via PC)
+		AlivePlayer->Destroy();
+		AShooterCharacter* Respawned = Cast<AShooterCharacter>(UGameplayStatics::GetPlayerPawn(World, 0));
+		Test->TestNotNull(TEXT("Respawned pawn is created"), Respawned);
+		Test->TestFalse(TEXT("Death screen dismisses after respawn"), GM->IsDeathScreenShown());
+		Test->TestEqual(TEXT("Quest progress is preserved across death/respawn"), Quest->GetCurrent(), 1);
+		if (HUD->GetCrosshair())
+		{
+			Test->TestEqual(TEXT("Crosshair restores after respawn"), HUD->GetCrosshair()->GetVisibility(), ESlateVisibility::HitTestInvisible);
+		}
+	}
+
 	GM->StartBeat(1);
 
-	Test->AddInfo(TEXT("[DC_TEST] All 5 beats, quests, weapon swaps, pickups, Princess, Director Boss, B5 respawn, Start/Pause, and Victory passed!"));
+	Test->AddInfo(TEXT("[DC_TEST] All 5 beats, quests, weapon swaps, pickups, Princess, Director Boss, B5 respawn, Start/Pause, Death Slate, and Victory passed!"));
 	return true;
 }
 

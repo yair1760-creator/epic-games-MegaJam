@@ -619,16 +619,59 @@ def build_pause_menu():
     finish(bp)
 
 
+def build_death_screen():
+    bp = recreate_wbp("WBP_DeathScreen", unreal.DCDeathScreenWidget)
+    root = add(bp, unreal.CanvasPanel, "Root")
+
+    backdrop = add(bp, unreal.Border, "Backdrop", root)
+    backdrop.set_editor_property("brush_color", unreal.LinearColor(0.02, 0.01, 0.015, 0.50))
+    fill_canvas_slot(backdrop)
+    add_letterbox(bp, root, 56)
+
+    card_outer, card_inner = make_framed_panel(bp, "Card", root, pad=(0, 0, 0, 0), bg_color=SLATE_CARD, gold_thickness=3, ink_thickness=4)
+    canvas_slot(card_outer, (0.5, 0.44), (0, 0))
+
+    card_vbox = add(bp, unreal.VerticalBox, "CardStack", card_inner)
+    add_clapper_strip(bp, "ClapperTop", card_vbox, height=20).get_editor_property("slot").set_horizontal_alignment(unreal.HorizontalAlignment.H_ALIGN_FILL)
+
+    body = add(bp, unreal.Border, "CardBody", card_vbox)
+    body.set_editor_property("brush_color", unreal.LinearColor(0, 0, 0, 0))
+    body.set_editor_property("padding", unreal.Margin(48, 28, 48, 32))
+
+    col = add(bp, unreal.VerticalBox, "Column", body)
+
+    icon_wrap = add(bp, unreal.HorizontalBox, "IconRow", col)
+    icon_wrap.get_editor_property("slot").set_horizontal_alignment(unreal.HorizontalAlignment.H_ALIGN_CENTER)
+    icon_wrap.get_editor_property("slot").set_padding(unreal.Margin(0, 0, 0, 10))
+    add_icon(bp, "SlateIcon", icon_wrap, "T_DC_UI_SlateIcon", (48, 48))
+
+    def dtext(name, value, size, color, bottom_pad, font_key="Font_Body", outline=2):
+        tb = add(bp, unreal.TextBlock, name, col)
+        style_text(tb, value, size, color, font_key=font_key, outline_size=outline, justify=unreal.TextJustify.CENTER)
+        s = tb.get_editor_property("slot")
+        s.set_horizontal_alignment(unreal.HorizontalAlignment.H_ALIGN_CENTER)
+        s.set_padding(unreal.Margin(0, 0, 0, bottom_pad))
+        return tb
+
+    dtext("TitleText", "CUT!  TAKE 2", 52, GOLD, 8, font_key="Font_Display", outline=3)
+    dtext("SubtitleText", "SCENE 1: BOAR HUNT  -  ACTOR DOWN", 20, CREAM, 14, font_key="Font_Condensed", outline=2)
+    dtext("CountdownText", "RESETTING TO MARK IN 5.0s...", 16, RED_BRIGHT, 6, font_key="Font_Mono", outline=1)
+    dtext("ProgressNote", "QUEST PROGRESS PRESERVED", 12, SILVER, 0, font_key="Font_Mono", outline=1)
+
+    finish(bp)
+
+
 def assign_to_blueprints():
     gm = _obj(GAME_MODE)
     gm_gen = unreal.load_class(None, GAME_MODE + "." + GAME_MODE.rsplit("/", 1)[-1] + "_C")
     gm_cdo = unreal.get_default_object(gm_gen)
     gm_cdo.set_editor_property("hud_widget_class", _cls("WBP_DCHUD"))
     gm_cdo.set_editor_property("start_screen_widget_class", _cls("WBP_StartScreen"))
+    gm_cdo.set_editor_property("death_screen_widget_class", _cls("WBP_DeathScreen"))
     gm_cdo.set_editor_property("victory_widget_class", _cls("WBP_CutScreen"))
     unreal.BlueprintEditorLibrary.compile_blueprint(gm)
     unreal.EditorLoadingAndSavingUtils.save_packages([gm.get_outermost()], False)
-    LOG.append("SET  BP_DCGameMode -> WBP_DCHUD, WBP_StartScreen, WBP_CutScreen")
+    LOG.append("SET  BP_DCGameMode -> WBP_DCHUD, WBP_StartScreen, WBP_DeathScreen, WBP_CutScreen")
 
     pc = _obj(PLAYER_CTRL)
     if pc:
@@ -645,7 +688,7 @@ def main():
     import_ui_fonts()
 
     # Delete parent HUD first so child WBPs can be recreated cleanly without stale references
-    for name in ("WBP_DCHUD", "WBP_StartScreen", "WBP_PauseMenu", "WBP_CutScreen", "WBP_Subtitles", "WBP_QuestTracker", "WBP_HealthBar"):
+    for name in ("WBP_DCHUD", "WBP_StartScreen", "WBP_PauseMenu", "WBP_DeathScreen", "WBP_CutScreen", "WBP_Subtitles", "WBP_QuestTracker", "WBP_HealthBar"):
         pkg = "%s/%s" % (FOLDER, name)
         if EAL.does_asset_exist(pkg):
             EAL.delete_asset(pkg)
@@ -657,6 +700,7 @@ def main():
     build_cut_screen()
     build_start_screen()
     build_pause_menu()
+    build_death_screen()
     assign_to_blueprints()
 
     summary = "\n".join(LOG)

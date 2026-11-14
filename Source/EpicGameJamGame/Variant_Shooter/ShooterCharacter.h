@@ -119,6 +119,9 @@ protected:
 
 public:
 
+	UFUNCTION(BlueprintPure, Category="Destruction")
+	float GetRespawnTime() const { return RespawnTime; }
+
 	/** Bullet count updated delegate */
 	FBulletCountUpdatedDelegate OnBulletCountUpdated;
 

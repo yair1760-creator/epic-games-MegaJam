@@ -39,5 +39,21 @@ void UDCHUDWidget::RefreshTakeLabel(int32 Beat)
 
 	const ADCGameMode* GM = GetWorld() ? GetWorld()->GetAuthGameMode<ADCGameMode>() : nullptr;
 	const FString SceneName = GM ? GM->GetBeatDisplayName(Beat) : FString::Printf(TEXT("SCENE %d"), Beat);
-	TakeText->SetText(FText::FromString(FString::Printf(TEXT("REC  |  %s"), *SceneName)));
+	const int32 TakeNum = GM ? GM->GetCurrentTakeNumber() : 1;
+	if (TakeNum > 1)
+	{
+		TakeText->SetText(FText::FromString(FString::Printf(TEXT("REC  |  %s  |  TAKE %d"), *SceneName, TakeNum)));
+	}
+	else
+	{
+		TakeText->SetText(FText::FromString(FString::Printf(TEXT("REC  |  %s"), *SceneName)));
+	}
+}
+
+void UDCHUDWidget::SetCrosshairVisible(bool bVisible)
+{
+	if (Crosshair)
+	{
+		Crosshair->SetVisibility(bVisible ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
+	}
 }

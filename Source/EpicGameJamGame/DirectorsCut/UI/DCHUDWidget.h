@@ -46,10 +46,12 @@ private:
 	UFUNCTION()
 	void HandleBeatChanged(int32 Beat);
 
-	void RefreshTakeLabel(int32 Beat);
-
 public:
 
+	void RefreshTakeLabel(int32 Beat);
+	void SetCrosshairVisible(bool bVisible);
+
+	UWidget* GetCrosshair() const { return Crosshair; }
 	UDCQuestTrackerWidget* GetQuestTracker() const { return QuestTracker; }
 	UDCHealthBarWidget* GetHealthBar() const { return HealthBar; }
 	UDCSubtitlesWidget* GetSubtitles() const { return Subtitles; }

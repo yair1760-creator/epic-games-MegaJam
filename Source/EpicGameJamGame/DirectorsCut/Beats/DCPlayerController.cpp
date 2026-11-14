@@ -120,7 +120,7 @@ void ADCPlayerController::SetPauseMenuOpen(bool bOpen)
 	{
 		if (const ADCGameMode* GM = World->GetAuthGameMode<ADCGameMode>())
 		{
-			if (GM->IsVictoryShown() || GM->IsStartScreenShown())
+			if (GM->IsVictoryShown() || GM->IsStartScreenShown() || GM->IsDeathScreenShown())
 			{
 				return;
 			}

@@ -29,6 +29,7 @@
 #include "ShooterWeapon.h"
 #include "Sound/SoundBase.h"
 #include "TimerManager.h"
+#include "UI/DCDeathScreenWidget.h"
 #include "UI/DCHUDWidget.h"
 #include "UI/DCStartScreenWidget.h"
 #include "UI/DCVictoryWidget.h"
@@ -51,6 +52,11 @@ ADCGameMode::ADCGameMode()
 	if (StartScreenBP.Succeeded())
 	{
 		StartScreenWidgetClass = StartScreenBP.Class;
+	}
+	static ConstructorHelpers::FClassFinder<UDCDeathScreenWidget> DeathScreenBP(TEXT("/Game/DirectorsCut/UI/WBP_DeathScreen"));
+	if (DeathScreenBP.Succeeded())
+	{
+		DeathScreenWidgetClass = DeathScreenBP.Class;
 	}
 	static ConstructorHelpers::FClassFinder<UDCVictoryWidget> CutScreenBP(TEXT("/Game/DirectorsCut/UI/WBP_CutScreen"));
 	if (CutScreenBP.Succeeded())
@@ -501,6 +507,11 @@ void ADCGameMode::StartBeat(int32 Beat)
 	bVictoryPending = false;
 	bVictoryShown = false;
 	bStartScreenShown = false;
+	HideDeathScreen();
+	if (Clamped == 1)
+	{
+		CurrentTakeNumber = 1;
+	}
 	bMusicDucked = false;
 	GetWorldTimerManager().ClearTimer(MusicUnduckTimer);
 	if (StartScreenWidget)
@@ -756,6 +767,11 @@ void ADCGameMode::HandlePossessedPawnChanged(APawn* OldPawn, APawn* NewPawn)
 		NewChar->OnDied.AddUniqueDynamic(this, &ADCGameMode::HandlePlayerDied);
 		bPlayedPlayerHurt = false;
 
+		if (!NewChar->IsDead())
+		{
+			HideDeathScreen();
+		}
+
 		if (bVictoryPending || bVictoryShown)
 		{
 			NewChar->SetCanBeDamaged(false);
@@ -794,6 +810,16 @@ void ADCGameMode::HandlePlayerDied(AShooterCharacter* Character)
 	{
 		return;
 	}
+	if (ADCPlayerController* DCPC = Cast<ADCPlayerController>(GetWorld()->GetFirstPlayerController()))
+	{
+		DCPC->SetPauseMenuOpen(false);
+	}
+	++CurrentTakeNumber;
+	ShowDeathScreen(Character ? Character->GetRespawnTime() : 5.0f);
+	if (USoundBase* CutSFX = CutSound ? CutSound.Get() : (FPackageName::DoesPackageExist(TEXT("/Game/DirectorsCut/Audio/SFX/S_Cut")) ? LoadObject<USoundBase>(nullptr, TEXT("/Game/DirectorsCut/Audio/SFX/S_Cut")) : nullptr))
+	{
+		UDCFXLibrary::PlayUISound(this, CutSFX, 0.75f);
+	}
 	if (UDCNarratorSubsystem* Narrator = GetWorld()->GetSubsystem<UDCNarratorSubsystem>())
 	{
 		Narrator->Interrupt();
@@ -802,6 +828,57 @@ void ADCGameMode::HandlePlayerDied(AShooterCharacter* Character)
 	if (CurrentBeat == 1 && !bHuntQuestStarted)
 	{
 		StartHuntQuest();
+	}
+}
+
+void ADCGameMode::ShowDeathScreen(float RespawnDuration)
+{
+	if (bVictoryShown || bStartScreenShown)
+	{
+		return;
+	}
+
+	APlayerController* PC = GetWorld() ? GetWorld()->GetFirstPlayerController() : nullptr;
+	if (!PC)
+	{
+		return;
+	}
+
+	bDeathScreenShown = true;
+	if (HUDWidget)
+	{
+		HUDWidget->SetCrosshairVisible(false);
+		HUDWidget->RefreshTakeLabel(CurrentBeat);
+	}
+
+	if (!DeathScreenWidget)
+	{
+		TSubclassOf<UDCDeathScreenWidget> WidgetCls = DeathScreenWidgetClass ? DeathScreenWidgetClass : TSubclassOf<UDCDeathScreenWidget>(UDCDeathScreenWidget::StaticClass());
+		DeathScreenWidget = CreateWidget<UDCDeathScreenWidget>(PC, WidgetCls);
+	}
+	if (DeathScreenWidget)
+	{
+		if (!DeathScreenWidget->IsInViewport())
+		{
+			// Sit above DCScreenTintWidget (-5) and below WBP_DCHUD (0) so live subtitles + 0 HP bar remain visible.
+			DeathScreenWidget->AddToViewport(-2);
+		}
+		DeathScreenWidget->SetupDeath(CurrentTakeNumber, GetBeatDisplayName(CurrentBeat), RespawnDuration);
+	}
+}
+
+void ADCGameMode::HideDeathScreen()
+{
+	bDeathScreenShown = false;
+	if (DeathScreenWidget)
+	{
+		DeathScreenWidget->RemoveFromParent();
+		DeathScreenWidget = nullptr;
+	}
+	if (HUDWidget)
+	{
+		HUDWidget->SetCrosshairVisible(true);
+		HUDWidget->RefreshTakeLabel(CurrentBeat);
 	}
 }
 
@@ -885,6 +962,7 @@ void ADCGameMode::ShowVictoryScene()
 	}
 	bVictoryShown = true;
 	bVictoryPending = false;
+	HideDeathScreen();
 
 	GetWorldTimerManager().ClearTimer(IdleTimer);
 	GetWorldTimerManager().ClearTimer(BossStartFallbackTimer);
@@ -996,6 +1074,7 @@ void ADCGameMode::ShowStartScreen()
 		return;
 	}
 
+	HideDeathScreen();
 	bStartScreenShown = true;
 	GetWorldTimerManager().ClearTimer(IntroTimer);
 
@@ -1038,6 +1117,8 @@ void ADCGameMode::StartFromTitle()
 	}
 
 	bStartScreenShown = false;
+	CurrentTakeNumber = 1;
+	HideDeathScreen();
 	RunStartTime = GetWorld()->GetTimeSeconds();
 
 	if (StartScreenWidget)

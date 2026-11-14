@@ -15,6 +15,7 @@ class ADCPrincess;
 class UAudioComponent;
 class UDCHealthComponent;
 class UDCHUDWidget;
+class UDCDeathScreenWidget;
 class UDCStartScreenWidget;
 class UDCVictoryWidget;
 class ULevelStreaming;
@@ -83,6 +84,9 @@ public:
 	UDCStartScreenWidget* GetStartScreenWidget() const { return StartScreenWidget; }
 
 	UFUNCTION(BlueprintPure, Category="UI")
+	UDCDeathScreenWidget* GetDeathScreenWidget() const { return DeathScreenWidget; }
+
+	UFUNCTION(BlueprintPure, Category="UI")
 	UDCVictoryWidget* GetVictoryWidget() const { return VictoryWidget; }
 
 	UFUNCTION(BlueprintPure, Category="Beats|Start")
@@ -95,6 +99,20 @@ public:
 	/** Dismisses the Title / Start slate and begins Beat 1 ("ACTION!"). */
 	UFUNCTION(BlueprintCallable, Category="Beats|Start")
 	void StartFromTitle();
+
+	UFUNCTION(BlueprintPure, Category="Beats|Death")
+	bool IsDeathScreenShown() const { return bDeathScreenShown; }
+
+	UFUNCTION(BlueprintPure, Category="Beats|Death")
+	int32 GetCurrentTakeNumber() const { return CurrentTakeNumber; }
+
+	/** Shows the "CUT! TAKE N" slate while the player waits to respawn. */
+	UFUNCTION(BlueprintCallable, Category="Beats|Death")
+	void ShowDeathScreen(float RespawnDuration = 5.0f);
+
+	/** Hides the Death slate once the actor respawns back on their mark. */
+	UFUNCTION(BlueprintCallable, Category="Beats|Death")
+	void HideDeathScreen();
 
 	UFUNCTION(BlueprintPure, Category="Beats|Victory")
 	bool IsVictoryShown() const { return bVictoryShown; }
@@ -136,6 +154,13 @@ protected:
 	/** Show the Start / Title slate on BeginPlay (skipped automatically in automated/unattended runs) */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Beats|Start")
 	bool bShowStartScreen = true;
+
+	/** Death / respawn slate shown when the player dies (WBP_DeathScreen) */
+	UPROPERTY(EditDefaultsOnly, Category="UI")
+	TSubclassOf<UDCDeathScreenWidget> DeathScreenWidgetClass;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UDCDeathScreenWidget> DeathScreenWidget;
 
 	/** Victory / wrap screen shown after defeating The Director (WBP_CutScreen) */
 	UPROPERTY(EditDefaultsOnly, Category="UI")
@@ -286,9 +311,11 @@ private:
 	bool bPlayedPlayerHurt = false;
 	bool bPendingBeat5 = false;
 	bool bStartScreenShown = false;
+	bool bDeathScreenShown = false;
 	bool bVictoryPending = false;
 	bool bVictoryShown = false;
 	bool bMusicDucked = false;
+	int32 CurrentTakeNumber = 1;
 	int32 Beat2BoarKillCount = 0;
 	float RunStartTime = 0.0f;
 
