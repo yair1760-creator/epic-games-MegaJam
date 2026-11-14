@@ -441,3 +441,23 @@ When a reload starts (R, or a click on an empty magazine: `ADCShotgunWeapon::Sta
 - Saar's automation test for the reload was updated to the new pose names and times (same checks). The automation tests were not run.
 - **Checked in play:** pose changes measured at 0 / 261 / 424 / 615 ms (R), 0 / 251 / 421 / 592 ms (click on empty), within one game frame of the grid; a second R during the reload does not restart it.
 - Screenshots: `Docs/Screenshots/Shotgun2D_Reload_01.png`, `Shotgun2D_Reload_02.png`.
+
+## 21. Player death drawing (two poses, 12 fps)
+
+When the player dies, the hero's drawn death plays once on a full-screen layer, together with Saar's "CUT! TAKE N" slate.
+
+| Frame | Starts | Held |
+|---|---|---|
+| `T_Player_Death_01_Dying` (clutching his chest) | 0 ms, on the death event itself | 3 ticks (250 ms) |
+| `T_Player_Death_02_Dead` (lying on his side) | 250 ms | until the respawn (5 s after death) or a beat change |
+
+- **Flow it hooks into:** `AShooterCharacter::Die` -> `OnDied` -> `ADCGameMode::HandlePlayerDied` -> `ShowDeathScreen`. The drawing is created and started there, and removed in `HideDeathScreen` (called when the new pawn is possessed, on a beat change and on victory). There is no Game Over screen or retry button in this game: death is a 5-second slate and an automatic respawn with quest progress kept. A second death replays from the first drawing.
+- **Class:** `UDCPlayerDeathSpriteWidget` (`Source/.../UI/DCPlayerDeathSpriteWidget.h/.cpp`), built in code, ticks itself. Hard cut between the two drawings: no tween, no fade. It is its own layer because the slate fades in and the drawings must not.
+- **Layer order:** screen tint (-5) < slate (-2) < death drawing (-1) < HUD (0). So the standing pose is in front of the slate card for its 250 ms, and the HUD (subtitles, HP bar, quest) stays on top.
+- **Placement:** the whole 1920x1080 canvas, aspect kept, both drawings on the same anchor and scale. `CanvasScale` = 0.9 with `CanvasPivot` = top centre: at full size the body lay behind the Director's subtitle box, which covers the bottom of the screen exactly when the death line plays. At 0.9 the floor line sits just above that box and the body lies between the slate card and the subtitles. Set `CanvasScale` to 1 for the canvas fitted to the screen.
+- Tunables: `SpriteDying`, `SpriteDead`, `AnimFPS` (12), `DyingTicks` (3), `CanvasScale`, `CanvasPivot`. Poses for tests: `Dying`, `Dead`; `ADCGameMode::GetDeathSpriteWidget()`.
+- Art: `Art/Player/Death` (2 PNGs; PSD under `Reference`). Textures in `/Game/DirectorsCut/UI/Death` (UI group, no streaming), a folder that is always cooked.
+- Saar's automation test got two checks (drawing starts on `Dying`; removed after respawn). The automation tests were not run.
+- **Checked in play:** `Dying` at 0 ms, `Dead` at 250 / 253 ms, removed at 5.0 s when the player respawns with the sword; second death starts on `Dying` again; take counter goes 2, 3.
+- Limits: a two-line subtitle box grows upward and covers the lowest edge of the body; not tried at other aspect ratios or in a packaged build; the first-person camera view behind the drawing is unchanged (no camera fall).
+- Screenshots: `Docs/Screenshots/PlayerDeath_01_Dying.png`, `PlayerDeath_02_Dead.png` (the first was taken with the grid slowed down so the pose could be photographed).

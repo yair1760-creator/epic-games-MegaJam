@@ -35,6 +35,7 @@
 #include "Quest/DCQuestSubsystem.h"
 #include "UI/DCAmmoCounterWidget.h"
 #include "UI/DCDeathScreenWidget.h"
+#include "UI/DCPlayerDeathSpriteWidget.h"
 #include "UI/DCHealthBarWidget.h"
 #include "UI/DCHUDWidget.h"
 #include "UI/DCMainMenuGameMode.h"
@@ -593,6 +594,14 @@ bool FDCRunFullQuestFlowCommand::Update()
 		Test->TestTrue(TEXT("Player is dead after lethal damage"), AlivePlayer->IsDead());
 		Test->TestTrue(TEXT("Death screen shows on player death"), GM->IsDeathScreenShown());
 		Test->TestEqual(TEXT("Death increments take number to 2"), GM->GetCurrentTakeNumber(), 2);
+		if (UDCPlayerDeathSpriteWidget* DeathSprite = GM->GetDeathSpriteWidget())
+		{
+			Test->TestEqual(TEXT("Drawn death starts on the Dying pose"), DeathSprite->GetPose(), FName("Dying"));
+		}
+		else
+		{
+			Test->AddError(TEXT("DeathSpriteWidget was not created"));
+		}
 		Test->TestEqual(TEXT("Death triggers L1_PlayerDied line"), Narrator->GetCurrentLineId(), FName("L1_PlayerDied"));
 		if (UDCDeathScreenWidget* DeathWidget = GM->GetDeathScreenWidget())
 		{
@@ -617,6 +626,7 @@ bool FDCRunFullQuestFlowCommand::Update()
 		AShooterCharacter* Respawned = Cast<AShooterCharacter>(UGameplayStatics::GetPlayerPawn(World, 0));
 		Test->TestNotNull(TEXT("Respawned pawn is created"), Respawned);
 		Test->TestFalse(TEXT("Death screen dismisses after respawn"), GM->IsDeathScreenShown());
+		Test->TestNull(TEXT("Drawn death is removed after respawn"), GM->GetDeathSpriteWidget());
 		Test->TestEqual(TEXT("Quest progress is preserved across death/respawn"), Quest->GetCurrent(), 1);
 		if (HUD->GetCrosshair())
 		{
