@@ -1,0 +1,5 @@
+Rated PG for Pig — loading icon
+
+Play frames/Loading_Boar_01.png through Loading_Boar_08.png in ascending order, then return directly to 01. Loop at 12 animation frames per second (83.33 ms per frame, about 667 ms per loop). Use hard image swaps.
+
+Display overlay/Loading_Text.png as a static foreground layer above the animated sprite for the entire loading screen. All PNGs are transparent and share a 256 x 212 canvas. Overlay the two images at identical size, anchor and position. The text is already offset below the boar within its canvas. Show both layers together when loading starts and hide both when it completes. Verify motion during actual map loading.

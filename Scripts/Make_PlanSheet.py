@@ -339,6 +339,8 @@ BACKLOG = [
  (20, "Main menu + pause menu", "Code", "Not tested with real key presses or in a packaged build; in the editor Esc stops Play so P is the stand-in", "Test in Standalone / a packaged build", "High"),
  (21, "Drawn HP bar", "Animation", "The bar jumps to the new value: no drain animation, no shake or flash on the bar when hit", "Lerp LifePercent in the widget tick; small scale punch on damage", "Low"),
  (21, "Drawn HP bar", "Design", "The health number is hidden on the drawn bar", "bShowNumber on the widget turns it back on; needs a matching font", "Low"),
+ (22, "Loading screen", "Code", "Not tested in a packaged build; it never shows in Play-In-Editor (engine limit)", "Check it in the first packaged build", "High"),
+ (22, "Loading screen", "Art", "Plain parchment backdrop behind the boar; no tip text or key art", "Optional background picture behind the two layers", "Low"),
 ]
 pol = Sheet("Polish backlog")
 pol.set(1, 1, "Polish backlog: what each system still lacks (art, animation, textures, audio, VFX, UI)", S_TITLE)

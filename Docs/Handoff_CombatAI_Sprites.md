@@ -407,3 +407,17 @@ The HUD health bar now shows the designer's two pictures instead of the plain re
 - **Checked in play:** screenshots at 100 %, 70 %, 35 %, 5 % and 0 % health and after respawn (back to full).
 - Limits: the bar jumps to the new value (no drain animation, no flash on the bar itself); the number is hidden.
 - Screenshots: `Docs/Screenshots/HPBar_100.png`, `HPBar_035.png`.
+
+## 19. Loading screen (running boar, "Rated PG for Pig" UI art)
+
+The project had no loading screen at all, so there was nothing to reuse; this adds one.
+
+- **Art:** `Art/UI/Loading` (`frames/Loading_Boar_01..08.png`, `overlay/Loading_Text.png`, PSD + note under `Reference`) -> `/Game/DirectorsCut/UI/Loading/T_UI_Loading_Boar_01..08`, `T_UI_Loading_Text` (256 x 212, UI group). The folder is always cooked, because the pictures are loaded by path.
+- **Code:** `UDCLoadingScreenSubsystem` (`UI/DCLoadingScreen.h`), a game-instance subsystem, so no map, game mode or Blueprint has to be set up. It listens to the engine's "map load starts" / "map load finished" events and shows a Slate widget through the engine's movie player (new module dependency `MoviePlayer`).
+- **Why the movie player:** while a map loads the game thread is blocked, so an ordinary HUD widget would freeze on one drawing. The movie player keeps drawing its widget on the loading thread, so the boar really runs during the load.
+- **Animation:** drawings 01..08 in ascending order at 12 per second (83.33 ms each, hard swaps, 0.67 s per loop), then straight back to 01, taken from the wall clock. `Loading_Text` is a second static layer on top for the whole screen. Both layers sit in one box of the 256 x 212 canvas shape, so they have the same size, anchor and position and the transparent padding is kept.
+- **Show / hide:** both layers go up when a map load begins and come down when the map is ready, but never before `MinimumDisplaySeconds` (1.0 s), so a very fast load still shows more than one full loop.
+- **Look:** centred on the screen at 1.5x (384 x 318 at the 1920 x 1080 reference), on the UI art's parchment colour, because the drawings are black silhouettes and would be invisible on black.
+- **Tunables** (config properties on the subsystem): `AnimFPS`, `MinimumDisplaySeconds`, `IconScale`, `BackdropColor`.
+- **Verified during actual map loads** in a standalone game (`UnrealEditor.exe <project> -game`, then `open Lvl_DirectorsCut`): the log line `DCLoadingScreen: '<map>' loaded after 1.00 s; boar drawn 184 times, 12 frame switches, 8 of 8 drawings shown` is written at the end of every load, and window captures taken mid-load show different drawings with the text unchanged (`Docs/Screenshots/Loading_FrameA.png`, `Loading_FrameB.png`).
+- Limits: **it does not show in Play-In-Editor** (the engine's movie player only runs in a standalone or packaged game); the level currently loads in about a second on this machine, so the minimum time is what you mostly see; beat changes inside the level stream sublevels and do not show it; no packaged build was tested.
