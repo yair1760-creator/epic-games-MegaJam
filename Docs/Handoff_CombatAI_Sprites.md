@@ -251,7 +251,7 @@ Materials: `MI_DC_*_3D` on `M_DC_InkedProp` (lit, masked, two-sided). The `DC Pr
 - **Made with Meshy:** text-to-3D, meshy-t2.5 smart topology (5 credits) + texture pass (10 credits). The untouched download is in `Art/Meshy/SetFloor/Source/`.
 - **Adjusted in Blender:** `Scripts/Blender_AdjustSetFloor.py` (`blender -b --python ... -- preview`): joins the parts, merges doubles, fixes normals, centres it with the bottom at z = 0, makes the footprint a true circle, scales it to 24 m x 20 cm (the squash also flattens the top: plank steps are under 1 cm), triangulates and exports `Art/Meshy/SetFloor/Export/SM_DC_SetFloor.glb` + `.blend` for hand edits.
 - **Collision:** complex-as-simple, so the player and boars walk on the real surface.
-- **Not placed in any map yet.** To use it: put it at the plinth's spot (1000, 0, 0) and hide or delete `POI_TheSet_Plinth`, then rebuild nav.
+- **Placed on the playable level (2026-11-14):** `Stage_SetFloor` in `DC/SetDressing_Stage`, via `dress_main_map("stage")`: stretched to the disc's exact footprint and 40 cm height, no collision; `POI_TheSet_Plinth` is invisible but still collides and carries the nav mesh. In play the player can walk onto it and nav reaches its centre.
 - Limits: planks are wide (about 1-2 m) because one model covers 24 m, and its 2K texture is soft up close; the look is painted wood rather than strong ink lines.
 - Screenshots: `Docs/Screenshots/SetFloor_Top.png`, `SetFloor_Side.png`.
 

@@ -4,9 +4,10 @@
 #   - the hunt set's 10 greybox hay bales (yellow cylinders) become Taisho's hay bale cut-outs
 #   - Taisho's apple trees around the village edges and the meadow border
 #   - the Forgive Me Father style floor (SM_DC_SetGround) over the meadow, paths and village square
+#   - the round wooden stage floor (SM_DC_SetFloor) over the lilac disc "THE SET"
 # Run inside the editor (Lvl_DirectorsCut open):
 #   exec(open(r"D:\EpicGameJam\EpicGameJamGame\EpicGameJamGame\Scripts\LD_DressMainMap.py").read())
-#   dress_main_map()            # or dress_main_map("houses") / ("hunt") / ("props") / ("trees") / ("ground")
+#   dress_main_map()            # or dress_main_map("houses") / ("hunt") / ("props") / ("trees") / ("ground") / ("stage")
 # Re-runnable: clears DC/Village_Flats, DC/SetDressing_Props and DC/SetDressing_Trees (persistent level) and the Hunt_HayProp_* actors first.
 # DC_Set_Hunt only gets its greybox hay bales swapped for the real ones; no other sublevel is touched.
 # Note: re-running LD_BuildDirectorsCut's village / hunt stages would bring the greybox back - run this again afterwards.
@@ -211,6 +212,27 @@ def dress_ground():
     return sorted(hidden)
 
 
+def dress_stage():
+    """The round wooden stage floor (SM_DC_SetFloor, Meshy + Scripts/Blender_AdjustSetFloor.py) over the lilac disc
+    "THE SET" (POI_TheSet_Plinth). Visual only: the disc goes invisible but keeps its collision and nav."""
+    CURRENT_FOLDER[0] = "DC/SetDressing_Stage"
+    clear_folder("DC/SetDressing_Stage")
+    plinth = next((x for x in EAS.get_all_level_actors() if x.get_actor_label() == "POI_TheSet_Plinth"), None)
+    assert plinth, "POI_TheSet_Plinth not found"
+    o, e = plinth.get_actor_bounds(False)
+    sm_asset = unreal.load_asset("/Game/DirectorsCut/Environment/SetFloor/SM_DC_SetFloor")
+    b = sm_asset.get_bounding_box()
+    a = EAS.spawn_actor_from_object(sm_asset, V(o.x, o.y, o.z - e.z), R())
+    # stretch the model to the disc's exact footprint and height (it was built 24 m x 20 cm; the disc is 40 cm tall)
+    a.set_actor_scale3d(V(2 * e.x / (b.max.x - b.min.x), 2 * e.y / (b.max.y - b.min.y), 2 * e.z / (b.max.z - b.min.z)))
+    c = a.static_mesh_component
+    c.set_collision_enabled(unreal.CollisionEnabled.NO_COLLISION)
+    c.set_editor_property("can_ever_affect_navigation", False)
+    _finish(a, "Stage_SetFloor")
+    plinth.static_mesh_component.set_editor_property("visible", False)        # still collides, still on the nav mesh
+    return {"at": [round(o.x), round(o.y), round(o.z - e.z)], "size_cm": [round(2 * e.x), round(2 * e.y), round(2 * e.z)]}
+
+
 def dress_main_map(which="all"):
     _check_world()
     # no ensure_materials(): it re-saves the lead's shared MI_LD_* materials; the ones used here already exist
@@ -224,6 +246,8 @@ def dress_main_map(which="all"):
             out.update(dress_props())
         if which in ("all", "ground"):
             out["ground_hidden_greybox"] = dress_ground()
+        if which in ("all", "stage"):
+            out["stage"] = dress_stage()
         if which in ("all", "trees"):
             out["apple_trees"] = dress_trees()
     w = UES.get_editor_world()
