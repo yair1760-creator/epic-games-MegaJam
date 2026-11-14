@@ -292,3 +292,24 @@ Four models in `/Game/DirectorsCut/Environment/ButcherStall`, built by `Scripts/
 - Screenshots: `Docs/Screenshots/ButcherStall_Beat1.png`, `ButcherStall_Beat2_Close.png`, `ButcherStall_Beat2_Far.png`.
 
 **Merge note (2026-11-14):** Saar's commit `b10990e` and the stall work both changed `Lvl_DirectorsCut.umap`. Our version of the level was kept, and Saar's one level change was re-created by hand exactly as his `LD_BuildDirectorsCut.py` does it: the `BoarWanderArea` trigger box (centre 0, 0, 500; extent 5700 x 4700 x 500; tag `BoarWanderArea`; folder `DC/Gameplay`) and `DC_BoarSpawner.wander_area` pointing at it. Checked in play: a spawned boar has the area set.
+
+## 13. 2D shotgun view (designer frames, 12 fps)
+
+`ADCShotgunWeapon` (Saar's Beat 3-5 shotgun) now draws the designer's hand-drawn frames on screen, the same way the sword does (`UDCWeaponSpriteWidget`, full-screen layer under the HUD). The 3D gun and the template arms are hidden in first person; pellets, ammo, sound and camera kick are unchanged.
+
+| Frame | Starts | Held |
+|---|---|---|
+| `T_Shotgun_Idle` | before input | until the player fires |
+| `T_Shotgun_Flash` (flash drawn in) | 0 ms, on the accepted shot itself | 2 ticks (167 ms) |
+| `T_Shotgun_Recoil` (peak) | 167 ms | 1 tick (83 ms) |
+| `T_Shotgun_Recovery` | 250 ms | 2 ticks (167 ms) |
+| `T_Shotgun_Idle` | 417 ms | until the next shot |
+
+- Frames: `/Game/DirectorsCut/Combat/Shotgun/Sprites/` (1920 x 1080, UI group, no streaming). Source art, the PSD, the reference GIF and the designer's `Timing.txt`: `Art/Player/Shotgun`.
+- The sequence starts in `FireProjectile`, so it plays once per accepted shot: an empty magazine, a reload or a click during the refire delay does not play it. `RefireRate` (0.55 s) is kept at least as long as the animation (0.417 s), so a shot never cuts the previous one off.
+- Hard cuts on the tick grid; the one-tick peak recoil is always shown, even if a slow frame would skip it.
+- Walk bob and idle sway only while idle; the shot drawings keep their exact drawn placement.
+- Tunables on the weapon (`Shotgun|2D View`): `bUseSpriteView` (off = the old 3D gun), `AnimFPS`, `FlashTicks`, `RecoilTicks`, `RecoveryTicks`, `SpriteScreenScale`, `WalkBobPixels`, `IdleSwayPixels`, `EdgeBleedPixels`. For tests: `GetSpritePose()`, `GetShotElapsed()`, `GetShotAnimDuration()`.
+- Checked in play (`DC.SwapWeapon Gun`): pose changes measured at 0 / 168 / 251 / 418 ms; a second click 200 ms into the animation does not restart it; swapping back to the sword removes the shotgun layer.
+- Limits: no reload drawing (the idle frame stays up while reloading); the pellets still leave from the hidden 3D gun's muzzle, not from the drawn barrel; Saar's automation tests were not re-run.
+- Screenshots: `Docs/Screenshots/Shotgun2D_Idle.png`, `Shotgun2D_Flash.png`, `Shotgun2D_Recoil.png`, `Shotgun2D_Recovery.png`.

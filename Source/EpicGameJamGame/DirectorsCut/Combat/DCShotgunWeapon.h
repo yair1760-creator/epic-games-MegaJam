@@ -8,6 +8,8 @@
 
 class USoundBase;
 class UNiagaraSystem;
+class UTexture2D;
+class UDCWeaponSpriteWidget;
 
 /**
  *  Pump-action shotgun for Beats 3-5. Fires a cone of multiple pellets per shell,
@@ -56,8 +58,91 @@ public:
 	UFUNCTION(BlueprintPure, Category="Shotgun")
 	float GetSpreadAngleDeg() const { return SpreadAngleDeg; }
 
+	// ---------------- 2D first-person view (hand-drawn frames, same system as the sword)
+
+	/** Draw the shotgun as 2D hands + gun frames on screen instead of the 3D gun and the template arms */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Shotgun|2D View")
+	bool bUseSpriteView = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Shotgun|2D View")
+	TObjectPtr<UTexture2D> SpriteIdle;
+
+	/** The flash is drawn into this frame; the pose already shows the start of the kick */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Shotgun|2D View")
+	TObjectPtr<UTexture2D> SpriteFlash;
+
+	/** Highest point of the recoil */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Shotgun|2D View")
+	TObjectPtr<UTexture2D> SpriteRecoil;
+
+	/** Gun settling back down */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Shotgun|2D View")
+	TObjectPtr<UTexture2D> SpriteRecovery;
+
+	/** Animation timing grid (the designer spec: 12 fps, hard cuts, no in-betweens) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Shotgun|2D View", meta=(ClampMin=1, ClampMax=60))
+	float AnimFPS = 12.0f;
+
+	/** Ticks each pose is held: Muzzle Flash 2 (167 ms) -> Peak Recoil 1 (83 ms) -> Recovery 2 (167 ms) -> Idle */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Shotgun|2D View", meta=(ClampMin=1))
+	int32 FlashTicks = 2;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Shotgun|2D View", meta=(ClampMin=1))
+	int32 RecoilTicks = 1;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Shotgun|2D View", meta=(ClampMin=1))
+	int32 RecoveryTicks = 2;
+
+	/** Current pose for UI / tests: Idle, Flash, Recoil, Recovery */
+	UFUNCTION(BlueprintPure, Category="Shotgun|2D View")
+	FName GetSpritePose() const { return CurrentPose; }
+
+	/** Seconds since the current shot animation started (-1 when idle) */
+	UFUNCTION(BlueprintPure, Category="Shotgun|2D View")
+	float GetShotElapsed() const { return ShotTime; }
+
+	/** Length of one shot animation in seconds ((Flash + Recoil + Recovery) ticks / AnimFPS) */
+	UFUNCTION(BlueprintPure, Category="Shotgun|2D View")
+	float GetShotAnimDuration() const { return float(FlashTicks + RecoilTicks + RecoveryTicks) / FMath::Max(AnimFPS, 1.0f); }
+
+	/** Frame size on screen (1 = a frame fills the screen height) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Shotgun|2D View", meta=(ClampMin=0.2, ClampMax=2))
+	float SpriteScreenScale = 1.0f;
+
+	/** Walk bob in screen pixels at full running speed (0 = off) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Shotgun|2D View", meta=(ClampMin=0))
+	float WalkBobPixels = 18.0f;
+
+	/** Gentle breathing sway when standing still, in pixels */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Shotgun|2D View", meta=(ClampMin=0))
+	float IdleSwayPixels = 4.0f;
+
+	/** Extra pixels the frames are pushed past the bottom-right corner (on top of the bob), so the cut-off
+	 *  edges of the drawn arms never show on screen while walking */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Shotgun|2D View", meta=(ClampMin=0))
+	float EdgeBleedPixels = 4.0f;
+
+	virtual void SetActorHiddenInGame(bool bNewHidden) override;
+	virtual void Tick(float DeltaSeconds) override;
+
 protected:
 
 	virtual void BeginPlay() override;
+	virtual void EndPlay(EEndPlayReason::Type EndPlayReason) override;
 	virtual void FireProjectile(const FVector& TargetLocation) override;
+
+private:
+
+	/** 2D view: create the screen layer for the local player (lazy: the owner may not be possessed yet) */
+	void UpdateSpriteView(float DeltaSeconds);
+	void RemoveSpriteWidget();
+	void SetOwnerArmsHidden(bool bArmsHidden);
+
+	UPROPERTY()
+	TObjectPtr<UDCWeaponSpriteWidget> SpriteWidget;
+
+	float ShotTime = -1.0f;      // < 0 when no shot animation is playing
+	float BobTime = 0.0f;
+	bool bRecoilShown = false;   // the one-tick peak recoil is never skipped, even on a slow frame
+	FName CurrentPose = TEXT("Idle");
 };

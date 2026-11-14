@@ -3,6 +3,9 @@
 #include "DirectorsCut/Combat/DCShotgunWeapon.h"
 #include "DirectorsCut/Combat/DCFXLibrary.h"
 #include "DirectorsCut/Combat/DCHitFeedbackComponent.h"
+#include "DirectorsCut/Combat/DCWeaponSpriteWidget.h"
+#include "EpicGameJamGameCharacter.h"
+#include "Engine/Texture2D.h"
 #include "Animation/AnimInstance.h"
 #include "Animation/AnimMontage.h"
 #include "Camera/PlayerCameraManager.h"
@@ -69,6 +72,16 @@ ADCShotgunWeapon::ADCShotgunWeapon()
 	{
 		FireSound = BlastSFX.Object;
 	}
+
+	// 2D first-person frames (Art/Player/Shotgun)
+	static ConstructorHelpers::FObjectFinder<UTexture2D> FrameIdle(TEXT("/Game/DirectorsCut/Combat/Shotgun/Sprites/T_Shotgun_Idle.T_Shotgun_Idle"));
+	static ConstructorHelpers::FObjectFinder<UTexture2D> FrameFlash(TEXT("/Game/DirectorsCut/Combat/Shotgun/Sprites/T_Shotgun_Flash.T_Shotgun_Flash"));
+	static ConstructorHelpers::FObjectFinder<UTexture2D> FrameRecoil(TEXT("/Game/DirectorsCut/Combat/Shotgun/Sprites/T_Shotgun_Recoil.T_Shotgun_Recoil"));
+	static ConstructorHelpers::FObjectFinder<UTexture2D> FrameRecovery(TEXT("/Game/DirectorsCut/Combat/Shotgun/Sprites/T_Shotgun_Recovery.T_Shotgun_Recovery"));
+	if (FrameIdle.Succeeded())     SpriteIdle = FrameIdle.Object;
+	if (FrameFlash.Succeeded())    SpriteFlash = FrameFlash.Object;
+	if (FrameRecoil.Succeeded())   SpriteRecoil = FrameRecoil.Object;
+	if (FrameRecovery.Succeeded()) SpriteRecovery = FrameRecovery.Object;
 }
 
 void ADCShotgunWeapon::BeginPlay()
@@ -77,6 +90,163 @@ void ADCShotgunWeapon::BeginPlay()
 
 	// Allow firing immediately on equip without waiting RefireRate seconds after spawn
 	TimeOfLastShot = -RefireRate - 1.0f;
+
+	if (bUseSpriteView)
+	{
+		// the sequence plays once per accepted fire input: never accept the next shot before it has finished
+		RefireRate = FMath::Max(RefireRate, GetShotAnimDuration());
+		TimeOfLastShot = -RefireRate - 1.0f;
+
+		// the 2D frames replace the 3D gun in first person (its muzzle socket still gives the pellets a start point)
+		if (USkeletalMeshComponent* FPMesh = GetFirstPersonMesh())
+		{
+			FPMesh->SetHiddenInGame(true, true);
+		}
+	}
+}
+
+void ADCShotgunWeapon::EndPlay(EEndPlayReason::Type EndPlayReason)
+{
+	RemoveSpriteWidget();
+	if (bUseSpriteView && !IsHidden())
+	{
+		SetOwnerArmsHidden(false);
+	}
+	Super::EndPlay(EndPlayReason);
+}
+
+void ADCShotgunWeapon::RemoveSpriteWidget()
+{
+	if (SpriteWidget)
+	{
+		SpriteWidget->RemoveFromParent();
+		SpriteWidget = nullptr;
+	}
+}
+
+void ADCShotgunWeapon::SetOwnerArmsHidden(bool bArmsHidden)
+{
+	if (AEpicGameJamGameCharacter* Char = Cast<AEpicGameJamGameCharacter>(GetOwner()))
+	{
+		if (USkeletalMeshComponent* Arms = Char->GetFirstPersonMesh())
+		{
+			Arms->SetHiddenInGame(bArmsHidden, false);
+		}
+	}
+}
+
+void ADCShotgunWeapon::SetActorHiddenInGame(bool bNewHidden)
+{
+	Super::SetActorHiddenInGame(bNewHidden);
+
+	if (!bUseSpriteView)
+	{
+		return;
+	}
+
+	// the drawn hands replace the template arms while the shotgun is out
+	SetOwnerArmsHidden(!bNewHidden);
+
+	// the 2D hands go away with the weapon (holstered, owner died); a holstered gun is not mid-shot
+	if (bNewHidden)
+	{
+		ShotTime = -1.0f;
+		CurrentPose = TEXT("Idle");
+		if (SpriteWidget)
+		{
+			SpriteWidget->SetVisibility(ESlateVisibility::Collapsed);
+		}
+	}
+}
+
+void ADCShotgunWeapon::UpdateSpriteView(float DeltaSeconds)
+{
+	APawn* Pawn = PawnOwner.Get();
+	APlayerController* PC = Pawn ? Cast<APlayerController>(Pawn->GetController()) : nullptr;
+	const bool bShow = bUseSpriteView && PC && PC->IsLocalController() && !IsHidden();
+
+	if (!bShow)
+	{
+		if (SpriteWidget)
+		{
+			SpriteWidget->SetVisibility(ESlateVisibility::Collapsed);
+		}
+		return;
+	}
+
+	if (!SpriteWidget)
+	{
+		SpriteWidget = CreateWidget<UDCWeaponSpriteWidget>(PC, UDCWeaponSpriteWidget::StaticClass());
+		if (!SpriteWidget)
+		{
+			return;
+		}
+		SpriteWidget->AddToViewport(-10);   // under the HUD (health bar, quest, subtitles)
+	}
+	SpriteWidget->SetVisibility(ESlateVisibility::HitTestInvisible);
+
+	// the weapon that was out before (the sword) shows the template arms again when it is put away,
+	// and that can happen after this one was taken out: keep them hidden while the drawn hands are up
+	SetOwnerArmsHidden(true);
+
+	// pose from the 12 fps tick grid: hard cuts, each drawing held for whole ticks
+	UTexture2D* Frame = SpriteIdle;
+	FName Pose = TEXT("Idle");
+	if (ShotTime >= 0.0f)
+	{
+		const int32 RecoilStart = FlashTicks;
+		const int32 RecoveryStart = FlashTicks + RecoilTicks;
+		const int32 End = RecoveryStart + RecoveryTicks;
+		int32 AnimTick = FMath::FloorToInt(ShotTime * FMath::Max(AnimFPS, 1.0f));
+
+		// a slow frame may jump straight past the one-tick peak recoil: show it anyway, it is the snap of the shot
+		if (AnimTick >= RecoveryStart && !bRecoilShown)
+		{
+			AnimTick = RecoilStart;
+		}
+
+		if (AnimTick < RecoilStart)         { Frame = SpriteFlash;    Pose = TEXT("Flash"); }
+		else if (AnimTick < RecoveryStart)  { Frame = SpriteRecoil;   Pose = TEXT("Recoil"); bRecoilShown = true; }
+		else if (AnimTick < End)            { Frame = SpriteRecovery; Pose = TEXT("Recovery"); }
+	}
+	CurrentPose = Pose;
+	SpriteWidget->SetFrame(Frame ? Frame : SpriteIdle.Get());
+
+	// walk bob / idle breathing while idle; the shot poses keep the exact drawn placement
+	BobTime += DeltaSeconds;
+	const float Run = FMath::Clamp(Pawn->GetVelocity().Size2D() / 600.0f, 0.0f, 1.0f);
+	const float Calm = ShotTime >= 0.0f ? 0.0f : 1.0f;
+	const float Step = BobTime * 2.0f * PI * 1.6f;
+	FVector2D Offset;
+	Offset.X = FMath::Sin(Step) * WalkBobPixels * Run * Calm;
+	Offset.Y = (FMath::Abs(FMath::Sin(Step)) * WalkBobPixels * 0.6f * Run
+		+ FMath::Sin(BobTime * 2.0f * PI * 0.35f) * IdleSwayPixels * (1.0f - Run)) * Calm;
+	// the arms are drawn running off the bottom and right edges of the frame: push every pose a little further
+	// off-screen (at least as far as the bob can move it) so the bob never pulls those straight edges into view
+	const FVector2D EdgeBleed(WalkBobPixels + EdgeBleedPixels, IdleSwayPixels + EdgeBleedPixels);
+	SpriteWidget->SetPlacement(Offset + EdgeBleed, SpriteScreenScale);
+}
+
+void ADCShotgunWeapon::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	if (!bUseSpriteView)
+	{
+		return;
+	}
+
+	if (ShotTime >= 0.0f)
+	{
+		ShotTime += DeltaSeconds;
+
+		// sequence over -> Idle (only once the peak recoil has been on screen)
+		if (ShotTime >= GetShotAnimDuration() && bRecoilShown)
+		{
+			ShotTime = -1.0f;
+		}
+	}
+	UpdateSpriteView(DeltaSeconds);
 }
 
 void ADCShotgunWeapon::FireProjectile(const FVector& TargetLocation)
@@ -188,6 +358,14 @@ void ADCShotgunWeapon::FireProjectile(const FVector& TargetLocation)
 
 	UDCFXLibrary::PlayWorldSound(this, FireSound, MuzzleLoc, 1.0f, 0.05f, 0.02f, FireSoundPitch);
 	UDCFXLibrary::SpawnWorldFX(this, FireFX, MuzzleLoc, AimDir.Rotation());
+
+	// 2D view: this shot was accepted -> play the sequence once from the top; the flash shows on the input frame itself
+	if (bUseSpriteView)
+	{
+		ShotTime = 0.0f;
+		bRecoilShown = false;
+		UpdateSpriteView(0.0f);
+	}
 
 	--CurrentBullets;
 
