@@ -395,18 +395,24 @@ FILMSET_DIR = "/Game/DirectorsCut/Environment/FilmSet"
 SET_STAGE = (1000, 0)                  # centre of the round stage "THE SET"
 CAM_YAW_OFFSET = 180.0                   # degrees added so the camera model's lens points at its target
 MIC_YAW_OFFSET = 180.0                   # same for the boom mic (the mic head leans towards its target)
-# film cameras: (name, x, y, what it films). Kept off the six dirt paths and clear of the beat 3 dolly rails.
+# film cameras: (name, x, y, what it films). "What it films" is a point (x, y) the lens is turned to, or a plain
+# number = the actor's yaw as set by hand in the editor. Kept off the six dirt paths and clear of the beat 3 dolly rails.
+# Layout as of 2026-11-14 21:20, after Yair's hand edits in the editor (Village + Stall cameras moved, Village2 and
+# Village4 added, the stall boom mic removed), so re-running this zone rebuilds the level as he left it.
 FILM_CAMERAS = [("Stage_NE", 1466, 1739, SET_STAGE), ("Stage_NW", -273, 1273, SET_STAGE),
                 ("Stage_SW", -273, -1273, SET_STAGE), ("Stage_SE", 1466, -1739, SET_STAGE),
-                ("Village", -4650, -1150, (-5200, 0)),          # the hero's entrance
-                ("Stall", -1700, 2300, (-2500, 2800)),          # the butcher stall
+                ("Village", -4650, -850, -55.0),                # the hero's entrance
+                ("Village2", -2910, -390, 36.0),                # either side of the main path, east of the village
+                ("Village4", -2910, 300, -34.0),
+                ("Stall", -1400, 1600, -52.0),                  # the butcher stall, from the meadow
                 ("Pen", 1900, -2700, (3000, -3200)),            # the King Boar clearing / Princess shed
                 ("Meadow", 4300, 650, SET_STAGE)]               # wide shot from the far meadow
-BOOM_MICS = [("Stage", -480, -430, SET_STAGE), ("Village", -4850, 430, (-5200, 0)),
-             ("Stall", -2050, 2450, (-2500, 2800)), ("Pen", 2300, -2550, (3000, -3200))]
+BOOM_MICS = [("Stage", -480, -430, SET_STAGE), ("Village", -4850, 430, (-5200, 0)), ("Pen", 2300, -2550, (3000, -3200))]
 
 
 def _aim(x, y, target, offset):
+    if isinstance(target, (int, float)):
+        return float(target)                          # yaw set by hand
     return math.degrees(math.atan2(target[1] - y, target[0] - x)) + offset
 
 
@@ -429,7 +435,7 @@ def _set_piece(asset, label, x, y, z, yaw, radius, height, folder=None):
 
 def dress_filmset():
     """Taisho's film camera and boom mic (cleaned by Scripts/Blender_CleanFilmSetModels.py) all over the level, so it
-    reads as a real film set. Persistent level (DC/SetDressing_FilmSet): 8 cameras + 4 boom mics, each aimed at what
+    reads as a real film set. Persistent level (DC/SetDressing_FilmSet): 10 cameras + 3 boom mics, each aimed at what
     it films. DC_Set_FilmCrew sublevel (beat 3): the greybox dolly camera and boom mic become the real models."""
     CURRENT_FOLDER[0] = "DC/SetDressing_FilmSet"
     clear_folder("DC/SetDressing_FilmSet")

@@ -360,6 +360,7 @@ Taisho's film reel camera and boom mic are placed all over the playable level so
 
 **Placement:** `dress_main_map("filmset")` in `Scripts/LD_DressMainMap.py`:
 - persistent level, folder `DC/SetDressing_FilmSet`: 8 cameras (`FilmSet_Camera_*`: four around the stage, the village entrance, the butcher stall, the King Boar pen, a wide shot from the east meadow) and 4 boom mics (`FilmSet_BoomMic_*`: stage, village, stall, pen), each turned to face what it films (`FILM_CAMERAS`, `BOOM_MICS`, `CAM_YAW_OFFSET`, `MIC_YAW_OFFSET` at the top of the function);
+- **Layout after Yair's hand edits (2026-11-14 21:20):** 10 cameras and 3 boom mics: the Village and Stall cameras were moved, `FilmSet_Camera_Village2` and `Village4` were added either side of the main path, and the stall boom mic was removed. `FILM_CAMERAS` / `BOOM_MICS` in the script now hold that layout (a plain number in place of a target = the yaw set by hand), so re-running the zone rebuilds it. Each piece's invisible blocker was moved with it, the two new cameras got blockers, and the blocker left behind by the removed mic was deleted. Nav re-checked in the editor: stage, stall front, pen and sword pickup reachable, 6/6 boar spawns.
 - `DC_Set_FilmCrew` sublevel (beat 3): the greybox dolly camera and boom mic are hidden and replaced by the real models (`FilmCrew_Prop_Camera`, `FilmCrew_Prop_BoomMic`);
 - every piece has an invisible blocking cylinder (`*_Blocker`), so the player and boars walk around it; all pieces are off the six dirt paths.
 
