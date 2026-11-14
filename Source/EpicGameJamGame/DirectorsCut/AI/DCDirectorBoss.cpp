@@ -37,7 +37,7 @@ ADCDirectorBoss::ADCDirectorBoss()
 	Move->GravityScale = 1.0f;
 
 	Health = CreateDefaultSubobject<UDCHealthComponent>(TEXT("Health"));
-	Health->MaxHP = 1500.0f;   // rifle needs ~60 hits, about 2 magazines
+	Health->MaxHP = 450.0f;   // sword (25 dmg) needs 18 hits
 	Health->bInvulnerable = true;   // unlocked when StartFight() runs after his intro monologue
 
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> Cube(TEXT("/Game/LevelPrototyping/Meshes/SM_ChamferCube.SM_ChamferCube"));

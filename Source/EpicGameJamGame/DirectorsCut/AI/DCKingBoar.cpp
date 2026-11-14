@@ -2,10 +2,13 @@
 
 #include "DirectorsCut/AI/DCKingBoar.h"
 #include "DirectorsCut/AI/DCBoarAIController.h"
+#include "DirectorsCut/Combat/DCFloatingHPBar.h"
+#include "DirectorsCut/Combat/DCFXLibrary.h"
 #include "DirectorsCut/Combat/DCHealthComponent.h"
 #include "DirectorsCut/Rendering/DCBillboardSprite.h"
 #include "Components/TextRenderComponent.h"
 #include "Engine/Texture2D.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/Pawn.h"
 #include "Kismet/GameplayStatics.h"
 #include "UObject/ConstructorHelpers.h"
@@ -14,11 +17,13 @@ ADCKingBoar::ADCKingBoar()
 {
 	SetActorScale3D(FVector(2.5f));
 
-	Health->MaxHP = 900.0f;   // rifle (25 x 10/s) needs ~36 hits, about 1 magazine + a reload
+	Health->MaxHP = 350.0f;   // sword (25 dmg) needs 14 hits
 	FleeHPFraction = 0.0f;
-	ChargeSpeed = 580.0f;
+	AngryPause = 0.35f;
+	ChargeSpeed = 740.0f;
 	BiteDamage = 25.0f;
-	BiteRange = 110.0f;
+	BiteRange = 115.0f;
+	BiteCooldown = 0.85f;
 	LoseInterestDistance = 6000.0f;
 	MaxChaseTime = 60.0f;
 	WanderRadius = 700.0f;
@@ -26,6 +31,14 @@ ADCKingBoar::ADCKingBoar()
 	CorpseTime = 5.0f;
 	SoundVolume = 1.6f;   // same boar sounds, bigger and deeper
 	SoundPitch = 0.7f;
+
+	if (HPBar)
+	{
+		HPBar->bShowWhenFull = true;
+		HPBar->Width = 110.0f;
+		HPBar->Height = 12.0f;
+		HPBar->SetRelativeLocation(FVector(0.0f, 0.0f, 118.0f));
+	}
 
 	// gold boar
 	if (Sprite)
@@ -76,6 +89,22 @@ void ADCKingBoar::Tick(float DeltaSeconds)
 	if (CrownSprite && IsDead())
 	{
 		CrownSprite->SetRelativeLocation(FMath::VInterpTo(CrownSprite->GetRelativeLocation(), DeadCrownOffset, DeltaSeconds, 8.0f));
+	}
+
+	// Enrage below 50% HP: faster royal rush + red-gold tint
+	if (!bEnraged && !IsDead() && Health && Health->GetHPPercent() <= 0.5f)
+	{
+		bEnraged = true;
+		ChargeSpeed = EnragedChargeSpeed;
+		if (GetBoarState() == EDCBoarState::Charge || GetBoarState() == EDCBoarState::Angry)
+		{
+			GetCharacterMovement()->MaxWalkSpeed = ChargeSpeed;
+		}
+		if (Sprite)
+		{
+			Sprite->SetTint(FLinearColor(1.45f, 0.55f, 0.35f), KingBrightness * 1.15f);
+		}
+		UDCFXLibrary::PlayWorldSound(this, AngrySound, GetActorLocation(), SoundVolume, 0.08f, 0.06f, SoundPitch);
 	}
 
 	// Aggro automatically if player approaches within guard range

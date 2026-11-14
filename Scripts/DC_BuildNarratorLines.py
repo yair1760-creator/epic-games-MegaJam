@@ -16,20 +16,20 @@ LINES = [
     ("L1_Intro_03",        "Fortunately, we have you. And a sword. Apparently that was the entire budget.", 4.5),
     ("L1_Intro_04",        "Fight ten boars. Exactly ten. We're making cinema, not a census. And... action.", 5.5),
     ("L1_FirstHit",        "Ooh, contact. The boar is acting hurt. Very convincing. Somebody nominate the boar.", 5.0),
-    ("L1_FirstKill",       "One down. Hold that pose... no. Not that one. Keep going.", 4.5),
+    ("L1_FirstKill",       "Two down. Hold that pose... no. Not that one. Keep going.", 4.5),
     ("L1_Half",            "Five. Halfway. The audience is on the edge of their seats. Mostly because the seats are broken.", 5.5),
     ("L1_PlayerHurt",      "Try not to die. The insurance on this production is... aspirational.", 4.5),
     ("L1_PlayerDied",      "CUT! Someone get the actor back to their mark. With feeling this time.", 4.5),
     ("L1_Idle",            "Hello? The boars are over there. I can see them from up here. I can see everything from up here.", 5.0),
 
-    # Beat 2: Breakfast / Bacon (at 7/10 kills -> collect 5 boar meat + no-meat joke)
-    ("B2_Intro_01",        "Hold it! Stop hitting them for one second. All this boar fighting is making me starving.", 5.0),
-    ("B2_Intro_02",        "I skipped breakfast for this shoot. I want bacon. Crispy bacon. Bring me five slabs of ham right now.", 5.5),
-    ("B2_Intro_02_Alt",    "Forget the ten boars, the script is changing. Go butcher five cuts of boar meat for my breakfast.", 5.0),
-    ("B2_FirstMeat",       "Ooh, yes, look at that marbling. Put it on the craft services table. Four more.", 4.5),
+    # Beat 2: Breakfast / Bacon (at 7/10 kills -> sees meat drop, wants 5 bacons + no-meat joke)
+    ("B2_Intro_01",        "Hold it! Wait... did that boar just drop a piece of meat? Look at that.", 4.5),
+    ("B2_Intro_02",        "I skipped breakfast for this shoot, and now I want bacon! Forget the ten boars, bring me five pieces of bacon right now.", 5.5),
+    ("B2_Intro_02_Alt",    "Actually, I skipped breakfast and that looks delicious. Script change: forget the ten boars, get me five pieces of bacon.", 5.0),
+    ("B2_FirstMeat",       "Ooh, yes, look at that marbling. Put it on the craft services table. Three more.", 4.5),
     ("B2_NoMeat_01",       "Wait... seriously? This one got no meat. What is it, stuffed with sawdust?", 4.5),
     ("B2_NoMeat_02",       "Another hollow boar. This one got no meat either. Who did our prop catering, an origami club?", 5.0),
-    ("B2_AlmostDone",      "Four out of five. One more ham and I can finally eat like a real auteur.", 4.5),
+    ("B2_AlmostDone",      "Four out of five. One more piece of bacon and I can finally eat like a real auteur.", 4.5),
 
     # Beat 3: Too Boring! Sword -> Gun, Hyperspawn, Kill 100 Boars
     ("B3_Intro_01",        "Ugh. Actually, watching you poke pigs with a butter knife is putting me to sleep.", 4.5),

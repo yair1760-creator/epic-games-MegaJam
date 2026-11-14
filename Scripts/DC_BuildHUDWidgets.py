@@ -164,23 +164,88 @@ def build_hud():
     finish(bp)
 
 
+def build_cut_screen():
+    bp = new_wbp("WBP_CutScreen", unreal.DCVictoryWidget)
+    if bp:
+        root = add(bp, unreal.CanvasPanel, "Root")
+        backdrop = add(bp, unreal.Border, "Backdrop", root)
+        backdrop.set_editor_property("brush_color", unreal.LinearColor(0.02, 0.01, 0.03, 0.88))
+        bs = backdrop.get_editor_property("slot")
+        bs.set_anchors(unreal.Anchors(minimum=unreal.Vector2D(0, 0), maximum=unreal.Vector2D(1, 1)))
+        bs.set_offsets(unreal.Margin(0, 0, 0, 0))
+
+        for name, ay in (("LetterboxTop", 0.0), ("LetterboxBottom", 1.0)):
+            bar = add(bp, unreal.Border, name, root)
+            bar.set_editor_property("brush_color", unreal.LinearColor(0, 0, 0, 1))
+            s = bar.get_editor_property("slot")
+            s.set_anchors(unreal.Anchors(minimum=unreal.Vector2D(0, ay), maximum=unreal.Vector2D(1, ay)))
+            s.set_alignment(unreal.Vector2D(0, ay))
+            s.set_offsets(unreal.Margin(0, 0, 0, 68))
+
+        card = add(bp, unreal.Border, "Card", root)
+        card.set_editor_property("brush_color", unreal.LinearColor(0.07, 0.06, 0.09, 0.96))
+        card.set_editor_property("padding", unreal.Margin(56, 42, 56, 42))
+        canvas_slot(card, (0.5, 0.5), (0, 0))
+
+        col = add(bp, unreal.VerticalBox, "Column", card)
+
+        def vtext(name, value, size, color, bottom_pad):
+            tb = add(bp, unreal.TextBlock, name, col)
+            text(tb, value, size, color)
+            tb.set_editor_property("justification", unreal.TextJustify.CENTER)
+            s = tb.get_editor_property("slot")
+            s.set_horizontal_alignment(unreal.HorizontalAlignment.H_ALIGN_CENTER)
+            s.set_padding(unreal.Margin(0, 0, 0, bottom_pad))
+            return tb
+
+        vtext("TitleText", "CUT! THAT'S A WRAP!", 52, YELLOW, 10)
+        vtext("SubtitleText", "SCENE 1 COMPLETE  -  THE DIRECTOR HAS BEEN RECAST", 20, WHITE, 20)
+        vtext("ReviewText", "\"Terrible performance... five stars.\"  -  The Director  * * * * *", 22, unreal.LinearColor(1.0, 0.65, 0.8, 1), 22)
+        vtext("StatsText", "Boars Eliminated: 0   |   Run Time: 00:00   |   Director Defeated", 18, unreal.LinearColor(0.8, 0.85, 0.9, 1), 30)
+
+        row = add(bp, unreal.HorizontalBox, "ButtonsRow", col)
+        rs = row.get_editor_property("slot")
+        rs.set_horizontal_alignment(unreal.HorizontalAlignment.H_ALIGN_CENTER)
+
+        for bname, lname, label, bg in (
+            ("PlayAgainButton", "PlayAgainLabel", "  PLAY AGAIN  ", unreal.LinearColor(0.18, 0.58, 0.25, 1)),
+            ("QuitButton", "QuitLabel", "  QUIT  ", unreal.LinearColor(0.65, 0.14, 0.14, 1)),
+        ):
+            btn = add(bp, unreal.Button, bname, row)
+            btn.set_editor_property("background_color", bg)
+            lbl = add(bp, unreal.TextBlock, lname, btn)
+            text(lbl, label, 20, WHITE)
+            btn.get_editor_property("slot").set_padding(unreal.Margin(14, 0, 14, 0))
+    finish(bp)
+
+
 def assign_to_game_mode():
     gm = _obj(GAME_MODE)
     gen = unreal.load_class(None, GAME_MODE + "." + GAME_MODE.rsplit("/", 1)[-1] + "_C")
     cdo = unreal.get_default_object(gen)
+    changed = False
     if cdo.get_editor_property("hud_widget_class"):
         LOG.append("KEEP BP_DCGameMode HUD widget class")
-        return
-    cdo.set_editor_property("hud_widget_class", _cls("WBP_DCHUD"))
-    unreal.BlueprintEditorLibrary.compile_blueprint(gm)
-    unreal.EditorLoadingAndSavingUtils.save_packages([gm.get_outermost()], False)
-    LOG.append("SET  BP_DCGameMode HUD widget class = WBP_DCHUD")
+    else:
+        cdo.set_editor_property("hud_widget_class", _cls("WBP_DCHUD"))
+        LOG.append("SET  BP_DCGameMode HUD widget class = WBP_DCHUD")
+        changed = True
+    if cdo.get_editor_property("victory_widget_class"):
+        LOG.append("KEEP BP_DCGameMode Victory widget class")
+    else:
+        cdo.set_editor_property("victory_widget_class", _cls("WBP_CutScreen"))
+        LOG.append("SET  BP_DCGameMode Victory widget class = WBP_CutScreen")
+        changed = True
+    if changed:
+        unreal.BlueprintEditorLibrary.compile_blueprint(gm)
+        unreal.EditorLoadingAndSavingUtils.save_packages([gm.get_outermost()], False)
 
 
 build_quest_tracker()
 build_health_bar()
 build_subtitles()
 build_hud()
+build_cut_screen()
 assign_to_game_mode()
 print("\n".join(LOG))
 "\n".join(LOG)

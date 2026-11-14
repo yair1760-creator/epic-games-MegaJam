@@ -148,12 +148,13 @@ void AShooterProjectile::ProcessHit(AActor* HitActor, UPrimitiveComponent* HitCo
 		if (HitCharacter != GetOwner() || bDamageOwner)
 		{
 			// apply damage to the character
-			UGameplayStatics::ApplyDamage(HitCharacter, HitDamage, GetInstigator()->GetController(), this, HitDamageType);
+			AController* InstigatorController = GetInstigator() ? GetInstigator()->GetController() : nullptr;
+			UGameplayStatics::ApplyDamage(HitCharacter, HitDamage, InstigatorController, this, HitDamageType);
 		}
 	}
 
 	// have we hit a physics object?
-	if (HitComp->IsSimulatingPhysics())
+	if (HitComp && HitComp->IsSimulatingPhysics())
 	{
 		// give some physics impulse to the object
 		HitComp->AddImpulseAtLocation(HitDirection * PhysicsForce, HitLocation);

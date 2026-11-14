@@ -3,13 +3,17 @@
 #include "Beats/DCGameMode.h"
 #include "Beats/DCPlayerController.h"
 #include "Beats/DCPrincess.h"
+#include "Beats/DCShedDoors.h"
 #include "AI/DCBoar.h"
 #include "AI/DCBoarSpawner.h"
 #include "AI/DCBoarSubsystem.h"
 #include "AI/DCDirectorBoss.h"
 #include "AI/DCKingBoar.h"
 #include "Combat/DCBoarMeatPickup.h"
+#include "Combat/DCFXLibrary.h"
 #include "Combat/DCHealthComponent.h"
+#include "Combat/DCShotgunWeapon.h"
+#include "Components/AudioComponent.h"
 #include "Engine/Engine.h"
 #include "Engine/LevelStreaming.h"
 #include "Engine/World.h"
@@ -17,12 +21,15 @@
 #include "GameFramework/PlayerController.h"
 #include "HAL/IConsoleManager.h"
 #include "Kismet/GameplayStatics.h"
+#include "Misc/PackageName.h"
 #include "Narrator/DCNarratorSubsystem.h"
 #include "Quest/DCQuestSubsystem.h"
 #include "ShooterCharacter.h"
 #include "ShooterWeapon.h"
+#include "Sound/SoundBase.h"
 #include "TimerManager.h"
 #include "UI/DCHUDWidget.h"
+#include "UI/DCVictoryWidget.h"
 #include "UObject/ConstructorHelpers.h"
 #include "EpicGameJamGame.h"
 
@@ -37,10 +44,11 @@ ADCGameMode::ADCGameMode()
 	{
 		SwordWeaponClass = SwordBP.Class;
 	}
-	static ConstructorHelpers::FClassFinder<AShooterWeapon> RifleBP(TEXT("/Game/Variant_Shooter/Blueprints/Pickups/Weapons/BP_ShooterWeapon_Rifle"));
-	if (RifleBP.Succeeded())
+	GunWeaponClass = ADCShotgunWeapon::StaticClass();
+	static ConstructorHelpers::FClassFinder<UDCVictoryWidget> CutScreenBP(TEXT("/Game/DirectorsCut/UI/WBP_CutScreen"));
+	if (CutScreenBP.Succeeded())
 	{
-		GunWeaponClass = RifleBP.Class;
+		VictoryWidgetClass = CutScreenBP.Class;
 	}
 
 	BeatSublevels.Add(1, { { FName("DC_Light_Day"),  FName("DC_Set_Hunt") } });
@@ -53,6 +61,7 @@ ADCGameMode::ADCGameMode()
 void ADCGameMode::BeginPlay()
 {
 	Super::BeginPlay();
+	RunStartTime = GetWorld()->GetTimeSeconds();
 
 	if (HUDWidgetClass)
 	{
@@ -76,6 +85,7 @@ void ADCGameMode::BeginPlay()
 
 	if (UDCNarratorSubsystem* Narrator = GetWorld()->GetSubsystem<UDCNarratorSubsystem>())
 	{
+		Narrator->OnLineStarted.AddUniqueDynamic(this, &ADCGameMode::HandleLineStarted);
 		Narrator->OnLineFinished.AddUniqueDynamic(this, &ADCGameMode::HandleLineFinished);
 	}
 
@@ -85,6 +95,7 @@ void ADCGameMode::BeginPlay()
 		HandlePossessedPawnChanged(nullptr, PC->GetPawn());
 	}
 
+	UpdateMusicForBeat(CurrentBeat);
 	GetWorldTimerManager().SetTimer(IntroTimer, this, &ADCGameMode::StartIntro, FMath::Max(IntroDelay, 0.01f), false);
 }
 
@@ -94,6 +105,14 @@ void ADCGameMode::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	GetWorldTimerManager().ClearTimer(IdleTimer);
 	GetWorldTimerManager().ClearTimer(BossStartFallbackTimer);
 	GetWorldTimerManager().ClearTimer(Beat5FallbackTimer);
+	GetWorldTimerManager().ClearTimer(VictoryFallbackTimer);
+	GetWorldTimerManager().ClearTimer(MusicUnduckTimer);
+	StopBeatMusic(0.0f);
+	if (VictoryMusicComponent)
+	{
+		VictoryMusicComponent->Stop();
+		VictoryMusicComponent = nullptr;
+	}
 	Super::EndPlay(EndPlayReason);
 }
 
@@ -109,8 +128,29 @@ void ADCGameMode::StartIntro()
 	Narrator->PlaySequence(IntroLines);
 }
 
+void ADCGameMode::HandleLineStarted(FText Speaker, FText Text, float Duration)
+{
+	GetWorldTimerManager().ClearTimer(MusicUnduckTimer);
+	if (!bMusicDucked)
+	{
+		bMusicDucked = true;
+		RefreshMusicDucking();
+	}
+}
+
 void ADCGameMode::HandleLineFinished(FName RowId)
 {
+	// Wait one tick before unducking so back-to-back queued lines stay smoothly ducked.
+	MusicUnduckTimer = GetWorldTimerManager().SetTimerForNextTick(FTimerDelegate::CreateWeakLambda(this, [this]()
+	{
+		UDCNarratorSubsystem* Narrator = GetWorld() ? GetWorld()->GetSubsystem<UDCNarratorSubsystem>() : nullptr;
+		if (!Narrator || !Narrator->IsPlaying())
+		{
+			bMusicDucked = false;
+			RefreshMusicDucking();
+		}
+	}));
+
 	if (CurrentBeat == 1 && !bHuntQuestStarted && !IntroLines.IsEmpty() && RowId == IntroLines.Last())
 	{
 		StartHuntQuest();
@@ -128,6 +168,12 @@ void ADCGameMode::HandleLineFinished(FName RowId)
 	if (CurrentBeat == 5 && RowId == FName("B5_Intro_03"))
 	{
 		StartBossFightNow();
+		return;
+	}
+
+	if (bVictoryPending && RowId == FName("B5_DirectorDefeated"))
+	{
+		ShowVictoryScene();
 	}
 }
 
@@ -187,7 +233,7 @@ void ADCGameMode::EnterBeat2()
 	{
 		Quest->ReplaceQuest(
 			FName("Q_CollectMeat"),
-			NSLOCTEXT("DirectorsCut", "CollectMeatTitle", "Boar meat collected"),
+			NSLOCTEXT("DirectorsCut", "CollectMeatTitle", "Bacon collected"),
 			5,
 			FName("Collect.Meat"),
 			false);
@@ -254,7 +300,7 @@ void ADCGameMode::EnterBeat4()
 	}
 
 	GoToBeat(4);
-	EquipBeatWeapon(true);
+	EquipBeatWeapon(false);
 
 	// Use an already-placed ADCPrincess in the level (e.g. inside a shed or tower), or a TargetPoint tagged "PrincessSpawn",
 	// falling back to the default clearing location if neither is placed yet.
@@ -284,6 +330,13 @@ void ADCGameMode::EnterBeat4()
 	{
 		Princess->OnLockedAttempt.AddUniqueDynamic(this, &ADCGameMode::HandlePrincessLockedAttempt);
 		ActivePrincess = Princess;
+	}
+
+	// Reset and bind any lockable shed doors in DC_Set_PG
+	for (TActorIterator<ADCShedDoors> It(GetWorld()); It; ++It)
+	{
+		It->ResetLocked();
+		It->OnLockedAttempt.AddUniqueDynamic(this, &ADCGameMode::HandlePrincessLockedAttempt);
 	}
 
 	// Same for King Boar: use a "KingBoarSpawn" marker if placed, otherwise guard just in front of the Princess.
@@ -343,15 +396,16 @@ void ADCGameMode::EnterBeat5()
 	}
 
 	GoToBeat(5);
-	EquipBeatWeapon(true);
+	EquipBeatWeapon(false);
 
 	// Place player cleanly inside the Beat 5 arena facing The Director
-	if (APawn* Player = UGameplayStatics::GetPlayerPawn(this, 0))
+	FTransform ArenaSpawn;
+	if (APawn* Player = UGameplayStatics::GetPlayerPawn(this, 0); Player && GetBeatRespawnTransform(ArenaSpawn))
 	{
-		Player->SetActorLocationAndRotation(FVector(-600.0f, 0.0f, 130.0f), FRotator(0.0f, 0.0f, 0.0f), false, nullptr, ETeleportType::TeleportPhysics);
+		Player->SetActorLocationAndRotation(ArenaSpawn.GetLocation(), ArenaSpawn.Rotator(), false, nullptr, ETeleportType::TeleportPhysics);
 		if (APlayerController* PC = Cast<APlayerController>(Player->GetController()))
 		{
-			PC->SetControlRotation(FRotator(0.0f, 0.0f, 0.0f));
+			PC->SetControlRotation(ArenaSpawn.Rotator());
 		}
 	}
 
@@ -381,8 +435,8 @@ void ADCGameMode::EnterBeat5()
 			false);
 	}
 
-	// Safety fallback in case VO is interrupted or missing
-	GetWorldTimerManager().SetTimer(BossStartFallbackTimer, this, &ADCGameMode::StartBossFightNow, 18.0f, false);
+	// Safety fallback in case VO is interrupted or missing (B5_Intro_01..03 total ~21.3s)
+	GetWorldTimerManager().SetTimer(BossStartFallbackTimer, this, &ADCGameMode::StartBossFightNow, 25.0f, false);
 }
 
 void ADCGameMode::StartBossFightNow()
@@ -427,6 +481,36 @@ void ADCGameMode::StartBeat(int32 Beat)
 	GetWorldTimerManager().ClearTimer(IdleTimer);
 	GetWorldTimerManager().ClearTimer(BossStartFallbackTimer);
 	GetWorldTimerManager().ClearTimer(Beat5FallbackTimer);
+	GetWorldTimerManager().ClearTimer(VictoryFallbackTimer);
+
+	bVictoryPending = false;
+	bVictoryShown = false;
+	GetWorldTimerManager().ClearTimer(MusicUnduckTimer);
+	if (VictoryMusicComponent)
+	{
+		VictoryMusicComponent->Stop();
+		VictoryMusicComponent = nullptr;
+	}
+	if (VictoryWidget)
+	{
+		VictoryWidget->RemoveFromParent();
+		VictoryWidget = nullptr;
+	}
+	if (HUDWidget)
+	{
+		HUDWidget->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+	}
+	if (APlayerController* PC = GetWorld()->GetFirstPlayerController())
+	{
+		PC->SetIgnoreMoveInput(false);
+		PC->SetIgnoreLookInput(false);
+		PC->SetInputMode(FInputModeGameOnly());
+		PC->bShowMouseCursor = false;
+	}
+	if (APawn* Player = UGameplayStatics::GetPlayerPawn(this, 0))
+	{
+		Player->SetCanBeDamaged(true);
+	}
 
 	if (UDCNarratorSubsystem* Narrator = GetWorld()->GetSubsystem<UDCNarratorSubsystem>())
 	{
@@ -438,6 +522,7 @@ void ADCGameMode::StartBeat(int32 Beat)
 		CleanupBeatActors();
 		bHuntQuestStarted = false;
 		bPlayedFirstHit = false;
+		bPlayedPlayerHurt = false;
 		GoToBeat(1);
 		EquipBeatWeapon(false);
 		StartHuntQuest();
@@ -466,7 +551,7 @@ void ADCGameMode::HandleQuestUpdated(FName Id, int32 Current, int32 Target)
 		{
 			ResetIdleTimer();
 		}
-		if (Current == 1 && Narrator)
+		if (Current == 2 && Narrator)
 		{
 			Narrator->PlayLine(FName("L1_FirstKill"));
 		}
@@ -476,7 +561,7 @@ void ADCGameMode::HandleQuestUpdated(FName Id, int32 Current, int32 Target)
 		}
 		else if (Current >= 7 && CurrentBeat == 1)
 		{
-			// After 7 boars, the Director gets hungry for bacon and switches to Beat 2!
+			// After 7 boars, the Director sees meat drop, gets hungry for bacon, and switches to Beat 2!
 			EnterBeat2();
 		}
 		return;
@@ -484,7 +569,7 @@ void ADCGameMode::HandleQuestUpdated(FName Id, int32 Current, int32 Target)
 
 	if (Id == FName("Q_CollectMeat") && Narrator)
 	{
-		if (Current == 1)
+		if (Current == 2 && !Narrator->IsPlaying())
 		{
 			Narrator->PlayLine(FName("B2_FirstMeat"));
 		}
@@ -497,15 +582,15 @@ void ADCGameMode::HandleQuestUpdated(FName Id, int32 Current, int32 Target)
 
 	if (Id == FName("Q_HyperspawnBoars") && Narrator)
 	{
-		if (Current == 25)
+		if (Current == 25 && !Narrator->IsPlaying())
 		{
 			Narrator->PlayLine(FName("B3_Progress_25"));
 		}
-		else if (Current == 50)
+		else if (Current == 50 && !Narrator->IsPlaying())
 		{
 			Narrator->PlayLine(FName("B3_Progress_50"));
 		}
-		else if (Current == 80)
+		else if (Current == 80 && !Narrator->IsPlaying())
 		{
 			Narrator->PlayLine(FName("B3_Progress_80"));
 		}
@@ -528,8 +613,13 @@ void ADCGameMode::HandleQuestCompleted(FName Id)
 		{
 			Princess->UnlockPrincess();
 		}
+		for (TActorIterator<ADCShedDoors> It(GetWorld()); It; ++It)
+		{
+			It->UnlockAndOpen();
+		}
 		if (UDCNarratorSubsystem* Narrator = GetWorld()->GetSubsystem<UDCNarratorSubsystem>())
 		{
+			Narrator->Interrupt();
 			Narrator->PlayLine(FName("B4_KingBoarDead"));
 		}
 		if (UDCQuestSubsystem* Quest = GetWorld()->GetSubsystem<UDCQuestSubsystem>())
@@ -547,17 +637,24 @@ void ADCGameMode::HandleQuestCompleted(FName Id)
 		bPendingBeat5 = true;
 		if (UDCNarratorSubsystem* Narrator = GetWorld()->GetSubsystem<UDCNarratorSubsystem>())
 		{
+			Narrator->Interrupt();
 			Narrator->PlayLine(FName("B4_PrincessRescued"));
 		}
-		GetWorldTimerManager().SetTimer(Beat5FallbackTimer, this, &ADCGameMode::EnterBeat5, 9.5f, false);
+		GetWorldTimerManager().SetTimer(Beat5FallbackTimer, this, &ADCGameMode::EnterBeat5, 11.0f, false);
 	}
 	else if (Id == FName("Q_DefeatDirector") && CurrentBeat == 5)
 	{
+		bVictoryPending = true;
+		if (APawn* Player = UGameplayStatics::GetPlayerPawn(this, 0))
+		{
+			Player->SetCanBeDamaged(false);
+		}
 		if (UDCNarratorSubsystem* Narrator = GetWorld()->GetSubsystem<UDCNarratorSubsystem>())
 		{
 			Narrator->Interrupt();
 			Narrator->PlayLine(FName("B5_DirectorDefeated"));
 		}
+		GetWorldTimerManager().SetTimer(VictoryFallbackTimer, this, &ADCGameMode::ShowVictoryScene, VictoryDelayAfterDefeat, false);
 	}
 }
 
@@ -571,8 +668,8 @@ void ADCGameMode::HandleBoarKilled(ADCBoar* Boar, APawn* Killer)
 	if (CurrentBeat == 2)
 	{
 		++Beat2BoarKillCount;
-		// Kill #2 (and every 4th after) drops NO meat -> triggers the "this one got no meat" joke!
-		const bool bNoMeatJoke = (Beat2BoarKillCount == 2) || (Beat2BoarKillCount > 2 && (Beat2BoarKillCount % 4) == 2);
+		// Kill #3 (and every 4th after) drops NO meat -> triggers the "this one got no meat" joke!
+		const bool bNoMeatJoke = (Beat2BoarKillCount == 3) || (Beat2BoarKillCount > 3 && (Beat2BoarKillCount % 4) == 3);
 		if (bNoMeatJoke)
 		{
 			if (UDCNarratorSubsystem* Narrator = GetWorld()->GetSubsystem<UDCNarratorSubsystem>())
@@ -606,9 +703,10 @@ void ADCGameMode::HandleBoarSpawned(ADCBoar* Boar)
 
 void ADCGameMode::HandleBoarFirstDamaged(UDCHealthComponent* HealthComp, float CurrentHP, float Delta, AActor* DamageCauser)
 {
-	if (!bPlayedFirstHit && Delta < 0.0f && CurrentBeat == 1)
+	if (!bPlayedFirstHit && Delta < 0.0f && CurrentBeat == 1 && bHuntQuestStarted)
 	{
 		bPlayedFirstHit = true;
+		ResetIdleTimer();
 		if (UDCNarratorSubsystem* Narrator = GetWorld()->GetSubsystem<UDCNarratorSubsystem>())
 		{
 			Narrator->PlayLine(FName("L1_FirstHit"));
@@ -632,12 +730,17 @@ void ADCGameMode::HandlePossessedPawnChanged(APawn* OldPawn, APawn* NewPawn)
 		NewChar->OnDied.AddUniqueDynamic(this, &ADCGameMode::HandlePlayerDied);
 		bPlayedPlayerHurt = false;
 
-		if (CurrentBeat >= 3)
+		if (bVictoryPending || bVictoryShown)
 		{
-			// Apply on next tick so AShooterCharacter::BeginPlay's default sword doesn't override the gun
+			NewChar->SetCanBeDamaged(false);
+		}
+
+		if (CurrentBeat == 3)
+		{
+			// Apply on next tick so AShooterCharacter::BeginPlay's default sword doesn't override the shotgun
 			GetWorldTimerManager().SetTimerForNextTick(FTimerDelegate::CreateWeakLambda(this, [this]()
 			{
-				EquipBeatWeapon(CurrentBeat >= 3);
+				EquipBeatWeapon(CurrentBeat == 3);
 			}));
 		}
 	}
@@ -645,22 +748,34 @@ void ADCGameMode::HandlePossessedPawnChanged(APawn* OldPawn, APawn* NewPawn)
 
 void ADCGameMode::HandlePlayerHealthChanged(float CurrentHP, float MaxHP, float Delta)
 {
-	if (!bPlayedPlayerHurt && Delta < 0.0f && MaxHP > 0.0f && (CurrentHP / MaxHP) < 0.5f && CurrentHP > 0.0f)
+	if (!bPlayedPlayerHurt && CurrentBeat < 5 && (CurrentBeat != 1 || bHuntQuestStarted)
+		&& Delta < 0.0f && MaxHP > 0.0f && (CurrentHP / MaxHP) < 0.5f && CurrentHP > 0.0f)
 	{
-		bPlayedPlayerHurt = true;
 		if (UDCNarratorSubsystem* Narrator = GetWorld()->GetSubsystem<UDCNarratorSubsystem>())
 		{
-			Narrator->PlayLine(FName("L1_PlayerHurt"));
+			if (!Narrator->IsPlaying())
+			{
+				bPlayedPlayerHurt = true;
+				Narrator->PlayLine(FName("L1_PlayerHurt"));
+			}
 		}
 	}
 }
 
 void ADCGameMode::HandlePlayerDied(AShooterCharacter* Character)
 {
+	if (bVictoryPending || bVictoryShown)
+	{
+		return;
+	}
 	if (UDCNarratorSubsystem* Narrator = GetWorld()->GetSubsystem<UDCNarratorSubsystem>())
 	{
 		Narrator->Interrupt();
 		Narrator->PlayLine(FName("L1_PlayerDied"));
+	}
+	if (CurrentBeat == 1 && !bHuntQuestStarted)
+	{
+		StartHuntQuest();
 	}
 }
 
@@ -668,7 +783,10 @@ void ADCGameMode::HandlePrincessLockedAttempt()
 {
 	if (UDCNarratorSubsystem* Narrator = GetWorld()->GetSubsystem<UDCNarratorSubsystem>())
 	{
-		Narrator->PlayLine(FName("B4_ShedLocked"));
+		if (!Narrator->IsPlaying())
+		{
+			Narrator->PlayLine(FName("B4_ShedLocked"));
+		}
 	}
 }
 
@@ -676,6 +794,7 @@ void ADCGameMode::HandleBossHalfHP()
 {
 	if (UDCNarratorSubsystem* Narrator = GetWorld()->GetSubsystem<UDCNarratorSubsystem>())
 	{
+		Narrator->Interrupt();
 		Narrator->PlayLine(FName("B5_BossHalfHP"));
 	}
 }
@@ -711,6 +830,114 @@ void ADCGameMode::HandleIdleTimeout()
 			}
 		}
 	}
+}
+
+bool ADCGameMode::GetBeatRespawnTransform(FTransform& OutTransform) const
+{
+	if (CurrentBeat != 5)
+	{
+		return false;
+	}
+
+	TArray<AActor*> ArenaMarkers;
+	UGameplayStatics::GetAllActorsWithTag(this, FName("BossArenaSpawn"), ArenaMarkers);
+	if (ArenaMarkers.Num() > 0 && ArenaMarkers[0])
+	{
+		OutTransform = ArenaMarkers[0]->GetActorTransform();
+		return true;
+	}
+
+	OutTransform = FTransform(Beat5ArenaSpawnRotation, Beat5ArenaSpawnLocation);
+	return true;
+}
+
+void ADCGameMode::ShowVictoryScene()
+{
+	if (bVictoryShown)
+	{
+		return;
+	}
+	bVictoryShown = true;
+	bVictoryPending = false;
+
+	GetWorldTimerManager().ClearTimer(IdleTimer);
+	GetWorldTimerManager().ClearTimer(BossStartFallbackTimer);
+	GetWorldTimerManager().ClearTimer(VictoryFallbackTimer);
+
+	if (HUDWidget)
+	{
+		HUDWidget->SetVisibility(ESlateVisibility::Collapsed);
+	}
+
+	APlayerController* PC = GetWorld()->GetFirstPlayerController();
+	if (!VictoryWidget && PC)
+	{
+		TSubclassOf<UDCVictoryWidget> WidgetCls = VictoryWidgetClass ? VictoryWidgetClass : TSubclassOf<UDCVictoryWidget>(UDCVictoryWidget::StaticClass());
+		VictoryWidget = CreateWidget<UDCVictoryWidget>(PC, WidgetCls);
+		if (VictoryWidget)
+		{
+			VictoryWidget->AddToViewport(100);
+		}
+	}
+
+	if (VictoryWidget)
+	{
+		int32 BoarsKilled = 0;
+		if (UDCBoarSubsystem* Boars = GetWorld()->GetSubsystem<UDCBoarSubsystem>())
+		{
+			BoarsKilled = Boars->GetKilledCount();
+		}
+		const float Elapsed = FMath::Max(0.0f, GetWorld()->GetTimeSeconds() - RunStartTime);
+		VictoryWidget->SetupVictory(BoarsKilled, Elapsed);
+	}
+
+	if (PC)
+	{
+		PC->SetIgnoreMoveInput(true);
+		PC->SetIgnoreLookInput(true);
+		FInputModeUIOnly Mode;
+		if (VictoryWidget)
+		{
+			if (UWidget* FocusTarget = VictoryWidget->GetInitialFocusWidget())
+			{
+				Mode.SetWidgetToFocus(FocusTarget->TakeWidget());
+			}
+		}
+		Mode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+		PC->SetInputMode(Mode);
+		PC->bShowMouseCursor = true;
+	}
+
+	auto LoadOptionalSound = [](TObjectPtr<USoundBase> Assigned, const TCHAR* PackagePath) -> USoundBase*
+	{
+		if (Assigned)
+		{
+			return Assigned.Get();
+		}
+		if (FPackageName::DoesPackageExist(PackagePath))
+		{
+			return LoadObject<USoundBase>(nullptr, PackagePath);
+		}
+		return nullptr;
+	};
+
+	if (USoundBase* CutSFX = LoadOptionalSound(CutSound, TEXT("/Game/DirectorsCut/Audio/SFX/S_Cut")))
+	{
+		UDCFXLibrary::PlayUISound(this, CutSFX, 1.0f);
+	}
+	StopBeatMusic(0.4f);
+	if (USoundBase* VictoryCue = LoadOptionalSound(VictorySound, TEXT("/Game/DirectorsCut/Audio/Music/M_Victory")))
+	{
+		if (VictoryMusicComponent)
+		{
+			VictoryMusicComponent->Stop();
+			VictoryMusicComponent = nullptr;
+		}
+		VictoryMusicComponent = UGameplayStatics::SpawnSound2D(this, VictoryCue, 0.9f);
+	}
+
+	OnVictoryTriggered.Broadcast();
+	UE_LOG(LogEpicGameJamGame, Log, TEXT("Victory scene displayed (THAT'S A WRAP!)"));
 }
 
 void ADCGameMode::EquipBeatWeapon(bool bUseGun)
@@ -786,8 +1013,97 @@ void ADCGameMode::GoToBeat(int32 Beat)
 	World->FlushLevelStreaming(EFlushLevelStreamingType::Full);
 
 	CurrentBeat = Beat;
+	UpdateMusicForBeat(Beat);
 	UE_LOG(LogEpicGameJamGame, Log, TEXT("GoToBeat(%d): %d sublevel(s) active"), Beat, Desired.Num());
 	OnBeatChanged.Broadcast(Beat);
+}
+
+USoundBase* ADCGameMode::ResolveMusicForBeat(int32 Beat) const
+{
+	if (const TObjectPtr<USoundBase>* Override = BeatMusic.Find(Beat); Override && *Override)
+	{
+		return Override->Get();
+	}
+
+	const TCHAR* DefaultPath = nullptr;
+	switch (Beat)
+	{
+	case 1:
+	case 2:
+		DefaultPath = TEXT("/Game/DirectorsCut/Audio/Music/M_Heroic");
+		break;
+	case 3:
+		DefaultPath = TEXT("/Game/DirectorsCut/Audio/Music/M_Frantic");
+		break;
+	case 4:
+		DefaultPath = TEXT("/Game/DirectorsCut/Audio/Music/M_Romance");
+		break;
+	case 5:
+		DefaultPath = TEXT("/Game/DirectorsCut/Audio/Music/M_Boss");
+		break;
+	default:
+		break;
+	}
+
+	if (DefaultPath && FPackageName::DoesPackageExist(DefaultPath))
+	{
+		return LoadObject<USoundBase>(nullptr, DefaultPath);
+	}
+	return nullptr;
+}
+
+float ADCGameMode::GetTargetMusicVolume() const
+{
+	return FMath::Max(0.0f, MusicVolume * (bMusicDucked ? MusicDuckScale : 1.0f));
+}
+
+void ADCGameMode::RefreshMusicDucking()
+{
+	if (ActiveMusicComponent && ActiveMusicComponent->IsActive())
+	{
+		ActiveMusicComponent->AdjustVolume(MusicDuckFadeDuration, GetTargetMusicVolume());
+	}
+}
+
+void ADCGameMode::StopBeatMusic(float FadeOutSeconds)
+{
+	if (ActiveMusicComponent)
+	{
+		if (FadeOutSeconds > 0.0f && ActiveMusicComponent->IsActive())
+		{
+			ActiveMusicComponent->FadeOut(FadeOutSeconds, 0.0f);
+		}
+		else
+		{
+			ActiveMusicComponent->Stop();
+		}
+		ActiveMusicComponent = nullptr;
+	}
+	ActiveMusicAsset = nullptr;
+}
+
+void ADCGameMode::UpdateMusicForBeat(int32 Beat)
+{
+	USoundBase* DesiredMusic = ResolveMusicForBeat(Beat);
+	if (DesiredMusic == ActiveMusicAsset && DesiredMusic != nullptr)
+	{
+		// Beats 1 and 2 share M_Heroic; keep it playing seamlessly across the transition.
+		return;
+	}
+
+	StopBeatMusic(MusicFadeDuration);
+	ActiveMusicAsset = DesiredMusic;
+	if (!DesiredMusic || !GetWorld())
+	{
+		return;
+	}
+
+	if (UAudioComponent* NewComp = UGameplayStatics::CreateSound2D(this, DesiredMusic, 1.0f, 1.0f, 0.0f, nullptr, false, true))
+	{
+		NewComp->FadeIn(MusicFadeDuration, GetTargetMusicVolume());
+		ActiveMusicComponent = NewComp;
+	}
+	UE_LOG(LogEpicGameJamGame, Log, TEXT("Beat %d music -> %s"), Beat, *DesiredMusic->GetName());
 }
 
 void ADCGameMode::SetSublevelLoaded(FName SublevelName, bool bLoaded)
@@ -854,7 +1170,7 @@ static FAutoConsoleCommandWithWorldAndArgs GDCGoToBeatCmd(
 
 static FAutoConsoleCommandWithWorldAndArgs GDCSwapWeaponCmd(
 	TEXT("DC.SwapWeapon"),
-	TEXT("DC.SwapWeapon <Sword|Gun> - equip the Beat 1-2 Sword or Beat 3-5 Gun"),
+	TEXT("DC.SwapWeapon <Sword|Gun> - equip the Sword (Beats 1-2, 4-5) or Beat 3 Shotgun"),
 	FConsoleCommandWithWorldAndArgsDelegate::CreateLambda([](const TArray<FString>& Args, UWorld* World)
 	{
 		if (Args.Num() < 1)
@@ -866,5 +1182,16 @@ static FAutoConsoleCommandWithWorldAndArgs GDCSwapWeaponCmd(
 		{
 			const bool bUseGun = Args[0].Equals(TEXT("Gun"), ESearchCase::IgnoreCase);
 			GM->EquipBeatWeapon(bUseGun);
+		}
+	}));
+
+static FAutoConsoleCommandWithWorld GDCVictoryCmd(
+	TEXT("DC.Victory"),
+	TEXT("DC.Victory - immediately show the Beat 5 victory wrap screen"),
+	FConsoleCommandWithWorldDelegate::CreateLambda([](UWorld* World)
+	{
+		if (ADCGameMode* GM = FindDCGameMode(World))
+		{
+			GM->ShowVictoryScene();
 		}
 	}));

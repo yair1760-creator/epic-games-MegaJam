@@ -20,15 +20,19 @@
 #include "AI/DCKingBoar.h"
 #include "Beats/DCGameMode.h"
 #include "Beats/DCPrincess.h"
+#include "Beats/DCShedDoors.h"
 #include "Combat/DCBoarMeatPickup.h"
 #include "Combat/DCHealthComponent.h"
+#include "Combat/DCShotgunWeapon.h"
 #include "Combat/DCSwordWeapon.h"
 #include "Narrator/DCNarratorSubsystem.h"
 #include "Quest/DCQuestSubsystem.h"
 #include "UI/DCHUDWidget.h"
 #include "UI/DCQuestTrackerWidget.h"
 #include "UI/DCSubtitlesWidget.h"
+#include "UI/DCVictoryWidget.h"
 #include "ShooterCharacter.h"
+#include "ShooterProjectile.h"
 #include "ShooterWeapon.h"
 
 // -----------------------------------------------------------------------------
@@ -87,6 +91,30 @@ bool FDCNarratorAuditTest::RunTest(const FString& Parameters)
 	}
 
 	AddInfo(FString::Printf(TEXT("[DC_TEST] Audited %d narrator rows in DT_NarratorLines"), ExpectedRows.Num()));
+
+	struct FMusicExpectation
+	{
+		const TCHAR* Path;
+		bool bShouldLoop;
+	};
+	const FMusicExpectation ExpectedMusic[] = {
+		{ TEXT("/Game/DirectorsCut/Audio/Music/M_Heroic.M_Heroic"),   true  },
+		{ TEXT("/Game/DirectorsCut/Audio/Music/M_Frantic.M_Frantic"), true  },
+		{ TEXT("/Game/DirectorsCut/Audio/Music/M_Romance.M_Romance"), true  },
+		{ TEXT("/Game/DirectorsCut/Audio/Music/M_Boss.M_Boss"),       true  },
+		{ TEXT("/Game/DirectorsCut/Audio/Music/M_Victory.M_Victory"), false },
+	};
+	for (const FMusicExpectation& M : ExpectedMusic)
+	{
+		USoundBase* Cue = LoadObject<USoundBase>(nullptr, M.Path);
+		TestNotNull(*FString::Printf(TEXT("Music asset %s must exist"), M.Path), Cue);
+		if (Cue)
+		{
+			TestEqual(*FString::Printf(TEXT("Music asset %s looping state"), M.Path), Cue->IsLooping(), M.bShouldLoop);
+			TestTrue(*FString::Printf(TEXT("Music asset %s duration > 0"), M.Path), Cue->GetDuration() > 0.0f);
+		}
+	}
+
 	return true;
 }
 
@@ -173,6 +201,7 @@ bool FDCRunFullQuestFlowCommand::Update()
 	Test->TestTrue(TEXT("Beat 1 loads DC_Set_Hunt"), DCFlowTestInternal::IsSublevelActive(World, FName("DC_Set_Hunt")));
 	Test->TestEqual(TEXT("Beat 1 quest is Q_HuntBoars"), Quest->GetActiveQuestId(), FName("Q_HuntBoars"));
 	Test->TestEqual(TEXT("Beat 1 quest target is 10"), Quest->GetTarget(), 10);
+	Test->TestEqual(TEXT("Beat 1 music is M_Heroic"), GM->GetActiveMusicAsset() ? GM->GetActiveMusicAsset()->GetFName() : NAME_None, FName("M_Heroic"));
 	if (Tracker)
 	{
 		Test->TestEqual(TEXT("HUD QuestTracker shows Boars killed:"), Tracker->GetDisplayedTitle(), FString(TEXT("Boars killed:")));
@@ -182,7 +211,16 @@ bool FDCRunFullQuestFlowCommand::Update()
 
 	for (int32 i = 1; i <= 6; ++i)
 	{
+		Narrator->Interrupt();
 		Quest->ReportEvent(FName("Kill.Boar"));
+		if (i == 1)
+		{
+			Test->TestTrue(TEXT("1st kill does not play L1_FirstKill (avoiding clash with L1_FirstHit)"), Narrator->GetCurrentLineId().IsNone());
+		}
+		else if (i == 2)
+		{
+			Test->TestEqual(TEXT("2nd kill plays L1_FirstKill"), Narrator->GetCurrentLineId(), FName("L1_FirstKill"));
+		}
 	}
 	Test->TestEqual(TEXT("After 6 kills, still in Beat 1"), GM->GetCurrentBeat(), 1);
 	Test->TestEqual(TEXT("After 6 kills, progress is 6/10"), Quest->GetCurrent(), 6);
@@ -191,28 +229,29 @@ bool FDCRunFullQuestFlowCommand::Update()
 		Test->TestEqual(TEXT("HUD QuestTracker shows 6/10"), Tracker->GetDisplayedCount(), FString(TEXT("6/10")));
 	}
 
-	// 7th kill -> Director interrupts for bacon breakfast (Beat 2)
+	// 7th kill -> Director sees meat drop, wants bacon breakfast (Beat 2)
 	Quest->ReportEvent(FName("Kill.Boar"));
 
-	// ======================== BEAT 2: Collect 5 Boar Meat + No-Meat Joke
+	// ======================== BEAT 2: Collect 5 Bacon + No-Meat Joke
 	Test->TestEqual(TEXT("7th kill triggers Beat 2"), GM->GetCurrentBeat(), 2);
 	Test->TestTrue(TEXT("Beat 2 loads DC_Set_NoMeat"), DCFlowTestInternal::IsSublevelActive(World, FName("DC_Set_NoMeat")));
 	Test->TestEqual(TEXT("Beat 2 quest is Q_CollectMeat"), Quest->GetActiveQuestId(), FName("Q_CollectMeat"));
 	Test->TestEqual(TEXT("Beat 2 quest target is 5"), Quest->GetTarget(), 5);
 	Test->TestEqual(TEXT("Beat 2 quest tag is Collect.Meat"), Quest->GetActiveEventTag(), FName("Collect.Meat"));
+	Test->TestEqual(TEXT("Beat 2 keeps M_Heroic music"), GM->GetActiveMusicAsset() ? GM->GetActiveMusicAsset()->GetFName() : NAME_None, FName("M_Heroic"));
 	Test->TestEqual(TEXT("Beat 2 starts with B2_Intro_01"), Narrator->GetCurrentLineId(), FName("B2_Intro_01"));
 	if (Tracker)
 	{
-		Test->TestEqual(TEXT("HUD QuestTracker shows Boar meat collected:"), Tracker->GetDisplayedTitle(), FString(TEXT("Boar meat collected:")));
+		Test->TestEqual(TEXT("HUD QuestTracker shows Bacon collected:"), Tracker->GetDisplayedTitle(), FString(TEXT("Bacon collected:")));
 	}
 	if (Subs)
 	{
 		Test->TestEqual(TEXT("HUD Subtitles speaker is THE DIRECTOR"), Subs->GetSpeakerString(), FString(TEXT("THE DIRECTOR")));
-		Test->TestTrue(TEXT("HUD Subtitles displays B2_Intro_01 text"), Subs->GetLineString().Contains(TEXT("starving")));
+		Test->TestTrue(TEXT("HUD Subtitles displays B2_Intro_01 text"), Subs->GetLineString().Contains(TEXT("meat")));
 	}
 	Narrator->Interrupt();
 
-	// Spawn 2 boars and kill them to verify meat drop on #1 and "no meat" joke on #2
+	// Spawn 3 boars and kill them to verify meat drops on #1-#2 and "no meat" joke on #3
 	auto CountMeatPickups = [World]() -> int32
 	{
 		int32 N = 0;
@@ -224,24 +263,36 @@ bool FDCRunFullQuestFlowCommand::Update()
 	FActorSpawnParameters BoarSpawnParams;
 	BoarSpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 	ADCBoar* Boar1 = World->SpawnActor<ADCBoar>(ADCBoar::StaticClass(), FVector(-4000.0f, 300.0f, 100.0f), FRotator::ZeroRotator, BoarSpawnParams);
-	ADCBoar* Boar2 = World->SpawnActor<ADCBoar>(ADCBoar::StaticClass(), FVector(-4000.0f, -300.0f, 100.0f), FRotator::ZeroRotator, BoarSpawnParams);
+	ADCBoar* Boar2 = World->SpawnActor<ADCBoar>(ADCBoar::StaticClass(), FVector(-4000.0f, 0.0f, 100.0f), FRotator::ZeroRotator, BoarSpawnParams);
+	ADCBoar* Boar3 = World->SpawnActor<ADCBoar>(ADCBoar::StaticClass(), FVector(-4000.0f, -300.0f, 100.0f), FRotator::ZeroRotator, BoarSpawnParams);
 	Test->TestNotNull(TEXT("Beat 2 test Boar1 spawned"), Boar1);
 	Test->TestNotNull(TEXT("Beat 2 test Boar2 spawned"), Boar2);
-	if (Boar1 && Boar2)
+	Test->TestNotNull(TEXT("Beat 2 test Boar3 spawned"), Boar3);
+	if (Boar1 && Boar2 && Boar3)
 	{
 		Boar1->GetHealth()->Kill(Player->GetController(), Player);
-		Test->TestEqual(TEXT("Beat 2 kill #1 drops 1 boar meat pickup"), CountMeatPickups(), MeatBefore + 1);
+		Test->TestEqual(TEXT("Beat 2 kill #1 drops 1 bacon pickup"), CountMeatPickups(), MeatBefore + 1);
 
 		Narrator->Interrupt();
 		Boar2->GetHealth()->Kill(Player->GetController(), Player);
-		Test->TestEqual(TEXT("Beat 2 kill #2 drops NO meat (stays at +1)"), CountMeatPickups(), MeatBefore + 1);
+		Test->TestEqual(TEXT("Beat 2 kill #2 drops 1 bacon pickup"), CountMeatPickups(), MeatBefore + 2);
+
+		Narrator->Interrupt();
+		Boar3->GetHealth()->Kill(Player->GetController(), Player);
+		Test->TestEqual(TEXT("Beat 2 kill #3 drops NO meat (stays at +2)"), CountMeatPickups(), MeatBefore + 2);
 		const FName NoMeatLine = Narrator->GetCurrentLineId();
-		Test->TestTrue(TEXT("Beat 2 kill #2 plays B2_NoMeat_01 or B2_NoMeat_02"),
+		Test->TestTrue(TEXT("Beat 2 kill #3 plays B2_NoMeat_01 or B2_NoMeat_02"),
 			NoMeatLine == FName("B2_NoMeat_01") || NoMeatLine == FName("B2_NoMeat_02"));
 	}
 
-	// Collect 5 meat -> triggers Beat 3
-	for (int32 i = 0; i < 5; ++i)
+	// Collect 5 bacon -> verify 1/5 doesn't clash with intro, 2/5 plays B2_FirstMeat, 5/5 triggers Beat 3
+	Narrator->Interrupt();
+	Quest->ReportEvent(FName("Collect.Meat"));
+	Test->TestTrue(TEXT("1/5 bacon does not play B2_FirstMeat (avoiding clash with B2_Intro)"), Narrator->GetCurrentLineId().IsNone());
+	Quest->ReportEvent(FName("Collect.Meat"));
+	Test->TestEqual(TEXT("2/5 bacon plays B2_FirstMeat"), Narrator->GetCurrentLineId(), FName("B2_FirstMeat"));
+	Narrator->Interrupt();
+	for (int32 i = 2; i < 5; ++i)
 	{
 		Quest->ReportEvent(FName("Collect.Meat"));
 	}
@@ -252,12 +303,27 @@ bool FDCRunFullQuestFlowCommand::Update()
 	Test->TestFalse(TEXT("Beat 3 unloads DC_Set_NoMeat"), DCFlowTestInternal::IsSublevelActive(World, FName("DC_Set_NoMeat")));
 	Test->TestEqual(TEXT("Beat 3 quest is Q_HyperspawnBoars"), Quest->GetActiveQuestId(), FName("Q_HyperspawnBoars"));
 	Test->TestEqual(TEXT("Beat 3 quest target is 100"), Quest->GetTarget(), 100);
+	Test->TestEqual(TEXT("Beat 3 music is M_Frantic"), GM->GetActiveMusicAsset() ? GM->GetActiveMusicAsset()->GetFName() : NAME_None, FName("M_Frantic"));
 	if (Tracker)
 	{
 		Test->TestEqual(TEXT("HUD QuestTracker shows Boars eliminated:"), Tracker->GetDisplayedTitle(), FString(TEXT("Boars eliminated:")));
 	}
-	Test->TestTrue(TEXT("Beat 3 player holds a gun (not sword)"),
-		Player->GetCurrentWeapon() && !Player->GetCurrentWeapon()->IsA<ADCSwordWeapon>());
+	Test->TestTrue(TEXT("Beat 3 player holds ADCShotgunWeapon"),
+		Player->GetCurrentWeapon() && Player->GetCurrentWeapon()->IsA<ADCShotgunWeapon>());
+	if (ADCShotgunWeapon* Shotgun = Cast<ADCShotgunWeapon>(Player->GetCurrentWeapon()))
+	{
+		int32 ProjectilesBefore = 0;
+		for (TActorIterator<AShooterProjectile> It(World); It; ++It) { ++ProjectilesBefore; }
+
+		const int32 BulletsBefore = Shotgun->GetBulletCount();
+		Shotgun->StartFiring();
+		Shotgun->StopFiring();
+		Test->TestEqual(TEXT("Shotgun blast consumes 1 shell"), Shotgun->GetBulletCount(), BulletsBefore - 1);
+
+		int32 ProjectilesAfter = 0;
+		for (TActorIterator<AShooterProjectile> It(World); It; ++It) { ++ProjectilesAfter; }
+		Test->TestEqual(TEXT("Shotgun blast spawns PelletCount projectiles"), ProjectilesAfter - ProjectilesBefore, Shotgun->GetPelletCount());
+	}
 
 	bool bAnyHyperspawning = false;
 	for (TActorIterator<ADCBoarSpawner> It(World); It; ++It)
@@ -275,8 +341,11 @@ bool FDCRunFullQuestFlowCommand::Update()
 	Test->TestEqual(TEXT("100/100 boars triggers Beat 4"), GM->GetCurrentBeat(), 4);
 	Test->TestTrue(TEXT("Beat 4 loads DC_Light_PG"), DCFlowTestInternal::IsSublevelActive(World, FName("DC_Light_PG")));
 	Test->TestTrue(TEXT("Beat 4 loads DC_Set_PG"), DCFlowTestInternal::IsSublevelActive(World, FName("DC_Set_PG")));
+	Test->TestTrue(TEXT("Beat 4 swaps back to ADCSwordWeapon"),
+		Player->GetCurrentWeapon() && Player->GetCurrentWeapon()->IsA<ADCSwordWeapon>());
 	Test->TestEqual(TEXT("Beat 4a quest is Q_DefeatKingBoar"), Quest->GetActiveQuestId(), FName("Q_DefeatKingBoar"));
 	Test->TestEqual(TEXT("Beat 4a quest target is 1"), Quest->GetTarget(), 1);
+	Test->TestEqual(TEXT("Beat 4 music is M_Romance"), GM->GetActiveMusicAsset() ? GM->GetActiveMusicAsset()->GetFName() : NAME_None, FName("M_Romance"));
 	if (Tracker)
 	{
 		Test->TestEqual(TEXT("HUD QuestTracker shows Defeat the King Boar:"), Tracker->GetDisplayedTitle(), FString(TEXT("Defeat the King Boar:")));
@@ -286,15 +355,27 @@ bool FDCRunFullQuestFlowCommand::Update()
 	for (TActorIterator<ADCKingBoar> It(World); It; ++It) { KingBoar = *It; break; }
 	ADCPrincess* Princess = nullptr;
 	for (TActorIterator<ADCPrincess> It(World); It; ++It) { Princess = *It; break; }
+	ADCShedDoors* ShedDoors = nullptr;
+	for (TActorIterator<ADCShedDoors> It(World); It; ++It) { ShedDoors = *It; break; }
 
 	Test->TestNotNull(TEXT("Beat 4 spawned ADCKingBoar"), KingBoar);
 	Test->TestNotNull(TEXT("Beat 4 spawned ADCPrincess"), Princess);
+	Test->TestNotNull(TEXT("Beat 4 DC_Set_PG has ADCShedDoors"), ShedDoors);
 	if (KingBoar && Princess)
 	{
 		Test->TestTrue(TEXT("Princess starts locked while King Boar lives"), Princess->IsLocked());
-		// Kill King Boar -> unlocks Princess and swaps quest to Q_RescuePrincess
+		if (ShedDoors)
+		{
+			Test->TestTrue(TEXT("Shed doors start locked while King Boar lives"), ShedDoors->IsLocked());
+		}
+		// Kill King Boar -> unlocks Princess, opens shed doors, and swaps quest to Q_RescuePrincess
 		KingBoar->GetHealth()->Kill(Player->GetController(), Player);
 		Test->TestFalse(TEXT("Princess unlocks after King Boar dies"), Princess->IsLocked());
+		if (ShedDoors)
+		{
+			Test->TestFalse(TEXT("Shed doors unlock after King Boar dies"), ShedDoors->IsLocked());
+			Test->TestTrue(TEXT("Shed doors begin opening after King Boar dies"), ShedDoors->IsOpen());
+		}
 		Test->TestEqual(TEXT("Beat 4b quest is Q_RescuePrincess"), Quest->GetActiveQuestId(), FName("Q_RescuePrincess"));
 
 		// Teleport player onto Princess to trigger rescue overlap (or verify rescue event)
@@ -316,11 +397,30 @@ bool FDCRunFullQuestFlowCommand::Update()
 	Test->TestEqual(TEXT("Beat 5 active"), GM->GetCurrentBeat(), 5);
 	Test->TestTrue(TEXT("Beat 5 loads DC_Light_Boss"), DCFlowTestInternal::IsSublevelActive(World, FName("DC_Light_Boss")));
 	Test->TestTrue(TEXT("Beat 5 loads DC_Set_Boss"), DCFlowTestInternal::IsSublevelActive(World, FName("DC_Set_Boss")));
+	Test->TestTrue(TEXT("Beat 5 keeps ADCSwordWeapon"),
+		Player->GetCurrentWeapon() && Player->GetCurrentWeapon()->IsA<ADCSwordWeapon>());
 	Test->TestEqual(TEXT("Beat 5 quest is Q_DefeatDirector"), Quest->GetActiveQuestId(), FName("Q_DefeatDirector"));
 	Test->TestEqual(TEXT("Beat 5 quest target is 1"), Quest->GetTarget(), 1);
+	Test->TestEqual(TEXT("Beat 5 music is M_Boss"), GM->GetActiveMusicAsset() ? GM->GetActiveMusicAsset()->GetFName() : NAME_None, FName("M_Boss"));
 	if (Tracker)
 	{
 		Test->TestEqual(TEXT("HUD QuestTracker shows Defeat the Director:"), Tracker->GetDisplayedTitle(), FString(TEXT("Defeat the Director:")));
+	}
+
+	// Verify Beat 5 arena respawn override (returns player to Beat 5 arena, not PlayerStart_Village)
+	FTransform Beat5Respawn;
+	Test->TestTrue(TEXT("Beat 5 overrides respawn transform to arena"), GM->GetBeatRespawnTransform(Beat5Respawn));
+	Test->TestTrue(TEXT("Beat 5 respawn location is inside arena (X near -600)"), FMath::IsNearlyEqual(Beat5Respawn.GetLocation().X, -600.0f, 50.0f));
+	Player->Destroy();
+	AShooterCharacter* RespawnedBeat5Player = Cast<AShooterCharacter>(UGameplayStatics::GetPlayerPawn(World, 0));
+	Test->TestNotNull(TEXT("Destroying player in Beat 5 immediately respawns new pawn"), RespawnedBeat5Player);
+	if (RespawnedBeat5Player)
+	{
+		Test->TestTrue(TEXT("Respawned Beat 5 player spawns in arena instead of village (-5200)"),
+			FVector::Dist2D(RespawnedBeat5Player->GetActorLocation(), Beat5Respawn.GetLocation()) < 150.0f);
+		Test->TestTrue(TEXT("Respawned Beat 5 player holds ADCSwordWeapon"),
+			RespawnedBeat5Player->GetCurrentWeapon() && RespawnedBeat5Player->GetCurrentWeapon()->IsA<ADCSwordWeapon>());
+		Player = RespawnedBeat5Player;
 	}
 
 	ADCDirectorBoss* Boss = nullptr;
@@ -339,9 +439,25 @@ bool FDCRunFullQuestFlowCommand::Update()
 		Boss->GetHealth()->Kill(Player->GetController(), Player);
 		Test->TestTrue(TEXT("Q_DefeatDirector completes on boss death"), Quest->IsActiveQuestComplete());
 		Test->TestEqual(TEXT("Boss defeated plays B5_DirectorDefeated"), Narrator->GetCurrentLineId(), FName("B5_DirectorDefeated"));
+
+		// Interrupting B5_DirectorDefeated fires OnLineFinished("B5_DirectorDefeated") -> opens Victory Scene
+		Narrator->Interrupt();
+		Test->TestTrue(TEXT("Victory scene is shown after B5_DirectorDefeated finishes"), GM->IsVictoryShown());
+		Test->TestNull(TEXT("Victory scene stops beat loop music"), GM->GetActiveMusicAsset());
+		UDCVictoryWidget* Victory = GM->GetVictoryWidget();
+		Test->TestNotNull(TEXT("Victory widget is created"), Victory);
+		if (Victory)
+		{
+			Test->TestTrue(TEXT("Victory title says THAT'S A WRAP!"), Victory->GetTitleString().Contains(TEXT("WRAP")));
+			Test->TestTrue(TEXT("Victory stats show Director Defeated"), Victory->GetStatsString().Contains(TEXT("Director Defeated")));
+		}
 	}
 
-	Test->AddInfo(TEXT("[DC_TEST] All 5 beats, quests, weapon swaps, pickups, Princess, and Director Boss passed!"));
+	// Clean up Beat 5 victory state so PIE/test exit leaves normal state
+	GM->StartBeat(1);
+	Test->TestFalse(TEXT("StartBeat resets victory state"), GM->IsVictoryShown());
+
+	Test->AddInfo(TEXT("[DC_TEST] All 5 beats, quests, weapon swaps, pickups, Princess, Director Boss, B5 respawn, and Victory passed!"));
 	return true;
 }
 
