@@ -506,3 +506,23 @@ The greybox watchtower at (2800, 3600) now looks like a plank tower: log legs wi
 - Left Shift is still mapped to "swap weapon" from the template; with one weapon it does nothing visible and is not listed on the card.
 - `DC_Set_Hunt.umap` was saved in this commit at Yair's instruction: one actor's position value changed (about 1915 -> 2385 on one axis) plus the file's save stamps; the change was made in the editor, not by a script.
 - Screenshots: `Docs/Screenshots/ControlsPrompt_Start.png`, `ControlsPrompt_Shotgun.png`.
+
+## 26. Drawn HUD panel frames (Meshy pictures)
+
+Four HUD panels got a drawn frame in place of the flat ink / gold / slate borders:
+
+| Panel | Widget | Picture |
+|---|---|---|
+| Health bar ("ACTOR VITALS") | `WBP_HealthBar` | dark wood with iron corner brackets |
+| Director's speech box | `WBP_Subtitles` | painted clapper-slate frame |
+| Script / quest box | `WBP_QuestTracker` | leather script folder with gold corners |
+| Controls card | `UDCControlsHintWidget` (code) | rope and leather cue card |
+
+- **Meshy (24 credits):** four text-to-image pictures (nano-banana-2, transparent background) in `Art/UI/Panels/Source`. All have a dark slate inside so the cream and gold text stays readable.
+- `Scripts/Blender_BuildHudPanels.py` crops each to its frame and writes a 9-slice ("Box") texture: the corner blocks keep their drawing and only the middle strips stretch, so one picture fits any panel size. The health frame is re-composed without the iron bands in the middle of its edges (they would have stretched). Output `Art/UI/Panels/Export/T_UI_Panel_*.png` at 2x the on-screen size, plus `Panels.json` (logical size, margins).
+- `Scripts/DC_ApplyHudPanelArt.py` (`apply_hud_panel_art()`) imports them to `/Game/DirectorsCut/UI/HUD` and, in Saar's three widgets, makes the outer border `<Name>_InkFrame` draw the frame and the two inner borders transparent. **Only the background changed**: layout, texts, fonts, icons and the clapper stripes are his, untouched. The outer padding went from 3 + 2 px to the frame thickness (11 to 14 px), so each panel is about 6 to 9 px bigger on every side.
+- **If `Scripts/DC_BuildHUDWidgets.py` is run again it rebuilds those widgets with the flat colours; run `apply_hud_panel_art()` afterwards.**
+- The controls card loads `T_UI_Panel_Controls` in code and falls back to the flat panel if it is missing.
+- **Checked in play** (beat 1 and beat 3, editor window): all four frames draw, text sits inside them, health bar and subtitles still update. Not checked: other resolutions and aspect ratios, a packaged build, the victory and death screens (not changed).
+- Not changed: the ammo counter, the "REC | SCENE" strip, the death slate and the victory card still have the flat style.
+- Screenshots: `Docs/Screenshots/HudPanels_Beat1.png`, `HudPanels_Beat3.png`.
