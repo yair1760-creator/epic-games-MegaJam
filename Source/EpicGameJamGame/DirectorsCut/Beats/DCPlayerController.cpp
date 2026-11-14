@@ -13,6 +13,10 @@
 #include "GameFramework/PlayerStart.h"
 #include "InputMappingContext.h"
 #include "Kismet/GameplayStatics.h"
+#include "Kismet/KismetSystemLibrary.h"
+#include "Components/Widget.h"
+#include "InputCoreTypes.h"
+#include "UI/DCMenuWidgets.h"
 #include "ShooterCharacter.h"
 #include "UObject/ConstructorHelpers.h"
 #include "Widgets/Input/SVirtualJoystick.h"
@@ -44,6 +48,13 @@ void ADCPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
 
+	// arriving from the main menu (UI-only input, visible cursor): hand the mouse back to the game
+	if (IsLocalPlayerController())
+	{
+		SetInputMode(FInputModeGameOnly());
+		bShowMouseCursor = false;
+	}
+
 	if (IsLocalPlayerController() && ShouldUseTouchControls() && MobileControlsWidgetClass)
 	{
 		MobileControlsWidget = CreateWidget<UUserWidget>(this, MobileControlsWidgetClass);
@@ -57,6 +68,14 @@ void ADCPlayerController::BeginPlay()
 void ADCPlayerController::SetupInputComponent()
 {
 	Super::SetupInputComponent();
+
+	// pause menu: Esc. Inside the editor Esc ends the Play session, so P does the same job there.
+	if (InputComponent)
+	{
+		InputComponent->BindKey(EKeys::Escape, IE_Pressed, this, &ADCPlayerController::TogglePauseMenu).bExecuteWhenPaused = true;
+		InputComponent->BindKey(EKeys::P, IE_Pressed, this, &ADCPlayerController::TogglePauseMenu).bExecuteWhenPaused = true;
+		InputComponent->BindKey(EKeys::Gamepad_Special_Right, IE_Pressed, this, &ADCPlayerController::TogglePauseMenu).bExecuteWhenPaused = true;
+	}
 
 	if (IsLocalPlayerController())
 	{
@@ -179,4 +198,67 @@ void ADCPlayerController::OnPawnDestroyed(AActor* DestroyedActor)
 bool ADCPlayerController::ShouldUseTouchControls() const
 {
 	return SVirtualJoystick::ShouldDisplayTouchInterface() || bForceTouchControls;
+}
+
+// ---------------------------------------------------------------- pause menu
+
+void ADCPlayerController::TogglePauseMenu()
+{
+	if (PauseWidget)
+	{
+		ClosePauseMenu();
+	}
+	else
+	{
+		OpenPauseMenu();
+	}
+}
+
+void ADCPlayerController::OpenPauseMenu()
+{
+	// not while another full-screen UI owns the mouse (the victory screen), and not twice
+	if (PauseWidget || !IsLocalPlayerController() || bShowMouseCursor || IsPaused())
+	{
+		return;
+	}
+
+	TSubclassOf<UDCPauseMenuWidget> WidgetCls = PauseMenuWidgetClass ? PauseMenuWidgetClass : TSubclassOf<UDCPauseMenuWidget>(UDCPauseMenuWidget::StaticClass());
+	PauseWidget = CreateWidget<UDCPauseMenuWidget>(this, WidgetCls);
+	if (!PauseWidget)
+	{
+		return;
+	}
+	PauseWidget->AddToViewport(200);      // above the HUD and the 2D weapon layer
+	PauseWidget->OnResume.AddUniqueDynamic(this, &ADCPlayerController::ClosePauseMenu);
+	PauseWidget->OnQuit.AddUniqueDynamic(this, &ADCPlayerController::QuitFromPauseMenu);
+
+	SetPause(true);
+
+	FInputModeUIOnly Mode;
+	if (UWidget* Focus = PauseWidget->GetInitialFocusWidget())
+	{
+		Mode.SetWidgetToFocus(Focus->TakeWidget());
+	}
+	Mode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+	SetInputMode(Mode);
+	bShowMouseCursor = true;
+}
+
+void ADCPlayerController::ClosePauseMenu()
+{
+	if (!PauseWidget)
+	{
+		return;
+	}
+	PauseWidget->RemoveFromParent();
+	PauseWidget = nullptr;
+
+	SetPause(false);
+	SetInputMode(FInputModeGameOnly());
+	bShowMouseCursor = false;
+}
+
+void ADCPlayerController::QuitFromPauseMenu()
+{
+	UKismetSystemLibrary::QuitGame(this, this, EQuitPreference::Quit, false);
 }
