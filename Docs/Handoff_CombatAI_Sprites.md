@@ -254,3 +254,19 @@ Materials: `MI_DC_*_3D` on `M_DC_InkedProp` (lit, masked, two-sided). The `DC Pr
 - **Not placed in any map yet.** To use it: put it at the plinth's spot (1000, 0, 0) and hide or delete `POI_TheSet_Plinth`, then rebuild nav.
 - Limits: planks are wide (about 1-2 m) because one model covers 24 m, and its 2K texture is soft up close; the look is painted wood rather than strong ink lines.
 - Screenshots: `Docs/Screenshots/SetFloor_Top.png`, `SetFloor_Side.png`.
+
+### 12d. The whole platform's floor (Meshy + Blender)
+
+`SM_DC_SetGround` (`/Game/DirectorsCut/Environment/SetGround`): ONE flat floor mesh for the whole playing platform, 120 m x 100 m, in the Forgive Me Father comic style (thick ink lines, flat muted colours), with three materials:
+
+| Surface | Covers | Texture | Made from |
+|---|---|---|---|
+| Grass | the meadow (`G_Meadow`) | `T_DC_Ground_Grass`, repeats every 8 m | Meshy text-to-image (nano-banana-2) |
+| Dirt | the six paths (`Path_00..05`) | `T_DC_Ground_Dirt`, one picture across the 3.5 m path | Meshy text-to-image (nano-banana-2) |
+| Cobblestone | the village square (`G_VillageSquare`) | `T_DC_Ground_Cobble`, repeats every 6 m | Meshy text-to-3D tile (meshy-t2.5 + texture), photographed square-on in Blender and mirrored 2 x 2 |
+
+- `Scripts/Blender_BuildSetGround.py` builds it (`-- preview` renders checks): makes each texture seamless, then builds the floor to the level's own layout (the `MEADOW` / `SQUARE` / `PATHS` numbers at the top are the greybox pieces, read from the level on 2026-11-14). If paths move, update those numbers and re-run.
+- The mesh is **visual only**: it lies 0.6 cm above the greybox ground, which keeps doing collision and navigation. Place it at (0, 0, 0) with no rotation and collision off; hiding the greybox meshes is optional (they are fully covered).
+- Meshy credits: 45 for three 3D tiles (the grass tile failed - loose tufts only - and the dirt tile came out as a grey disc; both are kept unused in `Art/Meshy/Ground/Source`) + 12 for the two pictures that replaced them.
+- **Not placed in any map yet**, and the backstage / tower-hill areas behind the backdrop are not covered.
+- Screenshots: `Docs/Screenshots/SetGround_*.png` (a temporary copy in the level, deleted afterwards).
