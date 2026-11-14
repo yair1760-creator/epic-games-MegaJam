@@ -10,6 +10,7 @@
 #     with three SM_DC_Sword over the greybox rack
 #   - Taisho's film cameras and boom mics around the level (SM_DC_FilmCamera, SM_DC_BoomMic), and in DC_Set_FilmCrew
 #   - Taisho's brick wall picture on the four boundary walls (tiled brick skins over the greybox walls)
+#   - Taisho's woodland slide as a set prop in the meadow south of the village
 #     the real models over the greybox dolly camera and boom mic
 #   - the butcher stall (SM_DC_ButcherStall) over the greybox stall, and in the DC_Set_NoMeat sublevel the SOLD OUT and
 #     HA HA HA signs (SM_DC_SoldOutSign, SM_DC_LaughSign) over the greybox boards and text
@@ -499,6 +500,28 @@ def dress_walls():
     return done
 
 
+SLIDE_SCALE = 1.5                      # the model is 1.36 m tall as delivered; 1.5 makes its deck about 2 m high
+SLIDE_YAW = 90.0                       # the ramp runs along the model's Y; 90 turns its side view to the village square
+SLIDE_SPOTS = [(-3500, -2900), (-2900, -2600), (-4100, -4100)]   # open meadow south-east of the village square, first free one wins
+
+
+def dress_slide():
+    """Taisho's woodland slide (cleaned by Scripts/Blender_CleanFilmSetModels.py) as a set prop in the meadow south of
+    the village. Persistent level, DC/SetDressing_Slide: the model (no collision) + an invisible cylinder blocker."""
+    CURRENT_FOLDER[0] = "DC/SetDressing_Slide"
+    clear_folder("DC/SetDressing_Slide")
+    blockers = _blockers()
+    dressing = [x.get_actor_location() for x in EAS.get_all_level_actors() if str(x.get_folder_path()).startswith("DC/SetDressing_")
+                and not str(x.get_folder_path()).startswith(("DC/SetDressing_Ground", "DC/SetDressing_Walls"))]
+    spot = next(((x, y) for x, y in SLIDE_SPOTS if _free(x, y, blockers, 250)
+                 and all(math.hypot(l.x - x, l.y - y) > 350 for l in dressing)), None)
+    assert spot, "no free spot for the slide"
+    a = _set_piece(unreal.load_asset(FILMSET_DIR + "/SM_DC_WoodlandSlide"), "Slide_Woodland", spot[0], spot[1], 0, SLIDE_YAW,
+                   110 * SLIDE_SCALE, 136 * SLIDE_SCALE)
+    a.set_actor_scale3d(V(SLIDE_SCALE, SLIDE_SCALE, SLIDE_SCALE))
+    return {"at": list(spot), "scale": SLIDE_SCALE, "yaw": SLIDE_YAW}
+
+
 def dress_main_map(which="all"):
     _check_world()
     # no ensure_materials(): it re-saves the lead's shared MI_LD_* materials; the ones used here already exist
@@ -524,6 +547,8 @@ def dress_main_map(which="all"):
             out["filmset"] = dress_filmset()
         if which in ("all", "walls"):
             out["walls"] = dress_walls()
+        if which in ("all", "slide"):
+            out["slide"] = dress_slide()
         if which in ("all", "trees"):
             out["apple_trees"] = dress_trees()
     w = UES.get_editor_world()

@@ -366,7 +366,7 @@ Taisho's film reel camera and boom mic are placed all over the playable level so
 
 **Checked (editor view, not in Play):** close-ups show no tearing; nav paths from the spawn to the stage, stall front, pen, east meadow and sword pickup are valid and all 6 boar spawn points are reachable.
 
-- Not used yet: `SM_DC_WoodlandSlide` (only in the test map; it is 1.4 m tall and would need about 3x scale to replace the watchtower) The brick wall picture is now on the boundary walls (section 22).
+- `SM_DC_WoodlandSlide` is now placed in the meadow (section 23) The brick wall picture is now on the boundary walls (section 22).
 - Left out on purpose: the modern cine camera from `taisho/3d-cameras` (cannot be used in the game). Do not merge that branch as a whole.
 - Test map: zone T behind the spawn shows the three cleaned models and the wall panel (`build_test_map("taisho")`).
 - Limits: the props are static (reels do not turn); the boom mic's cable lies outside its blocker; the realistic colour pictures are not redrawn in the inked style.
@@ -471,3 +471,13 @@ The four boundary walls of the main level (`B_West`, `B_North`, `B_South`, `B_Ba
 - Only the persistent level file changed (`Lvl_DirectorsCut.umap`): four actors added, four made invisible.
 - Limits: the picture was not made to tile, so the ivy patches repeat every 5 m and a faint seam shows at each repeat; bricks are oversized on purpose (about 18 cm rows) so they read from across the set; not checked in Play or in a packaged build (looked at with editor captures only); the scaffold in front of the east wall is still greybox metal.
 - Screenshots: `Docs/Screenshots/BrickWalls_Corner.png`, `BrickWalls_Close.png`, `BrickWalls_Overview.png`.
+
+## 23. Woodland slide in the meadow
+
+Taisho's woodland slide (`SM_DC_WoodlandSlide`, cleaned in section 17's Blender pass) is now a set prop in the main level: on the grass by the south-east corner of the village square, at (-3500, -2900), near the well and an apple tree.
+
+- `dress_main_map("slide")` in `Scripts/LD_DressMainMap.py`: `DC/SetDressing_Slide`, actors `Slide_Woodland` (no collision) and `Slide_Woodland_Blocker` (invisible cylinder, blocks player and boars). Tunables `SLIDE_SCALE` (1.5: the model is 1.36 m tall as delivered, so its deck is now about 2 m high), `SLIDE_YAW` (90), `SLIDE_SPOTS` (first free spot wins).
+- It is decoration only: the player cannot climb or slide on it.
+- It was not used for the watchtower: the greybox watchtower has a 11 m walkable ramp, and the model's ramp is far shorter, so the visible ramp and the walkable one would not match.
+- Limits: its sandy base does not match the meadow colour; looked at with editor captures only, not in Play; nav mesh was rebuilt by the script but boar pathing around it was not watched.
+- Screenshots: `Docs/Screenshots/WoodlandSlide_Meadow.png`, `WoodlandSlide_Top.png`.
