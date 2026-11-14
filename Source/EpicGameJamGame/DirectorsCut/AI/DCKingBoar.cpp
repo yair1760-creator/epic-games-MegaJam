@@ -29,7 +29,7 @@ ADCKingBoar::ADCKingBoar()
 	WanderRadius = 700.0f;
 	KillEventTag = FName("Kill.KingBoar");
 	CorpseTime = 5.0f;
-	SoundVolume = 1.6f;   // same boar sounds, bigger and deeper
+	SoundVolume = 0.25f;   // same boar sounds, bigger and deeper
 	SoundPitch = 0.7f;
 
 	if (HPBar)
@@ -104,7 +104,7 @@ void ADCKingBoar::Tick(float DeltaSeconds)
 		{
 			Sprite->SetTint(FLinearColor(1.45f, 0.55f, 0.35f), KingBrightness * 1.15f);
 		}
-		UDCFXLibrary::PlayWorldSound(this, AngrySound, GetActorLocation(), SoundVolume, 0.08f, 0.06f, SoundPitch);
+		PlayBoarSound(AngrySound);
 	}
 
 	// Aggro automatically if player approaches within guard range

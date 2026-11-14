@@ -164,7 +164,7 @@ void UDCNarratorSubsystem::StartNextLine()
 			{
 				Duration = FMath::Max(Duration, VoiceLength);
 			}
-			VoiceComponent = UGameplayStatics::SpawnSound2D(this, Line->Voice);
+			VoiceComponent = UGameplayStatics::SpawnSound2D(this, Line->Voice, VoiceVolume);
 		}
 		Duration = FMath::Max(Duration, 0.1f);
 

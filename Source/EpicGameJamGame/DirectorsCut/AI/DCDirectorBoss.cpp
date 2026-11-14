@@ -119,6 +119,7 @@ void ADCDirectorBoss::BeginPlay()
 void ADCDirectorBoss::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 	GetWorldTimerManager().ClearTimer(FireTimer);
+	GetWorldTimerManager().ClearTimer(ReloadTimer);
 	GetWorldTimerManager().ClearTimer(TauntTimer);
 	Super::EndPlay(EndPlayReason);
 }
@@ -130,10 +131,22 @@ void ADCDirectorBoss::StartFight()
 		return;
 	}
 	bFightActive = true;
-	Health->bInvulnerable = false;
+	bReloading = false;
+	ReloadElapsed = 0.0f;
+	ShotsRemaining = FMath::Max(1, ShotsBeforeReload);
+	Health->bInvulnerable = bInvulnerableWhileFiring;
 
 	GetWorldTimerManager().SetTimer(FireTimer, this, &ADCDirectorBoss::FireAtPlayer, FireInterval, true, 0.6f);
 	GetWorldTimerManager().SetTimer(TauntTimer, this, &ADCDirectorBoss::TriggerTaunt, TauntInterval, true, 5.0f);
+}
+
+float ADCDirectorBoss::GetReloadTimeRemaining() const
+{
+	if (!bReloading || !GetWorld())
+	{
+		return 0.0f;
+	}
+	return FMath::Max(0.0f, GetWorldTimerManager().GetTimerRemaining(ReloadTimer));
 }
 
 void ADCDirectorBoss::Tick(float DeltaSeconds)
@@ -148,6 +161,22 @@ void ADCDirectorBoss::Tick(float DeltaSeconds)
 
 	if (bDead)
 	{
+		return;
+	}
+
+	if (bReloading)
+	{
+		ReloadElapsed += DeltaSeconds;
+		if (MegaphoneMesh)
+		{
+			const float ShakeAngle = FMath::Sin(ReloadElapsed * 14.0f) * 22.0f;
+			MegaphoneMesh->SetRelativeLocation(FVector(55.0f, 38.0f, 24.0f + FMath::Abs(FMath::Sin(ReloadElapsed * 7.0f)) * 8.0f));
+			MegaphoneMesh->SetRelativeRotation(FRotator(125.0f, ShakeAngle, 0.0f));
+		}
+		if (SpotlightAura)
+		{
+			SpotlightAura->SetIntensity(7000.0f + 2500.0f * FMath::Sin(ReloadElapsed * 10.0f));
+		}
 		return;
 	}
 
@@ -171,7 +200,7 @@ void ADCDirectorBoss::Tick(float DeltaSeconds)
 
 void ADCDirectorBoss::FireAtPlayer()
 {
-	if (!IsFightActive())
+	if (!IsFightActive() || bReloading)
 	{
 		return;
 	}
@@ -196,6 +225,75 @@ void ADCDirectorBoss::FireAtPlayer()
 			OrbitDir = -OrbitDir;
 		}
 	}
+
+	ShotsRemaining = FMath::Max(0, ShotsRemaining - 1);
+	if (ShotsRemaining <= 0)
+	{
+		StartReload();
+	}
+}
+
+void ADCDirectorBoss::StartReload()
+{
+	if (!IsFightActive() || bReloading)
+	{
+		return;
+	}
+
+	bReloading = true;
+	ReloadElapsed = 0.0f;
+	GetWorldTimerManager().ClearTimer(FireTimer);
+	GetCharacterMovement()->StopMovementImmediately();
+
+	Health->bInvulnerable = false;
+
+	if (NameText)
+	{
+		NameText->SetText(FText::FromString(TEXT("RELOADING! ATTACK!")));
+		NameText->SetTextRenderColor(FColor::Yellow);
+	}
+	if (SpotlightAura)
+	{
+		SpotlightAura->SetLightColor(FLinearColor(1.0f, 0.85f, 0.15f));
+	}
+
+	UDCFXLibrary::PlayWorldSound(this, ReloadSound, GetActorLocation(), 1.3f);
+	GetWorldTimerManager().SetTimer(ReloadTimer, this, &ADCDirectorBoss::FinishReload, ReloadDuration, false);
+	OnBossReloadStarted.Broadcast();
+}
+
+void ADCDirectorBoss::FinishReload()
+{
+	GetWorldTimerManager().ClearTimer(ReloadTimer);
+	if (!IsFightActive())
+	{
+		return;
+	}
+
+	bReloading = false;
+	ReloadElapsed = 0.0f;
+	ShotsRemaining = FMath::Max(1, ShotsBeforeReload);
+	Health->bInvulnerable = bInvulnerableWhileFiring;
+
+	if (MegaphoneMesh)
+	{
+		MegaphoneMesh->SetRelativeLocation(FVector(65.0f, 38.0f, 45.0f));
+		MegaphoneMesh->SetRelativeRotation(FRotator(90.0f, 0.0f, 0.0f));
+	}
+	if (NameText)
+	{
+		NameText->SetText(FText::FromString(TEXT("THE DIRECTOR")));
+		NameText->SetTextRenderColor(FColor::Red);
+	}
+	if (SpotlightAura)
+	{
+		SpotlightAura->SetLightColor(FLinearColor(1.0f, 0.2f, 0.1f));
+		SpotlightAura->SetIntensity(6000.0f);
+	}
+
+	UDCFXLibrary::PlayWorldSound(this, ReloadCompleteSound, GetActorLocation(), 1.2f);
+	GetWorldTimerManager().SetTimer(FireTimer, this, &ADCDirectorBoss::FireAtPlayer, FireInterval, true, 0.4f);
+	OnBossReloadFinished.Broadcast();
 }
 
 void ADCDirectorBoss::SpawnProjectileTowards(const FVector& TargetPoint, float YawOffsetDeg)
@@ -241,8 +339,10 @@ void ADCDirectorBoss::HandleDied(UDCHealthComponent* HealthComponent, AControlle
 	}
 	bDead = true;
 	bFightActive = false;
+	bReloading = false;
 
 	GetWorldTimerManager().ClearTimer(FireTimer);
+	GetWorldTimerManager().ClearTimer(ReloadTimer);
 	GetWorldTimerManager().ClearTimer(TauntTimer);
 
 	GetCharacterMovement()->StopMovementImmediately();

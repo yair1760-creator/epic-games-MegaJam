@@ -168,10 +168,11 @@ void ADCBoar::BeginPlay()
 	NextGruntTime = GetWorld()->GetTimeSeconds() + FMath::FRandRange(1.0f, GruntInterval.Y);
 }
 
-void ADCBoar::PlayBoarSound(USoundBase* Sound, float MinInterval)
+void ADCBoar::PlayBoarSound(USoundBase* Sound, float MinInterval, float VolumeScale)
 {
-	// per-boar volume / pitch (the King is louder and deeper); the library adds jitter and stops a swarm stacking one sound
-	UDCFXLibrary::PlayWorldSound(this, Sound, GetActorLocation(), SoundVolume, 0.08f, MinInterval, SoundPitch);
+	const float EffectiveVolume = SoundVolume * VolumeScale;
+	// per-boar volume / pitch (the King is louder and deeper); the library adds jitter, narrator ducking, and stops a swarm stacking one sound
+	UDCFXLibrary::PlayWorldSound(this, Sound, GetActorLocation(), EffectiveVolume, 0.08f, MinInterval, SoundPitch);
 }
 
 void ADCBoar::HandleDied(UDCHealthComponent* HealthComponent, AController* Killer, AActor* DamageCauser)
@@ -245,7 +246,7 @@ void ADCBoar::Tick(float DeltaSeconds)
 	// calm grunts now and then
 	if ((BoarState == EDCBoarState::Idle || BoarState == EDCBoarState::Wander) && GruntSound && GetWorld()->GetTimeSeconds() >= NextGruntTime)
 	{
-		PlayBoarSound(GruntSound);
+		PlayBoarSound(GruntSound, 0.35f, GruntVolumeScale);
 		NextGruntTime = GetWorld()->GetTimeSeconds() + FMath::FRandRange(GruntInterval.X, FMath::Max(GruntInterval.X, GruntInterval.Y));
 	}
 

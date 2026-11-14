@@ -14,6 +14,7 @@
 #include "GameFramework/PlayerController.h"
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundBase.h"
+#include "TimerManager.h"
 
 #include "AI/DCBoar.h"
 #include "AI/DCBoarSpawner.h"
@@ -28,10 +29,13 @@
 #include "Combat/DCHealthComponent.h"
 #include "Combat/DCShotgunWeapon.h"
 #include "Combat/DCSwordWeapon.h"
+#include "Combat/DCWeaponSpriteWidget.h"
+#include "Components/SlateWrapperTypes.h"
 #include "Narrator/DCNarratorSubsystem.h"
 #include "Quest/DCQuestSubsystem.h"
 #include "UI/DCAmmoCounterWidget.h"
 #include "UI/DCDeathScreenWidget.h"
+#include "UI/DCHealthBarWidget.h"
 #include "UI/DCHUDWidget.h"
 #include "UI/DCPauseMenuWidget.h"
 #include "UI/DCQuestTrackerWidget.h"
@@ -402,6 +406,22 @@ bool FDCRunFullQuestFlowCommand::Update()
 
 		Shotgun->StartReload();
 		Test->TestTrue(TEXT("Shotgun enters reloading state"), Shotgun->IsReloading());
+		Test->TestTrue(TEXT("Shotgun reload starts 2D front-of-screen reload animation"), Shotgun->IsPlayingReloadAnim());
+		Test->TestEqual(TEXT("Shotgun reload starts in ReloadDrop pose"), Shotgun->GetSpritePose(), FName("ReloadDrop"));
+		Test->TestNotNull(TEXT("Shotgun 2D sprite widget is created on screen"), Shotgun->GetSpriteWidget());
+		if (Shotgun->GetSpriteWidget())
+		{
+			Test->TestEqual(TEXT("Shotgun 2D sprite widget is visible during reload"),
+				Shotgun->GetSpriteWidget()->GetVisibility(), ESlateVisibility::HitTestInvisible);
+		}
+
+		// Step through reload animation phases and verify pose progression
+		Shotgun->Tick(0.45f);
+		Test->TestEqual(TEXT("Shotgun reload reaches ReloadLoad pose"), Shotgun->GetSpritePose(), FName("ReloadLoad"));
+		Shotgun->Tick(0.70f);
+		Test->TestEqual(TEXT("Shotgun reload reaches ReloadPump pose"), Shotgun->GetSpritePose(), FName("ReloadPump"));
+		Shotgun->Tick(0.25f);
+		Test->TestEqual(TEXT("Shotgun reload reaches ReloadSettle pose"), Shotgun->GetSpritePose(), FName("ReloadSettle"));
 	}
 
 	bool bAnyHyperspawning = false;
@@ -514,6 +534,8 @@ bool FDCRunFullQuestFlowCommand::Update()
 		Boss->StartFight();
 		Test->TestTrue(TEXT("Director Boss fight is active"), Boss->IsFightActive());
 		Test->TestFalse(TEXT("Director Boss is no longer invulnerable"), Boss->GetHealth()->bInvulnerable);
+		Test->TestFalse(TEXT("Director Boss does not start reloading"), Boss->IsReloading());
+		Test->TestEqual(TEXT("Director Boss starts with full clip"), Boss->GetShotsRemaining(), Boss->ShotsBeforeReload);
 
 		Narrator->Interrupt();
 		Boss->GetHealth()->ApplyDamage(Boss->GetHealth()->GetMaxHP() * 0.6f, Player->GetController(), Player);
@@ -631,6 +653,119 @@ bool FDCFullQuestFlowTest::RunTest(const FString& Parameters)
 
 	ADD_LATENT_AUTOMATION_COMMAND(FDCWaitForGameWorldCommand(this));
 	ADD_LATENT_AUTOMATION_COMMAND(FDCRunFullQuestFlowCommand(this));
+	return true;
+}
+
+// -----------------------------------------------------------------------------
+// Test 3: Passive Player Health Regeneration (5s no-damage delay, +1 HP/sec)
+// -----------------------------------------------------------------------------
+DEFINE_LATENT_AUTOMATION_COMMAND_TWO_PARAMETER(FDCVerifyHealthRegenCommand, FAutomationTestBase*, Test, double, StartTimeSec);
+bool FDCVerifyHealthRegenCommand::Update()
+{
+	UWorld* World = AutomationCommon::GetAnyGameWorld();
+	if (!World)
+	{
+		Test->AddError(TEXT("No game world found during health regen test"));
+		return true;
+	}
+
+	AShooterCharacter* Player = Cast<AShooterCharacter>(UGameplayStatics::GetPlayerPawn(World, 0));
+	if (!Player)
+	{
+		Test->AddError(TEXT("No player pawn found during health regen test"));
+		return true;
+	}
+
+	const double Elapsed = World->GetTimeSeconds() - StartTimeSec;
+
+	// Before 5 seconds elapse, HP must still be 90
+	if (Elapsed < 4.5)
+	{
+		if (!FMath::IsNearlyEqual(Player->GetCurrentHP(), 90.0f, 0.01f))
+		{
+			Test->AddError(FString::Printf(TEXT("Health regenerated too early at %.2fs (HP=%.1f)"), Elapsed, Player->GetCurrentHP()));
+			return true;
+		}
+		return false;
+	}
+
+	// Wait until 6.4s so both the 5.0s first tick (+1 -> 91) and 6.0s second tick (+1 -> 92) have fired
+	if (Elapsed < 6.4)
+	{
+		return false;
+	}
+
+	Test->TestTrue(TEXT("After 5s delay + 1s interval, HP increased by +1/s from 90 to >=92"),
+		Player->GetCurrentHP() >= 92.0f && Player->GetCurrentHP() <= 93.0f);
+	if (ADCGameMode* GM = World->GetAuthGameMode<ADCGameMode>())
+	{
+		if (UDCHealthBarWidget* HealthBar = GM->GetHUDWidget() ? GM->GetHUDWidget()->GetHealthBar() : nullptr)
+		{
+			Test->TestTrue(TEXT("HUD HealthBar reflects regenerated HP"),
+				HealthBar->GetLifePercent() >= 0.919f && HealthBar->GetLifePercent() <= 0.931f);
+		}
+	}
+
+	Test->AddInfo(TEXT("[DC_TEST] Player health regeneration (5s no-damage delay, +1 HP/s) passed!"));
+	return true;
+}
+
+DEFINE_LATENT_AUTOMATION_COMMAND_ONE_PARAMETER(FDCStartHealthRegenTestCommand, FAutomationTestBase*, Test);
+bool FDCStartHealthRegenTestCommand::Update()
+{
+	UWorld* World = AutomationCommon::GetAnyGameWorld();
+	AShooterCharacter* Player = World ? Cast<AShooterCharacter>(UGameplayStatics::GetPlayerPawn(World, 0)) : nullptr;
+	if (!World || !Player)
+	{
+		Test->AddError(TEXT("World or player missing at start of health regen test"));
+		return true;
+	}
+
+	// Clear any boars and spawners so stray AI bites don't interfere with the 5s no-damage window
+	for (TActorIterator<ADCBoarSpawner> It(World); It; ++It)
+	{
+		It->Destroy();
+	}
+	for (TActorIterator<ADCBoar> It(World); It; ++It)
+	{
+		It->Destroy();
+	}
+
+	Test->TestEqual(TEXT("Default HealthRegenDelay is 5.0s"), Player->GetHealthRegenDelay(), 5.0f);
+	Test->TestEqual(TEXT("Default HealthRegenAmount is 1.0"), Player->GetHealthRegenAmount(), 1.0f);
+	Test->TestEqual(TEXT("Default HealthRegenInterval is 1.0s"), Player->GetHealthRegenInterval(), 1.0f);
+
+	// First hit: 100 -> 95, starts 5s timer
+	UGameplayStatics::ApplyDamage(Player, 5.0f, nullptr, nullptr, nullptr);
+	Test->TestEqual(TEXT("HP drops to 95 after first hit"), Player->GetCurrentHP(), 95.0f);
+	Test->TestTrue(TEXT("HealthRegenTimer starts after taking damage"),
+		World->GetTimerManager().IsTimerActive(Player->GetHealthRegenTimer()));
+
+	// Second hit: 95 -> 90, resets 5s timer
+	UGameplayStatics::ApplyDamage(Player, 5.0f, nullptr, nullptr, nullptr);
+	Test->TestEqual(TEXT("HP drops to 90 after second hit"), Player->GetCurrentHP(), 90.0f);
+	const float Remaining = World->GetTimerManager().GetTimerRemaining(Player->GetHealthRegenTimer());
+	Test->TestTrue(TEXT("HealthRegenTimer resets to ~5.0s on damage"), Remaining > 4.5f && Remaining <= 5.05f);
+
+	ADD_LATENT_AUTOMATION_COMMAND(FDCVerifyHealthRegenCommand(Test, World->GetTimeSeconds()));
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FDCPlayerHealthRegenTest,
+	"DirectorsCut.Combat.PlayerHealthRegen",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ClientContext | EAutomationTestFlags::ProductFilter)
+
+bool FDCPlayerHealthRegenTest::RunTest(const FString& Parameters)
+{
+	if (!AutomationOpenMap(TEXT("/Game/DirectorsCut/Maps/Lvl_DirectorsCut")))
+	{
+		AddError(TEXT("Failed to open /Game/DirectorsCut/Maps/Lvl_DirectorsCut"));
+		return false;
+	}
+
+	ADD_LATENT_AUTOMATION_COMMAND(FDCWaitForGameWorldCommand(this));
+	ADD_LATENT_AUTOMATION_COMMAND(FDCStartHealthRegenTestCommand(this));
 	return true;
 }
 

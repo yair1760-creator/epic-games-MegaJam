@@ -201,11 +201,11 @@ protected:
 
 	/** Base volume multiplier for background music */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Beats|Audio", meta=(ClampMin=0.0, ClampMax=2.0))
-	float MusicVolume = 0.45f;
+	float MusicVolume = 0.35f;
 
 	/** Volume multiplier applied to music while the Director is speaking (VO ducking) */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Beats|Audio", meta=(ClampMin=0.0, ClampMax=1.0))
-	float MusicDuckScale = 0.35f;
+	float MusicDuckScale = 0.20f;
 
 	/** Crossfade duration when switching beat music tracks */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Beats|Audio", meta=(ClampMin=0.0, Units="s"))
@@ -213,7 +213,7 @@ protected:
 
 	/** Fade duration when ducking or restoring music around Director lines */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Beats|Audio", meta=(ClampMin=0.0, Units="s"))
-	float MusicDuckFadeDuration = 0.25f;
+	float MusicDuckFadeDuration = 0.15f;
 
 	/** Weapon used in Beats 1-2 and 4-5 */
 	UPROPERTY(EditDefaultsOnly, Category="Weapons")

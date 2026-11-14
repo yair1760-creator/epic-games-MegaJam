@@ -79,6 +79,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Shotgun|2D View")
 	TObjectPtr<UTexture2D> SpriteRecovery;
 
+	/** Optional dedicated reload frame; falls back to the drawn recovery/recoil/idle poses if empty */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Shotgun|2D View")
+	TObjectPtr<UTexture2D> SpriteReload;
+
 	/** Animation timing grid (the designer spec: 12 fps, hard cuts, no in-betweens) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Shotgun|2D View", meta=(ClampMin=1, ClampMax=60))
 	float AnimFPS = 12.0f;
@@ -93,13 +97,23 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Shotgun|2D View", meta=(ClampMin=1))
 	int32 RecoveryTicks = 2;
 
-	/** Current pose for UI / tests: Idle, Flash, Recoil, Recovery */
+	/** Current pose for UI / tests: Idle, Flash, Recoil, Recovery, ReloadDrop, ReloadLoad, ReloadPump, ReloadSettle */
 	UFUNCTION(BlueprintPure, Category="Shotgun|2D View")
 	FName GetSpritePose() const { return CurrentPose; }
 
 	/** Seconds since the current shot animation started (-1 when idle) */
 	UFUNCTION(BlueprintPure, Category="Shotgun|2D View")
 	float GetShotElapsed() const { return ShotTime; }
+
+	/** Seconds since the current reload animation started (-1 when not reloading) */
+	UFUNCTION(BlueprintPure, Category="Shotgun|2D View")
+	float GetReloadElapsed() const { return ReloadAnimTime; }
+
+	/** True while the front-of-screen 2D reload animation is playing */
+	UFUNCTION(BlueprintPure, Category="Shotgun|2D View")
+	bool IsPlayingReloadAnim() const { return ReloadAnimTime >= 0.0f; }
+
+	UDCWeaponSpriteWidget* GetSpriteWidget() const { return SpriteWidget; }
 
 	/** Length of one shot animation in seconds ((Flash + Recoil + Recovery) ticks / AnimFPS) */
 	UFUNCTION(BlueprintPure, Category="Shotgun|2D View")
@@ -124,12 +138,15 @@ public:
 
 	virtual void SetActorHiddenInGame(bool bNewHidden) override;
 	virtual void Tick(float DeltaSeconds) override;
+	virtual void StartReload() override;
 
 protected:
 
 	virtual void BeginPlay() override;
 	virtual void EndPlay(EEndPlayReason::Type EndPlayReason) override;
 	virtual void FireProjectile(const FVector& TargetLocation) override;
+	virtual void FinishReload() override;
+	virtual void CancelReload() override;
 
 private:
 
@@ -141,8 +158,9 @@ private:
 	UPROPERTY()
 	TObjectPtr<UDCWeaponSpriteWidget> SpriteWidget;
 
-	float ShotTime = -1.0f;      // < 0 when no shot animation is playing
+	float ShotTime = -1.0f;         // < 0 when no shot animation is playing
+	float ReloadAnimTime = -1.0f;   // < 0 when no reload animation is playing
 	float BobTime = 0.0f;
-	bool bRecoilShown = false;   // the one-tick peak recoil is never skipped, even on a slow frame
+	bool bRecoilShown = false;      // the one-tick peak recoil is never skipped, even on a slow frame
 	FName CurrentPose = TEXT("Idle");
 };

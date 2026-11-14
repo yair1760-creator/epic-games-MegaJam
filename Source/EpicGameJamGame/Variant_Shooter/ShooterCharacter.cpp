@@ -75,8 +75,12 @@ void AShooterCharacter::EndPlay(EEndPlayReason::Type EndPlayReason)
 {
 	Super::EndPlay(EndPlayReason);
 
-	// clear the respawn timer
-	GetWorld()->GetTimerManager().ClearTimer(RespawnTimer);
+	// clear the respawn and health regen timers
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearTimer(RespawnTimer);
+		World->GetTimerManager().ClearTimer(HealthRegenTimer);
+	}
 }
 
 void AShooterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -132,12 +136,32 @@ float AShooterCharacter::TakeDamage(float Damage, struct FDamageEvent const& Dam
 	if (CurrentHP <= 0.0f)
 	{
 		CurrentHP = 0.0f;
+		if (UWorld* World = GetWorld())
+		{
+			World->GetTimerManager().ClearTimer(HealthRegenTimer);
+		}
 		UDCFXLibrary::PlayUISound(this, DeathSound, 1.0f, 0.0f, 0.0f);
 		Die();
 	}
 	else
 	{
-		UDCFXLibrary::PlayUISound(this, HurtSound, 1.0f, 0.06f, 0.25f);   // a swarm bites a lot: one grunt per 0.25 s
+		UDCFXLibrary::PlayUISound(this, HurtSound, 0.55f, 0.06f, 0.25f);   // a swarm bites a lot: one grunt per 0.25 s
+
+		// Reset passive regeneration countdown: after HealthRegenDelay seconds with no damage, heal HealthRegenAmount every HealthRegenInterval seconds
+		if (HealthRegenAmount > 0.0f && HealthRegenInterval > 0.0f && CurrentHP < MaxHP)
+		{
+			if (UWorld* World = GetWorld())
+			{
+				const float FirstDelay = HealthRegenDelay > 0.0f ? HealthRegenDelay : HealthRegenInterval;
+				World->GetTimerManager().SetTimer(
+					HealthRegenTimer,
+					this,
+					&AShooterCharacter::RegenHealthTick,
+					HealthRegenInterval,
+					true,
+					FirstDelay);
+			}
+		}
 	}
 
 	// update the HUD
@@ -402,6 +426,12 @@ AShooterWeapon* AShooterCharacter::FindWeaponOfType(TSubclassOf<AShooterWeapon> 
 
 void AShooterCharacter::Die()
 {
+	// stop passive health regen
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearTimer(HealthRegenTimer);
+	}
+
 	// deactivate the weapon
 	if (IsValid(CurrentWeapon))
 	{
@@ -461,6 +491,36 @@ void AShooterCharacter::OnRespawn()
 {
 	// destroy the character to force the PC to respawn
 	Destroy();
+}
+
+void AShooterCharacter::RegenHealthTick()
+{
+	if (IsDead() || CurrentHP >= MaxHP || HealthRegenAmount <= 0.0f)
+	{
+		if (UWorld* World = GetWorld())
+		{
+			World->GetTimerManager().ClearTimer(HealthRegenTimer);
+		}
+		return;
+	}
+
+	const float OldHP = CurrentHP;
+	CurrentHP = FMath::Min(MaxHP, CurrentHP + HealthRegenAmount);
+	const float Healed = CurrentHP - OldHP;
+
+	if (Healed > 0.0f)
+	{
+		OnHealthChanged.Broadcast(CurrentHP, MaxHP, Healed);
+		OnDamaged.Broadcast(GetHPPercent());
+	}
+
+	if (CurrentHP >= MaxHP)
+	{
+		if (UWorld* World = GetWorld())
+		{
+			World->GetTimerManager().ClearTimer(HealthRegenTimer);
+		}
+	}
 }
 
 bool AShooterCharacter::IsDead() const

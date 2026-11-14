@@ -94,6 +94,20 @@ protected:
 	/** Current HP remaining to this character */
 	float CurrentHP = 0.0f;
 
+	/** Seconds without taking damage before passive health regeneration begins */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Health", meta=(ClampMin=0, Units="s"))
+	float HealthRegenDelay = 5.0f;
+
+	/** Health restored per regeneration tick once regeneration begins */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Health", meta=(ClampMin=0))
+	float HealthRegenAmount = 1.0f;
+
+	/** Seconds between health regeneration ticks */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Health", meta=(ClampMin=0.05, Units="s"))
+	float HealthRegenInterval = 1.0f;
+
+	FTimerHandle HealthRegenTimer;
+
 	/** Team ID for this character*/
 	UPROPERTY(EditAnywhere, Category="Team")
 	uint8 TeamByte = 0;
@@ -265,11 +279,25 @@ protected:
 	/** Called from the respawn timer to destroy this character and force the PC to respawn */
 	void OnRespawn();
 
+	/** Restores HealthRegenAmount HP each interval after HealthRegenDelay seconds with no damage */
+	void RegenHealthTick();
+
 public:
 
 	/** Returns true if the character is dead */
 	UFUNCTION(BlueprintPure, Category="Health")
 	bool IsDead() const;
+
+	UFUNCTION(BlueprintPure, Category="Health")
+	float GetHealthRegenDelay() const { return HealthRegenDelay; }
+
+	UFUNCTION(BlueprintPure, Category="Health")
+	float GetHealthRegenAmount() const { return HealthRegenAmount; }
+
+	UFUNCTION(BlueprintPure, Category="Health")
+	float GetHealthRegenInterval() const { return HealthRegenInterval; }
+
+	const FTimerHandle& GetHealthRegenTimer() const { return HealthRegenTimer; }
 
 	/** Sets the team ID for this character */
 	void SetTeam(uint8 Team);

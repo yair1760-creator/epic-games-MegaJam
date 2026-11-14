@@ -42,14 +42,43 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Boss", meta=(ClampMin=0.2))
 	float FireInterval = 1.35f;
 
+	/** Number of volleys the Director fires before stopping to reload */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Boss", meta=(ClampMin=1))
+	int32 ShotsBeforeReload = 4;
+
+	/** Seconds the Director pauses to reload, leaving him open to attack */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Boss", meta=(ClampMin=0.5, Units="s"))
+	float ReloadDuration = 4.5f;
+
+	/** If true, the Director is invulnerable while firing and can only be damaged while reloading */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Boss")
+	bool bInvulnerableWhileFiring = false;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Boss", meta=(ClampMin=1.0))
 	float TauntInterval = 9.0f;
+
+	UFUNCTION(BlueprintPure, Category="Boss")
+	bool IsReloading() const { return bReloading && !bDead; }
+
+	UFUNCTION(BlueprintPure, Category="Boss")
+	int32 GetShotsRemaining() const { return ShotsRemaining; }
+
+	UFUNCTION(BlueprintPure, Category="Boss")
+	float GetReloadTimeRemaining() const;
 
 	// ---------------- audio / VFX (empty = silent / nothing; placeholders in /Game/DirectorsCut/Audio/SFX)
 
 	/** Each time he fires (once per volley) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Boss|Audio")
 	TObjectPtr<USoundBase> AttackSound;
+
+	/** When he runs out of ammo and starts reloading */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Boss|Audio")
+	TObjectPtr<USoundBase> ReloadSound;
+
+	/** When he finishes reloading and resumes firing */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Boss|Audio")
+	TObjectPtr<USoundBase> ReloadCompleteSound;
 
 	/** When he takes damage (at most every 0.15 s) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Boss|Audio")
@@ -72,6 +101,12 @@ public:
 
 	UPROPERTY(BlueprintAssignable, Category="Boss")
 	FDCOnDirectorBossEvent OnBossTaunt;
+
+	UPROPERTY(BlueprintAssignable, Category="Boss")
+	FDCOnDirectorBossEvent OnBossReloadStarted;
+
+	UPROPERTY(BlueprintAssignable, Category="Boss")
+	FDCOnDirectorBossEvent OnBossReloadFinished;
 
 	UPROPERTY(BlueprintAssignable, Category="Boss")
 	FDCOnDirectorBossEvent OnBossDied;
@@ -115,15 +150,21 @@ protected:
 private:
 
 	void FireAtPlayer();
+	void StartReload();
+	void FinishReload();
 	void SpawnProjectileTowards(const FVector& TargetPoint, float YawOffsetDeg = 0.0f);
 	void TriggerTaunt();
 
 	bool bFightActive = false;
 	bool bDead = false;
+	bool bReloading = false;
 	bool bHalfHPTriggered = false;
+	int32 ShotsRemaining = 0;
+	float ReloadElapsed = 0.0f;
 	float OrbitAngle = 0.0f;
 	float OrbitDir = 1.0f;
 
 	FTimerHandle FireTimer;
+	FTimerHandle ReloadTimer;
 	FTimerHandle TauntTimer;
 };

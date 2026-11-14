@@ -230,7 +230,7 @@ void ADCSwordWeapon::Fire()
 		UpdateSpriteView(0.0f);   // Windup shows on the input frame itself
 	}
 	OnSwing.Broadcast();
-	UDCFXLibrary::PlayUISound(this, SwingSound);
+	UDCFXLibrary::PlayUISound(this, SwingSound, 0.55f);
 	if (SwingFX)
 	{
 		FVector EyeLoc;
@@ -325,7 +325,7 @@ void ADCSwordWeapon::DoHitSweep()
 		OnHit.Broadcast(Target, Damage);
 		{
 			const FVector ImpactAt = Hit.bBlockingHit || !Hit.ImpactPoint.IsNearlyZero() ? FVector(Hit.ImpactPoint) : Target->GetActorLocation();
-			UDCFXLibrary::PlayWorldSound(this, HitSound, ImpactAt);
+			UDCFXLibrary::PlayWorldSound(this, HitSound, ImpactAt, 0.50f);
 			UDCFXLibrary::SpawnWorldFX(this, HitFX, ImpactAt, (ViewLoc - ImpactAt).Rotation());
 			UDCFXLibrary::SpawnSpriteFX(this, HitSpriteFX, ImpactAt, 1.0f, 25.0f);
 		}
