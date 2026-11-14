@@ -313,3 +313,14 @@ Four models in `/Game/DirectorsCut/Environment/ButcherStall`, built by `Scripts/
 - Checked in play (`DC.SwapWeapon Gun`): pose changes measured at 0 / 168 / 251 / 418 ms; a second click 200 ms into the animation does not restart it; swapping back to the sword removes the shotgun layer.
 - Limits: no reload drawing (the idle frame stays up while reloading); the pellets still leave from the hidden 3D gun's muzzle, not from the drawn barrel; Saar's automation tests were not re-run.
 - Screenshots: `Docs/Screenshots/Shotgun2D_Idle.png`, `Shotgun2D_Flash.png`, `Shotgun2D_Recoil.png`, `Shotgun2D_Recovery.png`.
+
+## 14. Village notice board: Boar King wanted poster (Meshy picture + Blender)
+
+`SM_DC_NoticeBoard` (`/Game/DirectorsCut/Environment/NoticeBoard`) covers the yellow greybox notice board in the village (`POI_NoticeBoard` + `Notice_PostL/R`), placed by `dress_main_map("notice")` as `Notice_WantedBoard` in `DC/SetDressing_Notice`. It is in the persistent level, so it is always visible.
+
+- **Board:** inked plank board on two posts with a small cap (wood = `MI_DC_SetStage`), same size and spot as the greybox board, facing the player spawn.
+- **Poster:** `T_DC_WantedPoster` / `MI_DC_WantedPoster`: torn parchment, "WANTED", an inked crowned boar, "THE BOAR KING", "REWARD: 10 XP". One Meshy text-to-image picture (nano-banana-2, 6 credits, `Art/Meshy/NoticeBoard/Source`); the build script cuts away the white outside the torn edge.
+- **Quest mark:** a yellow "!" floating over the board (two crossed cut-out cards, drawn by the script: `T_DC_QuestMark`). It is the nod to classic kill-ten-boars quests; no other game's logo, name or art is used.
+- Built by `Scripts/Blender_BuildNoticeBoard.py` (`blender -b --python ... -- preview`). The greybox board and posts are invisible, not deleted, so collision and nav are unchanged; the new mesh has no collision.
+- Limits: the "!" does not bob or spin and stays up for the whole game (it is not tied to the quest state); the back of the board is plain planks; the board is not interactive.
+- Screenshots: `Docs/Screenshots/NoticeBoard_Front.png`, `NoticeBoard_FromSpawn.png`.

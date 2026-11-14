@@ -5,11 +5,12 @@
 #   - Taisho's apple trees around the village edges and the meadow border
 #   - the Forgive Me Father style floor (SM_DC_SetGround) over the meadow, paths and village square
 #   - the round wooden stage floor (SM_DC_SetStage) over the lilac disc "THE SET"
+#   - the village notice board (SM_DC_NoticeBoard: Boar King wanted poster + quest "!") over the greybox board
 #   - the butcher stall (SM_DC_ButcherStall) over the greybox stall, and in the DC_Set_NoMeat sublevel the SOLD OUT and
 #     HA HA HA signs (SM_DC_SoldOutSign, SM_DC_LaughSign) over the greybox boards and text
 # Run inside the editor (Lvl_DirectorsCut open):
 #   exec(open(r"D:\EpicGameJam\EpicGameJamGame\EpicGameJamGame\Scripts\LD_DressMainMap.py").read())
-#   dress_main_map()            # or dress_main_map("houses") / ("hunt") / ("props") / ("trees") / ("ground") / ("stage") / ("stall")
+#   dress_main_map()            # or dress_main_map("houses") / ("hunt") / ("props") / ("trees") / ("ground") / ("stage") / ("stall") / ("notice")
 # Re-runnable: clears DC/Village_Flats, DC/SetDressing_Props and DC/SetDressing_Trees (persistent level) and the Hunt_HayProp_* actors first.
 # DC_Set_Hunt only gets its greybox hay bales swapped for the real ones; DC_Set_NoMeat only gets the two signs. No other sublevel is touched.
 # Note: re-running LD_BuildDirectorsCut's village / hunt stages would bring the greybox back - run this again afterwards.
@@ -292,6 +293,26 @@ def dress_stall():
     return {"hidden_greybox": sorted(hidden)}
 
 
+def dress_notice():
+    """The village notice board (Meshy poster + Scripts/Blender_BuildNoticeBoard.py): an inked plank board with the
+    Boar King wanted poster and a floating quest-giver "!" over the greybox board (POI_NoticeBoard + its two posts).
+    Persistent level, DC/SetDressing_Notice. Visual only: the greybox goes invisible but keeps its collision."""
+    CURRENT_FOLDER[0] = "DC/SetDressing_Notice"
+    clear_folder("DC/SetDressing_Notice")
+    board = next((x for x in EAS.get_all_level_actors() if x.get_actor_label() == "POI_NoticeBoard"), None)
+    assert board, "POI_NoticeBoard not found"
+    o, e = board.get_actor_bounds(False)
+    a = EAS.spawn_actor_from_object(unreal.load_asset("/Game/DirectorsCut/Environment/NoticeBoard/SM_DC_NoticeBoard"), V(o.x, o.y, 0), R())
+    _visual_only(a)
+    _finish(a, "Notice_WantedBoard")
+    hidden = []
+    for x in EAS.get_all_level_actors():
+        if x.get_level().get_outer().get_name() == MAIN and x.get_actor_label() in ("POI_NoticeBoard", "Notice_PostL", "Notice_PostR"):
+            _hide(x)
+            hidden.append(x.get_actor_label())
+    return {"at": [round(o.x), round(o.y), 0], "hidden_greybox": sorted(hidden)}
+
+
 def dress_main_map(which="all"):
     _check_world()
     # no ensure_materials(): it re-saves the lead's shared MI_LD_* materials; the ones used here already exist
@@ -309,6 +330,8 @@ def dress_main_map(which="all"):
             out["stage"] = dress_stage()
         if which in ("all", "stall"):
             out["stall"] = dress_stall()
+        if which in ("all", "notice"):
+            out["notice"] = dress_notice()
         if which in ("all", "trees"):
             out["apple_trees"] = dress_trees()
     w = UES.get_editor_world()
