@@ -328,6 +328,8 @@ BACKLOG = [
  (19, "2D shotgun view", "Audio", "Blast is still the template grenade launcher sound", "Use one of the fal shotgun takes once picked", "Medium"),
  (17, "Set dressing: notice board", "Animation", "The quest mark over the notice board is static (no bob or spin) and never goes away", "Slow bob in a small actor class; hide it once the King Boar quest starts or ends", "Low"),
  (17, "Set dressing: notice board", "Design", "The wanted board is only a prop: walking up to it does nothing", "Optional Director line when the player first looks at it", "Low"),
+ (17, "Set dressing: well + sword rack", "Design", "The three swords on the rack stay there after the player takes the sword", "Hide one rack sword when the sword pickup is collected", "Low"),
+ (17, "Set dressing: well + sword rack", "Code", "The well roof and posts have no collision; only the stone ring blocks", "Fine for a prop; add two thin blockers if players get stuck visually", "Low"),
 ]
 pol = Sheet("Polish backlog")
 pol.set(1, 1, "Polish backlog: what each system still lacks (art, animation, textures, audio, VFX, UI)", S_TITLE)

@@ -324,3 +324,22 @@ Four models in `/Game/DirectorsCut/Environment/ButcherStall`, built by `Scripts/
 - Built by `Scripts/Blender_BuildNoticeBoard.py` (`blender -b --python ... -- preview`). The greybox board and posts are invisible, not deleted, so collision and nav are unchanged; the new mesh has no collision.
 - Limits: the "!" does not bob or spin and stays up for the whole game (it is not tied to the quest state); the back of the board is plain planks; the board is not interactive.
 - Screenshots: `Docs/Screenshots/NoticeBoard_Front.png`, `NoticeBoard_FromSpawn.png`, `NoticeBoard_MarkFromBelow.png`.
+
+## 15. Village well and sword rack (Meshy picture + Blender)
+
+Two models in `/Game/DirectorsCut/Environment/Village`, built by `Scripts/Blender_BuildVillageProps.py` (`blender -b --python ... -- preview`) and placed by `dress_main_map("village")`:
+
+| Mesh | What | Where it lives |
+|---|---|---|
+| `SM_DC_Well` | inked stone ring (2.2 m across, 1 m tall) with cap stones and dark water, two posts, windlass with crank, rope and bucket, small plank roof | `Lvl_DirectorsCut`, `Village_Well` in `DC/SetDressing_Village` (always there) |
+| `SM_DC_SwordRack` | plank base, back board with a cap, two cheeks and a rail | `DC_Set_Hunt` sublevel, `Hunt_Rack` (beats 1-4, like the greybox rack) |
+| `SM_DC_Sword` x 3 | the game's own sword model, 1.6x size, blade down, leaning on the rail | `DC_Set_Hunt`, `Hunt_RackSword_0..2` |
+
+- **Meshy (6 credits):** one text-to-image picture of inked stone bricks (`Art/Meshy/Village/Source`); the script keeps its 8 inner rows and mirrors them so the texture wraps around the ring (`T_DC_StoneBricks`). The water texture is drawn by the script. All wood reuses `MI_DC_SetStage`.
+- **Rack swords:** the weapon's own material (`MI_DC_Sword`) rendered black on a static prop, so the rack swords use `MI_DC_Sword_Prop` (`M_DC_InkedProp` + the sword's colour picture).
+- **Greybox:** the white well cylinder, the rack base and its three white sticks are invisible, not deleted, so collision and nav are unchanged. The new meshes have no collision. The sword pickup point (`WeaponPickup_Sword`) is untouched.
+- **Checked:** pictures taken in the editor view (not in Play, see the note below). Nav from the spawn to the sword pickup was valid in an earlier Play run with the first placement.
+- Limits: the rack swords are decoration and do not disappear when the player takes the sword; the well is not interactive; the well roof and posts have no collision (only the stone ring blocks).
+- Screenshots: `Docs/Screenshots/Village_Well.png`, `Village_SwordRack.png`, `Village_SwordRack_Side.png`.
+
+**Crash note (2026-11-14 19:25):** the editor crashed (`Assertion failed: !bPostTickComponentUpdate`, call stack in the level editor's interactive tools) at the moment a script started Play while the level was being edited by hand in the viewport. Unsaved hand edits to `Lvl_DirectorsCut` and `DC_Set_Hunt` (a group actor, moved backdrop pieces) were recovered from the 19:24 autosave. Avoid starting Play from a script while someone is dragging things in the viewport; editor-view captures (`SceneCaptureToolset`) are safe.
