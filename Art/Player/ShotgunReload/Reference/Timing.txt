@@ -1,0 +1,3 @@
+Rated PG for Pig — first-person shotgun reload sprite
+
+12 FPS held drawings. On the existing reload animation event: Reload_01 for 3 ticks (250 ms), Reload_02 for 2 ticks (166.67 ms), Reload_03 for 2 ticks (166.67 ms), then Reload_00_Idle at 583.33 ms. 01 and 03 intentionally use identical art, with different holds. Hard cuts. Keep full 1920 x 1080 transparent canvas, scale and anchor. Preview GIF stores 80 ms per frame; idle time around the action is for preview.

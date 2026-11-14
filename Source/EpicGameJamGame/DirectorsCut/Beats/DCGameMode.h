@@ -16,6 +16,7 @@ class UAudioComponent;
 class UDCHealthComponent;
 class UDCHUDWidget;
 class UDCDeathScreenWidget;
+class UDCPlayerDeathSpriteWidget;
 class UDCVictoryWidget;
 class ULevelStreaming;
 class USoundBase;
@@ -82,6 +83,10 @@ public:
 	UFUNCTION(BlueprintPure, Category="UI")
 	UDCDeathScreenWidget* GetDeathScreenWidget() const { return DeathScreenWidget; }
 
+	/** The hero's drawn death (Dying -> Dead), up for as long as the death slate is */
+	UFUNCTION(BlueprintPure, Category="UI")
+	UDCPlayerDeathSpriteWidget* GetDeathSpriteWidget() const { return DeathSpriteWidget; }
+
 	UFUNCTION(BlueprintPure, Category="UI")
 	UDCVictoryWidget* GetVictoryWidget() const { return VictoryWidget; }
 
@@ -135,6 +140,9 @@ protected:
 
 	UPROPERTY(Transient)
 	TObjectPtr<UDCDeathScreenWidget> DeathScreenWidget;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UDCPlayerDeathSpriteWidget> DeathSpriteWidget;
 
 	/** Victory / wrap screen shown after defeating The Director (WBP_CutScreen) */
 	UPROPERTY(EditDefaultsOnly, Category="UI")

@@ -9,6 +9,9 @@
 #   - the village well (SM_DC_Well) over the greybox cylinder, and in DC_Set_Hunt the sword rack (SM_DC_SwordRack)
 #     with three SM_DC_Sword over the greybox rack
 #   - Taisho's film cameras and boom mics around the level (SM_DC_FilmCamera, SM_DC_BoomMic), and in DC_Set_FilmCrew
+#   - Taisho's brick wall picture on the four boundary walls (tiled brick skins over the greybox walls)
+#   - Taisho's woodland slide as a set prop in the meadow south of the village
+#   - the watchtower (SM_DC_Watchtower) as an inked plank skin over the greybox tower and its ramp
 #     the real models over the greybox dolly camera and boom mic
 #   - the butcher stall (SM_DC_ButcherStall) over the greybox stall, and in the DC_Set_NoMeat sublevel the SOLD OUT and
 #     HA HA HA signs (SM_DC_SoldOutSign, SM_DC_LaughSign) over the greybox boards and text
@@ -245,9 +248,13 @@ STALL_DIR = "/Game/DirectorsCut/Environment/ButcherStall"
 
 
 def _visual_only(a):
+    """No collision on a dressing mesh. The profile must be set LAST and by name: set_collision_enabled() alone was
+    silently undone by the property edit that followed it, and every imported mesh carries an auto-made convex hull
+    (found on the watchtower, whose hull blocked its own ramp)."""
     c = a.static_mesh_component
-    c.set_collision_enabled(unreal.CollisionEnabled.NO_COLLISION)
     c.set_editor_property("can_ever_affect_navigation", False)
+    c.set_collision_profile_name("NoCollision")
+    assert str(c.get_collision_profile_name()) == "NoCollision", a.get_actor_label()
 
 
 def _hide(a):
@@ -471,6 +478,79 @@ def dress_filmset():
     return {"cameras": len(FILM_CAMERAS), "boom_mics": len(BOOM_MICS), "filmcrew_hidden_greybox": sorted(hidden)}
 
 
+WALL_DIR = "/Game/DirectorsCut/Environment/Taisho/Wall"
+BOUNDARY_WALLS = {"B_West": "SM_DC_BoundaryWall_100x15", "B_North": "SM_DC_BoundaryWall_134x15",
+                  "B_South": "SM_DC_BoundaryWall_134x15", "B_BackstageEast": "SM_DC_BoundaryWall_100x7"}
+
+
+def dress_walls():
+    """Taisho's brick wall picture on the four boundary walls (Scripts/Blender_BuildBoundaryWalls.py): a brick skin
+    with evenly tiled UVs over each greybox wall (one picture per 5 m), material MI_Taisho_Wall.
+    Persistent level, DC/SetDressing_Walls. Visual only: the greybox wall goes invisible but keeps its collision."""
+    CURRENT_FOLDER[0] = "DC/SetDressing_Walls"
+    clear_folder("DC/SetDressing_Walls")
+    done = {}
+    for x in EAS.get_all_level_actors():
+        label = x.get_actor_label()
+        if label in BOUNDARY_WALLS and x.get_level().get_outer().get_name() == MAIN:
+            o, e = x.get_actor_bounds(False)
+            yaw = 0 if e.x > e.y else 90                  # the skin's long side is its X axis
+            a = EAS.spawn_actor_from_object(unreal.load_asset(WALL_DIR + "/" + BOUNDARY_WALLS[label]), V(o.x, o.y, o.z - e.z), R(yaw=yaw))
+            _visual_only(a)
+            a.static_mesh_component.set_cast_shadow(x.static_mesh_component.cast_shadow)
+            _finish(a, "Wall_Brick_" + label[2:])
+            _hide(x)
+            done[label] = [round(o.x), round(o.y), round(o.z - e.z), yaw]
+    assert len(done) == len(BOUNDARY_WALLS), "boundary walls found: %s" % sorted(done)
+    return done
+
+
+SLIDE_SCALE = 1.5                      # the model is 1.36 m tall as delivered; 1.5 makes its deck about 2 m high
+SLIDE_YAW = 90.0                       # the ramp runs along the model's Y; 90 turns its side view to the village square
+SLIDE_SPOTS = [(-3500, -2900), (-2900, -2600), (-4100, -4100)]   # open meadow south-east of the village square, first free one wins
+
+
+def dress_slide():
+    """Taisho's woodland slide (cleaned by Scripts/Blender_CleanFilmSetModels.py) as a set prop in the meadow south of
+    the village. Persistent level, DC/SetDressing_Slide: the model (no collision) + an invisible cylinder blocker."""
+    CURRENT_FOLDER[0] = "DC/SetDressing_Slide"
+    clear_folder("DC/SetDressing_Slide")
+    blockers = _blockers()
+    dressing = [x.get_actor_location() for x in EAS.get_all_level_actors() if str(x.get_folder_path()).startswith("DC/SetDressing_")
+                and not str(x.get_folder_path()).startswith(("DC/SetDressing_Ground", "DC/SetDressing_Walls"))]
+    spot = next(((x, y) for x, y in SLIDE_SPOTS if _free(x, y, blockers, 250)
+                 and all(math.hypot(l.x - x, l.y - y) > 350 for l in dressing)), None)
+    assert spot, "no free spot for the slide"
+    a = _set_piece(unreal.load_asset(FILMSET_DIR + "/SM_DC_WoodlandSlide"), "Slide_Woodland", spot[0], spot[1], 0, SLIDE_YAW,
+                   110 * SLIDE_SCALE, 136 * SLIDE_SCALE)
+    a.set_actor_scale3d(V(SLIDE_SCALE, SLIDE_SCALE, SLIDE_SCALE))
+    return {"at": list(spot), "scale": SLIDE_SCALE, "yaw": SLIDE_YAW}
+
+
+WATCHTOWER = (2800, 3600)              # tower centre (same as LD_BuildDirectorsCut)
+WATCHTOWER_GREYBOX = ("Watchtower_Leg_0", "Watchtower_Leg_1", "Watchtower_Leg_2", "Watchtower_Leg_3", "POI_Watchtower_Platform",
+                      "Watchtower_Rail_0", "Watchtower_Rail_1", "Watchtower_Rail_2", "Watchtower_Ramp")
+
+
+def dress_watchtower():
+    """The watchtower as an inked plank skin (Scripts/Blender_BuildWatchtower.py), built to the exact greybox shape so
+    the visible ramp is the one the player walks on. Persistent level, DC/SetDressing_Watchtower.
+    Visual only: the nine greybox pieces go invisible but keep their collision."""
+    CURRENT_FOLDER[0] = "DC/SetDressing_Watchtower"
+    clear_folder("DC/SetDressing_Watchtower")
+    a = EAS.spawn_actor_from_object(unreal.load_asset("/Game/DirectorsCut/Environment/Watchtower/SM_DC_Watchtower"),
+                                    V(WATCHTOWER[0], WATCHTOWER[1], 0), R())
+    _finish(a, "Watchtower_Skin")
+    _visual_only(a)
+    hidden = []
+    for x in EAS.get_all_level_actors():
+        if x.get_level().get_outer().get_name() == MAIN and x.get_actor_label() in WATCHTOWER_GREYBOX:
+            _hide(x)
+            hidden.append(x.get_actor_label())
+    assert len(hidden) == len(WATCHTOWER_GREYBOX), "watchtower greybox found: %s" % sorted(hidden)
+    return {"at": [WATCHTOWER[0], WATCHTOWER[1], 0], "hidden_greybox": len(hidden)}
+
+
 def dress_main_map(which="all"):
     _check_world()
     # no ensure_materials(): it re-saves the lead's shared MI_LD_* materials; the ones used here already exist
@@ -494,6 +574,12 @@ def dress_main_map(which="all"):
             out["village"] = dress_village()
         if which in ("all", "filmset"):
             out["filmset"] = dress_filmset()
+        if which in ("all", "walls"):
+            out["walls"] = dress_walls()
+        if which in ("all", "slide"):
+            out["slide"] = dress_slide()
+        if which in ("all", "watchtower"):
+            out["watchtower"] = dress_watchtower()
         if which in ("all", "trees"):
             out["apple_trees"] = dress_trees()
     w = UES.get_editor_world()

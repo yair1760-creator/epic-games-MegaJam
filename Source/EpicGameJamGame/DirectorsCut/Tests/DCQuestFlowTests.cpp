@@ -35,6 +35,7 @@
 #include "Quest/DCQuestSubsystem.h"
 #include "UI/DCAmmoCounterWidget.h"
 #include "UI/DCDeathScreenWidget.h"
+#include "UI/DCPlayerDeathSpriteWidget.h"
 #include "UI/DCHealthBarWidget.h"
 #include "UI/DCHUDWidget.h"
 #include "UI/DCMainMenuGameMode.h"
@@ -407,7 +408,7 @@ bool FDCRunFullQuestFlowCommand::Update()
 		Shotgun->StartReload();
 		Test->TestTrue(TEXT("Shotgun enters reloading state"), Shotgun->IsReloading());
 		Test->TestTrue(TEXT("Shotgun reload starts 2D front-of-screen reload animation"), Shotgun->IsPlayingReloadAnim());
-		Test->TestEqual(TEXT("Shotgun reload starts in ReloadDrop pose"), Shotgun->GetSpritePose(), FName("ReloadDrop"));
+		Test->TestEqual(TEXT("Shotgun reload starts on drawing Reload01"), Shotgun->GetSpritePose(), FName("Reload01"));
 		Test->TestNotNull(TEXT("Shotgun 2D sprite widget is created on screen"), Shotgun->GetSpriteWidget());
 		if (Shotgun->GetSpriteWidget())
 		{
@@ -415,13 +416,17 @@ bool FDCRunFullQuestFlowCommand::Update()
 				Shotgun->GetSpriteWidget()->GetVisibility(), ESlateVisibility::HitTestInvisible);
 		}
 
-		// Step through reload animation phases and verify pose progression
-		Shotgun->Tick(0.45f);
-		Test->TestEqual(TEXT("Shotgun reload reaches ReloadLoad pose"), Shotgun->GetSpritePose(), FName("ReloadLoad"));
-		Shotgun->Tick(0.70f);
-		Test->TestEqual(TEXT("Shotgun reload reaches ReloadPump pose"), Shotgun->GetSpritePose(), FName("ReloadPump"));
-		Shotgun->Tick(0.25f);
-		Test->TestEqual(TEXT("Shotgun reload reaches ReloadSettle pose"), Shotgun->GetSpritePose(), FName("ReloadSettle"));
+		// Step through the drawn reload on the 12 fps grid: 01 (250 ms) -> 02 (167 ms) -> 03 (167 ms) -> Idle at 583 ms
+		Shotgun->Tick(0.20f);
+		Test->TestEqual(TEXT("Shotgun reload still holds Reload01 at 200 ms"), Shotgun->GetSpritePose(), FName("Reload01"));
+		Shotgun->Tick(0.06f);
+		Test->TestEqual(TEXT("Shotgun reload shows Reload02 at 260 ms"), Shotgun->GetSpritePose(), FName("Reload02"));
+		Shotgun->Tick(0.17f);
+		Test->TestEqual(TEXT("Shotgun reload shows Reload03 at 430 ms"), Shotgun->GetSpritePose(), FName("Reload03"));
+		Shotgun->Tick(0.17f);
+		Test->TestEqual(TEXT("Shotgun reload is back on Idle at 600 ms"), Shotgun->GetSpritePose(), FName("Idle"));
+		Test->TestFalse(TEXT("Drawn reload sequence has finished"), Shotgun->IsPlayingReloadAnim());
+		Test->TestTrue(TEXT("Shotgun is still reloading after the drawn sequence"), Shotgun->IsReloading());
 	}
 
 	bool bAnyHyperspawning = false;
@@ -589,6 +594,14 @@ bool FDCRunFullQuestFlowCommand::Update()
 		Test->TestTrue(TEXT("Player is dead after lethal damage"), AlivePlayer->IsDead());
 		Test->TestTrue(TEXT("Death screen shows on player death"), GM->IsDeathScreenShown());
 		Test->TestEqual(TEXT("Death increments take number to 2"), GM->GetCurrentTakeNumber(), 2);
+		if (UDCPlayerDeathSpriteWidget* DeathSprite = GM->GetDeathSpriteWidget())
+		{
+			Test->TestEqual(TEXT("Drawn death starts on the Dying pose"), DeathSprite->GetPose(), FName("Dying"));
+		}
+		else
+		{
+			Test->AddError(TEXT("DeathSpriteWidget was not created"));
+		}
 		Test->TestEqual(TEXT("Death triggers L1_PlayerDied line"), Narrator->GetCurrentLineId(), FName("L1_PlayerDied"));
 		if (UDCDeathScreenWidget* DeathWidget = GM->GetDeathScreenWidget())
 		{
@@ -613,6 +626,7 @@ bool FDCRunFullQuestFlowCommand::Update()
 		AShooterCharacter* Respawned = Cast<AShooterCharacter>(UGameplayStatics::GetPlayerPawn(World, 0));
 		Test->TestNotNull(TEXT("Respawned pawn is created"), Respawned);
 		Test->TestFalse(TEXT("Death screen dismisses after respawn"), GM->IsDeathScreenShown());
+		Test->TestNull(TEXT("Drawn death is removed after respawn"), GM->GetDeathSpriteWidget());
 		Test->TestEqual(TEXT("Quest progress is preserved across death/respawn"), Quest->GetCurrent(), 1);
 		if (HUD->GetCrosshair())
 		{

@@ -79,9 +79,31 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Shotgun|2D View")
 	TObjectPtr<UTexture2D> SpriteRecovery;
 
-	/** Optional dedicated reload frame; falls back to the drawn recovery/recoil/idle poses if empty */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Shotgun|2D View")
-	TObjectPtr<UTexture2D> SpriteReload;
+	// Reload drawings (Art/Player/ShotgunReload). 01 and 03 are the same artwork on purpose; 02 is the pullback
+	// pose between them. After 03 the gun is back on SpriteIdle.
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Shotgun|2D View|Reload")
+	TObjectPtr<UTexture2D> SpriteReload01;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Shotgun|2D View|Reload")
+	TObjectPtr<UTexture2D> SpriteReload02;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Shotgun|2D View|Reload")
+	TObjectPtr<UTexture2D> SpriteReload03;
+
+	/** Ticks each reload drawing is held on the AnimFPS grid: 01 for 3 (250 ms) -> 02 for 2 (167 ms) -> 03 for 2 (167 ms) -> Idle at 583 ms */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Shotgun|2D View|Reload", meta=(ClampMin=1))
+	int32 Reload01Ticks = 3;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Shotgun|2D View|Reload", meta=(ClampMin=1))
+	int32 Reload02Ticks = 2;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Shotgun|2D View|Reload", meta=(ClampMin=1))
+	int32 Reload03Ticks = 2;
+
+	/** Length of the drawn reload sequence in seconds ((3 + 2 + 2) ticks / AnimFPS = 0.583 s). The reload itself
+	 *  still takes ReloadTime; the gun shows Idle for the rest of it. */
+	UFUNCTION(BlueprintPure, Category="Shotgun|2D View|Reload")
+	float GetReloadAnimDuration() const { return float(Reload01Ticks + Reload02Ticks + Reload03Ticks) / FMath::Max(AnimFPS, 1.0f); }
 
 	/** Animation timing grid (the designer spec: 12 fps, hard cuts, no in-betweens) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Shotgun|2D View", meta=(ClampMin=1, ClampMax=60))
@@ -97,7 +119,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Shotgun|2D View", meta=(ClampMin=1))
 	int32 RecoveryTicks = 2;
 
-	/** Current pose for UI / tests: Idle, Flash, Recoil, Recovery, ReloadDrop, ReloadLoad, ReloadPump, ReloadSettle */
+	/** Current pose for UI / tests: Idle, Flash, Recoil, Recovery, Reload01, Reload02, Reload03 */
 	UFUNCTION(BlueprintPure, Category="Shotgun|2D View")
 	FName GetSpritePose() const { return CurrentPose; }
 
@@ -105,11 +127,11 @@ public:
 	UFUNCTION(BlueprintPure, Category="Shotgun|2D View")
 	float GetShotElapsed() const { return ShotTime; }
 
-	/** Seconds since the current reload animation started (-1 when not reloading) */
+	/** Seconds since the drawn reload sequence started (-1 once it has finished or when not reloading) */
 	UFUNCTION(BlueprintPure, Category="Shotgun|2D View")
 	float GetReloadElapsed() const { return ReloadAnimTime; }
 
-	/** True while the front-of-screen 2D reload animation is playing */
+	/** True while the drawn reload sequence (01 -> 02 -> 03) is on screen */
 	UFUNCTION(BlueprintPure, Category="Shotgun|2D View")
 	bool IsPlayingReloadAnim() const { return ReloadAnimTime >= 0.0f; }
 

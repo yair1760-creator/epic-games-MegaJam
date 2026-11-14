@@ -4,6 +4,7 @@
 #include "DirectorsCut/Combat/DCFXLibrary.h"
 #include "DirectorsCut/Combat/DCHitFeedbackComponent.h"
 #include "DirectorsCut/Combat/DCWeaponSpriteWidget.h"
+#include "DirectorsCut/Beats/DCPlayerController.h"
 #include "EpicGameJamGameCharacter.h"
 #include "Engine/Texture2D.h"
 #include "Animation/AnimInstance.h"
@@ -78,6 +79,10 @@ ADCShotgunWeapon::ADCShotgunWeapon()
 	static ConstructorHelpers::FObjectFinder<UTexture2D> FrameFlash(TEXT("/Game/DirectorsCut/Combat/Shotgun/Sprites/T_Shotgun_Flash.T_Shotgun_Flash"));
 	static ConstructorHelpers::FObjectFinder<UTexture2D> FrameRecoil(TEXT("/Game/DirectorsCut/Combat/Shotgun/Sprites/T_Shotgun_Recoil.T_Shotgun_Recoil"));
 	static ConstructorHelpers::FObjectFinder<UTexture2D> FrameRecovery(TEXT("/Game/DirectorsCut/Combat/Shotgun/Sprites/T_Shotgun_Recovery.T_Shotgun_Recovery"));
+	static ConstructorHelpers::FObjectFinder<UTexture2D> FrameReload01(TEXT("/Game/DirectorsCut/Combat/Shotgun/Sprites/T_Shotgun_Reload_01.T_Shotgun_Reload_01"));
+	static ConstructorHelpers::FObjectFinder<UTexture2D> FrameReload02(TEXT("/Game/DirectorsCut/Combat/Shotgun/Sprites/T_Shotgun_Reload_02.T_Shotgun_Reload_02"));
+	if (FrameReload01.Succeeded()) { SpriteReload01 = FrameReload01.Object; SpriteReload03 = FrameReload01.Object; }   // 03 = same art as 01
+	if (FrameReload02.Succeeded()) { SpriteReload02 = FrameReload02.Object; }
 	if (FrameIdle.Succeeded())     SpriteIdle = FrameIdle.Object;
 	if (FrameFlash.Succeeded())    SpriteFlash = FrameFlash.Object;
 	if (FrameRecoil.Succeeded())   SpriteRecoil = FrameRecoil.Object;
@@ -217,6 +222,12 @@ void ADCShotgunWeapon::UpdateSpriteView(float DeltaSeconds)
 			return;
 		}
 		SpriteWidget->AddToViewport(-10);   // under the HUD (health bar, quest, subtitles)
+
+		// first time the gun is in the player's hands: show how to fire and reload it
+		if (ADCPlayerController* DCPC = Cast<ADCPlayerController>(PC))
+		{
+			DCPC->ShowShotgunHintOnce();
+		}
 	}
 	SpriteWidget->SetVisibility(ESlateVisibility::HitTestInvisible);
 
@@ -254,55 +265,17 @@ void ADCShotgunWeapon::UpdateSpriteView(float DeltaSeconds)
 	}
 	else if (ReloadAnimTime >= 0.0f)
 	{
-		// Front-of-screen 2D reload sequence quantized to the 12 fps comic animation grid:
-		// 1) Drop/tilt gun closer into view, 2) 3 shell-loading punches, 3) Rack pump up (SpriteRecoil), 4) Settle to Idle.
-		const float FPS = FMath::Max(AnimFPS, 1.0f);
-		const float Duration = FMath::Max(ReloadTime, 0.01f);
-		const int32 TotalTicks = FMath::Max(1, FMath::RoundToInt(Duration * FPS));
-		const int32 AnimTick = FMath::Clamp(FMath::FloorToInt(ReloadAnimTime * FPS), 0, TotalTicks - 1);
-		const float T = TotalTicks > 1 ? float(AnimTick) / float(TotalTicks - 1) : 1.0f;
+		// Drawn reload on the 12 fps tick grid: Reload_01 for 3 ticks, Reload_02 for 2, Reload_03 for 2, then Idle.
+		// Hard cuts between held drawings, on the full canvas at its normal scale and anchor: no tweening.
+		const int32 Start02 = Reload01Ticks;
+		const int32 Start03 = Reload01Ticks + Reload02Ticks;
+		const int32 End = Start03 + Reload03Ticks;
+		const int32 AnimTick = FMath::FloorToInt(ReloadAnimTime * FMath::Max(AnimFPS, 1.0f));
 
-		UTexture2D* ReloadBaseFrame = SpriteReload ? SpriteReload.Get() : SpriteRecovery.Get();
-
-		if (T < 0.20f)
-		{
-			const float Alpha = FMath::InterpEaseOut(0.0f, 1.0f, T / 0.20f, 2.0f);
-			Pose = TEXT("ReloadDrop");
-			Frame = ReloadBaseFrame;
-			AnimScale = SpriteScreenScale * FMath::Lerp(1.0f, 1.12f, Alpha);
-			AnimAngleDeg = FMath::Lerp(0.0f, -7.0f, Alpha);
-			AnimOffset = FVector2D(FMath::Lerp(0.0f, 55.0f, Alpha), FMath::Lerp(0.0f, 95.0f, Alpha));
-		}
-		else if (T < 0.72f)
-		{
-			const float Sub = (T - 0.20f) / 0.52f;
-			const float Cycle = FMath::Frac(Sub * 3.0f);
-			const float Push = (Cycle < 0.45f) ? (Cycle / 0.45f) : (1.0f - (Cycle - 0.45f) / 0.55f);
-			Pose = TEXT("ReloadLoad");
-			Frame = (Push > 0.5f) ? SpriteIdle.Get() : ReloadBaseFrame;
-			AnimScale = SpriteScreenScale * (1.12f + 0.05f * Push);
-			AnimAngleDeg = -7.0f + 3.0f * Push;
-			AnimOffset = FVector2D(55.0f - 15.0f * Push, 95.0f - 42.0f * Push);
-		}
-		else if (T < 0.89f)
-		{
-			const float Alpha = (T - 0.72f) / 0.17f;
-			const float PumpArc = FMath::Sin(Alpha * PI);
-			Pose = TEXT("ReloadPump");
-			Frame = SpriteRecoil.Get();
-			AnimScale = SpriteScreenScale * FMath::Lerp(1.12f, 1.14f, PumpArc);
-			AnimAngleDeg = 0.0f;
-			AnimOffset = FVector2D(10.0f, FMath::Lerp(55.0f, 12.0f, PumpArc));
-		}
-		else
-		{
-			const float Alpha = (T - 0.89f) / 0.11f;
-			Pose = TEXT("ReloadSettle");
-			Frame = (Alpha < 0.5f) ? ReloadBaseFrame : SpriteIdle.Get();
-			AnimScale = SpriteScreenScale * FMath::Lerp(1.10f, 1.0f, Alpha);
-			AnimAngleDeg = FMath::Lerp(-2.0f, 0.0f, Alpha);
-			AnimOffset = FVector2D(FMath::Lerp(18.0f, 0.0f, Alpha), FMath::Lerp(28.0f, 0.0f, Alpha));
-		}
+		if (AnimTick < Start02)      { Frame = SpriteReload01; Pose = TEXT("Reload01"); }
+		else if (AnimTick < Start03) { Frame = SpriteReload02; Pose = TEXT("Reload02"); }
+		else if (AnimTick < End)     { Frame = SpriteReload03; Pose = TEXT("Reload03"); }
+		// past the end: Idle (Tick clears ReloadAnimTime)
 	}
 
 	CurrentPose = Pose;
@@ -344,6 +317,12 @@ void ADCShotgunWeapon::Tick(float DeltaSeconds)
 	if (ReloadAnimTime >= 0.0f)
 	{
 		ReloadAnimTime += DeltaSeconds;
+
+		// drawn sequence over -> Idle until the next animation (the reload timer itself may still be running)
+		if (ReloadAnimTime >= GetReloadAnimDuration())
+		{
+			ReloadAnimTime = -1.0f;
+		}
 	}
 
 	UpdateSpriteView(DeltaSeconds);

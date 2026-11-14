@@ -29,6 +29,7 @@
 #include "Sound/SoundBase.h"
 #include "TimerManager.h"
 #include "UI/DCDeathScreenWidget.h"
+#include "UI/DCPlayerDeathSpriteWidget.h"
 #include "UI/DCHUDWidget.h"
 #include "UI/DCVictoryWidget.h"
 #include "UObject/ConstructorHelpers.h"
@@ -845,6 +846,21 @@ void ADCGameMode::ShowDeathScreen(float RespawnDuration)
 		}
 		DeathScreenWidget->SetupDeath(CurrentTakeNumber, GetBeatDisplayName(CurrentBeat), RespawnDuration);
 	}
+
+	// The hero's drawn death starts on the same frame: Dying for 3 ticks at 12 fps, then Dead until the respawn.
+	// Its own layer (the slate fades in; the drawings must hard-cut), above the slate and under the HUD.
+	if (!DeathSpriteWidget)
+	{
+		DeathSpriteWidget = CreateWidget<UDCPlayerDeathSpriteWidget>(PC, UDCPlayerDeathSpriteWidget::StaticClass());
+	}
+	if (DeathSpriteWidget)
+	{
+		if (!DeathSpriteWidget->IsInViewport())
+		{
+			DeathSpriteWidget->AddToViewport(-1);
+		}
+		DeathSpriteWidget->Play();
+	}
 }
 
 void ADCGameMode::HideDeathScreen()
@@ -854,6 +870,11 @@ void ADCGameMode::HideDeathScreen()
 	{
 		DeathScreenWidget->RemoveFromParent();
 		DeathScreenWidget = nullptr;
+	}
+	if (DeathSpriteWidget)
+	{
+		DeathSpriteWidget->RemoveFromParent();
+		DeathSpriteWidget = nullptr;
 	}
 	if (HUDWidget)
 	{

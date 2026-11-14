@@ -311,7 +311,7 @@ Four models in `/Game/DirectorsCut/Environment/ButcherStall`, built by `Scripts/
 - Walk bob and idle sway only while idle; the shot drawings keep their exact drawn placement.
 - Tunables on the weapon (`Shotgun|2D View`): `bUseSpriteView` (off = the old 3D gun), `AnimFPS`, `FlashTicks`, `RecoilTicks`, `RecoveryTicks`, `SpriteScreenScale`, `WalkBobPixels`, `IdleSwayPixels`, `EdgeBleedPixels`. For tests: `GetSpritePose()`, `GetShotElapsed()`, `GetShotAnimDuration()`.
 - Checked in play (`DC.SwapWeapon Gun`): pose changes measured at 0 / 168 / 251 / 418 ms; a second click 200 ms into the animation does not restart it; swapping back to the sword removes the shotgun layer.
-- Limits: no reload drawing (the idle frame stays up while reloading); the pellets still leave from the hidden 3D gun's muzzle, not from the drawn barrel; Saar's automation tests were not re-run.
+- Limits (the reload drawing was added later, see section 20): the pellets still leave from the hidden 3D gun's muzzle, not from the drawn barrel; Saar's automation tests were not re-run.
 - Screenshots: `Docs/Screenshots/Shotgun2D_Idle.png`, `Shotgun2D_Flash.png`, `Shotgun2D_Recoil.png`, `Shotgun2D_Recovery.png`.
 
 ## 14. Village notice board: Boar King wanted poster (Meshy picture + Blender)
@@ -366,7 +366,7 @@ Taisho's film reel camera and boom mic are placed all over the playable level so
 
 **Checked (editor view, not in Play):** close-ups show no tearing; nav paths from the spawn to the stage, stall front, pen, east meadow and sword pickup are valid and all 6 boar spawn points are reachable.
 
-- Not used yet: `SM_DC_WoodlandSlide` (only in the test map; it is 1.4 m tall and would need about 3x scale to replace the watchtower) and Taisho's brick wall picture (`/Game/DirectorsCut/Environment/Taisho/Wall`, test map only).
+- `SM_DC_WoodlandSlide` is now placed in the meadow (section 23) The brick wall picture is now on the boundary walls (section 22).
 - Left out on purpose: the modern cine camera from `taisho/3d-cameras` (cannot be used in the game). Do not merge that branch as a whole.
 - Test map: zone T behind the spawn shows the three cleaned models and the wall panel (`build_test_map("taisho")`).
 - Limits: the props are static (reels do not turn); the boom mic's cable lies outside its blocker; the realistic colour pictures are not redrawn in the inked style.
@@ -422,3 +422,87 @@ The project had no loading screen at all, so there was nothing to reuse; this ad
 - **Tunables** (config properties on the subsystem): `AnimFPS`, `MinimumDisplaySeconds`, `IconScale`, `BackdropColor`.
 - **Verified during actual map loads** in a standalone game (`UnrealEditor.exe <project> -game`, then `open Lvl_DirectorsCut`): the log line `DCLoadingScreen: '<map>' loaded after 1.00 s; boar drawn 184 times, 12 frame switches, 8 of 8 drawings shown` is written at the end of every load, and window captures taken mid-load show different drawings with the text unchanged (`Docs/Screenshots/Loading_FrameA.png`, `Loading_FrameB.png`).
 - Limits: **it does not show in Play-In-Editor** (the engine's movie player only runs in a standalone or packaged game); the level currently loads in about a second on this machine, so the minimum time is what you mostly see; beat changes inside the level stream sublevels and do not show it; no packaged build was tested.
+
+## 20. 2D shotgun reload (designer frames, 12 fps)
+
+When a reload starts (R, or a click on an empty magazine: `ADCShotgunWeapon::StartReload`), the shotgun plays the designer's drawn reload once on the same full-screen sprite layer as the shot animation.
+
+| Frame | Starts | Held |
+|---|---|---|
+| `T_Shotgun_Reload_01` | 0 ms, on the reload event itself | 3 ticks (250 ms) |
+| `T_Shotgun_Reload_02` (pullback) | 250 ms | 2 ticks (167 ms) |
+| `T_Shotgun_Reload_01` again (the designer's 03 is the same artwork) | 417 ms | 2 ticks (167 ms) |
+| `T_Shotgun_Idle` | 583 ms | until the next animation |
+
+- **Replaces Saar's reload motion.** His version (poses `ReloadDrop / ReloadLoad / ReloadPump / ReloadSettle`) moved, scaled and tilted the existing shot frames over the whole 1.5 s reload. The designer's spec asks for held drawings with hard cuts and no tweening, on the normal canvas, scale and anchor, so that motion is gone. His reload event, timer, ammo counter and "RELOADING..." HUD are unchanged.
+- Art: `Art/Player/ShotgunReload` (4 PNGs, PSD, GIF and `Timing.txt` under `Reference`). `Shotgun_Reload_01.png` and `_03.png` are byte-identical to each other and to `Shotgun_03_Peak_Recoil.png`; `Shotgun_Reload_00_Idle.png` is byte-identical to `Shotgun_01_Idle.png`. So only two textures were imported (`T_Shotgun_Reload_01`, `T_Shotgun_Reload_02`); frame 03 points at the 01 texture and Idle at the existing idle texture.
+- Tunables (`Shotgun|2D View|Reload`): `SpriteReload01/02/03`, `Reload01Ticks` (3), `Reload02Ticks` (2), `Reload03Ticks` (2). Poses for tests: `Reload01`, `Reload02`, `Reload03`; `GetReloadAnimDuration()` = 0.583 s; `IsPlayingReloadAnim()` is true only while the three drawings are up.
+- **The reload itself still takes `ReloadTime` (1.5 s)**: the drawings finish at 0.583 s and the gun shows Idle for the remaining 0.9 s while it cannot fire yet (the HUD still says RELOADING). Shorten `ReloadTime` to about 0.6 s if the two should end together.
+- Saar's automation test for the reload was updated to the new pose names and times (same checks). The automation tests were not run.
+- **Checked in play:** pose changes measured at 0 / 261 / 424 / 615 ms (R), 0 / 251 / 421 / 592 ms (click on empty), within one game frame of the grid; a second R during the reload does not restart it.
+- Screenshots: `Docs/Screenshots/Shotgun2D_Reload_01.png`, `Shotgun2D_Reload_02.png`.
+
+## 21. Player death drawing (two poses, 12 fps)
+
+When the player dies, the hero's drawn death plays once on a full-screen layer, together with Saar's "CUT! TAKE N" slate.
+
+| Frame | Starts | Held |
+|---|---|---|
+| `T_Player_Death_01_Dying` (clutching his chest) | 0 ms, on the death event itself | 3 ticks (250 ms) |
+| `T_Player_Death_02_Dead` (lying on his side) | 250 ms | until the respawn (5 s after death) or a beat change |
+
+- **Flow it hooks into:** `AShooterCharacter::Die` -> `OnDied` -> `ADCGameMode::HandlePlayerDied` -> `ShowDeathScreen`. The drawing is created and started there, and removed in `HideDeathScreen` (called when the new pawn is possessed, on a beat change and on victory). There is no Game Over screen or retry button in this game: death is a 5-second slate and an automatic respawn with quest progress kept. A second death replays from the first drawing.
+- **Class:** `UDCPlayerDeathSpriteWidget` (`Source/.../UI/DCPlayerDeathSpriteWidget.h/.cpp`), built in code, ticks itself. Hard cut between the two drawings: no tween, no fade. It is its own layer because the slate fades in and the drawings must not.
+- **Layer order:** screen tint (-5) < slate (-2) < death drawing (-1) < HUD (0). So the standing pose is in front of the slate card for its 250 ms, and the HUD (subtitles, HP bar, quest) stays on top.
+- **Placement:** the whole 1920x1080 canvas, aspect kept, both drawings on the same anchor and scale. `CanvasScale` = 0.9 with `CanvasPivot` = top centre: at full size the body lay behind the Director's subtitle box, which covers the bottom of the screen exactly when the death line plays. At 0.9 the floor line sits just above that box and the body lies between the slate card and the subtitles. Set `CanvasScale` to 1 for the canvas fitted to the screen.
+- Tunables: `SpriteDying`, `SpriteDead`, `AnimFPS` (12), `DyingTicks` (3), `CanvasScale`, `CanvasPivot`. Poses for tests: `Dying`, `Dead`; `ADCGameMode::GetDeathSpriteWidget()`.
+- Art: `Art/Player/Death` (2 PNGs; PSD under `Reference`). Textures in `/Game/DirectorsCut/UI/Death` (UI group, no streaming), a folder that is always cooked.
+- Saar's automation test got two checks (drawing starts on `Dying`; removed after respawn). The automation tests were not run.
+- **Checked in play:** `Dying` at 0 ms, `Dead` at 250 / 253 ms, removed at 5.0 s when the player respawns with the sword; second death starts on `Dying` again; take counter goes 2, 3.
+- Limits: a two-line subtitle box grows upward and covers the lowest edge of the body; not tried at other aspect ratios or in a packaged build; the first-person camera view behind the drawing is unchanged (no camera fall).
+- Screenshots: `Docs/Screenshots/PlayerDeath_01_Dying.png`, `PlayerDeath_02_Dead.png` (the first was taken with the grid slowed down so the pose could be photographed).
+
+## 22. Brick boundary walls (Taisho's wall picture)
+
+The four boundary walls of the main level (`B_West`, `B_North`, `B_South`, `B_BackstageEast`) now show Taisho's brick wall picture.
+
+- **Why new meshes:** the greybox walls are one cube scaled to 100 m or 134 m, and the inked material has no tiling setting, so the picture would be stretched once over the whole wall. `Scripts/Blender_BuildBoundaryWalls.py` builds three plain boxes (100x15 m, 134x15 m, 100x7 m), 4 cm bigger than the greybox all round, with UVs in wall metres: one picture per 5 m (`TILE_M`), the same brick size on every wall. Change `TILE_M` and re-run for bigger or smaller bricks.
+- **In Unreal:** `/Game/DirectorsCut/Environment/Taisho/Wall/SM_DC_BoundaryWall_*` with `MI_Taisho_Wall` (Nanite off). `dress_main_map("walls")` in `Scripts/LD_DressMainMap.py` puts a skin over each wall (`DC/SetDressing_Walls`, labels `Wall_Brick_*`) and makes the greybox wall invisible. The greybox keeps its collision; the skins have none.
+- Only the persistent level file changed (`Lvl_DirectorsCut.umap`): four actors added, four made invisible.
+- Limits: the picture was not made to tile, so the ivy patches repeat every 5 m and a faint seam shows at each repeat; bricks are oversized on purpose (about 18 cm rows) so they read from across the set; not checked in Play or in a packaged build (looked at with editor captures only); the scaffold in front of the east wall is still greybox metal.
+- Screenshots: `Docs/Screenshots/BrickWalls_Corner.png`, `BrickWalls_Close.png`, `BrickWalls_Overview.png`.
+
+## 23. Woodland slide in the meadow
+
+Taisho's woodland slide (`SM_DC_WoodlandSlide`, cleaned in section 17's Blender pass) is now a set prop in the main level: on the grass by the south-east corner of the village square, at (-3500, -2900), near the well and an apple tree.
+
+- `dress_main_map("slide")` in `Scripts/LD_DressMainMap.py`: `DC/SetDressing_Slide`, actors `Slide_Woodland` (no collision) and `Slide_Woodland_Blocker` (invisible cylinder, blocks player and boars). Tunables `SLIDE_SCALE` (1.5: the model is 1.36 m tall as delivered, so its deck is now about 2 m high), `SLIDE_YAW` (90), `SLIDE_SPOTS` (first free spot wins).
+- It is decoration only: the player cannot climb or slide on it.
+- It was not used for the watchtower: the greybox watchtower has a 11 m walkable ramp, and the model's ramp is far shorter, so the visible ramp and the walkable one would not match.
+- Limits: its sandy base does not match the meadow colour; looked at with editor captures only, not in Play; nav mesh was rebuilt by the script but boar pathing around it was not watched.
+- Screenshots: `Docs/Screenshots/WoodlandSlide_Meadow.png`, `WoodlandSlide_Top.png`.
+
+## 24. Watchtower (inked plank skin over the greybox)
+
+The greybox watchtower at (2800, 3600) now looks like a plank tower: log legs with foot plates and knee braces, a plank deck with boxed-in rails on three sides, and the 11.7 m walk-up ramp as cross planks with cleats and side stringers. The look follows Taisho's woodland slide.
+
+- **Why built in Blender and not Taisho's slide or a new Meshy model:** the greybox ramp is long and walkable. Taisho's slide has a short steep ramp, and a generated model's proportions cannot be controlled, so in both cases the visible ramp would not be the one the player walks on. `Scripts/Blender_BuildWatchtower.py` uses the greybox numbers directly (1.2 cm bigger all round). No Meshy credits: all wood is the existing stage plank picture.
+- **In Unreal:** `/Game/DirectorsCut/Environment/Watchtower/SM_DC_Watchtower`, one slot with `MI_DC_SetStage`, Nanite off. `dress_main_map("watchtower")` places `Watchtower_Skin` (`DC/SetDressing_Watchtower`, no collision) and makes the nine greybox pieces invisible; they keep their collision, so walking up the ramp and standing on the deck are unchanged.
+- The knee braces start 3 m up, so the player still walks under the tower freely.
+- Limits: the cleats stand 3 cm above the walkable surface (not noticeable in first person); the ramp foot sinks a little into the ground like the greybox did; the editor-only label `LBL_Watchtower_(overview)` is still there.
+- **Walked in Play (Nov 15):** from the ramp foot to the deck in 3.7 s, feet height 8 -> 462 cm in an even climb; the back and side rails stop the player (y 3766, x 2966). Screenshots `Watchtower_Play_Ramp.png`, `Watchtower_Play_Deck.png`.
+- **Bug found by that test, fixed for the tower:** the first walk was blocked at the ramp foot. Every mesh imported from a GLB carries an auto-made convex hull, and `_visual_only()` did not actually switch collision off (its `set_collision_enabled` call was undone by the property edit after it). The tower's hull was a wedge over the whole ramp. `_visual_only()` now sets the `NoCollision` profile last and asserts it.
+- **Hulls removed from the older dressing meshes too (Nov 15):** the 24 dressing meshes in the persistent level (ground and stage floor, butcher stall and its name sign, notice board, well, 4 brick walls, slide, 13 film-set models) now use the `NoCollision` profile; the 14 `*_Blocker` cylinders keep theirs. The player and boars stand on the greybox again, as designed.
+  - Replayed after the change: feet height 2 cm on the meadow (was 8, on the ground hull), 5 on the village square, 7 on the main path, 42 on the stage; both tested boundary walls, the notice board, the slide and a film camera still stop the player; the player now reaches the stall counter itself (stopped 35 cm from its front face); the well still deflects the player; five boars stood at ground height and wandered; `DC.GoToBeat` 2, 3, 4, 5, 1 each left the player standing with the right weapon (sword, shotgun, sword, sword, sword).
+  - Not covered: the boars did not attack during the 6-second watch (the player stood away from them), so boar combat after the change was not re-checked; no full start-to-finish run.
+  - Not changed: dressing pieces inside sublevels (SOLD OUT and HA HA HA signs, sword rack and its swords, film-crew props) still carry their hulls; they sit over greybox of about the same shape.
+- Screenshots: `Docs/Screenshots/Watchtower_Ramp.png`, `Watchtower_Side.png`, `Watchtower_OnDeck.png`.
+
+## 25. Controls prompt and the reload key
+
+- **Controls card:** `UDCControlsHintWidget` (`Source/.../UI/DCControlsHintWidget.h/.cpp`), built in code in the HUD's ink-and-cream look, on the right edge of the screen. `ADCPlayerController::BeginPlay` shows the sword set for `StartHintSeconds` (10 s): W A S D move, mouse look, left mouse swing the sword, Space jump, Esc pause. The first time the shotgun's 2D view comes up, `ShowShotgunHintOnce()` shows "NEW PROP | SHOTGUN": left mouse fire, R reload, for `ShotgunHintSeconds` (6 s). It fades out over 0.4 s and removes itself. It only shows on maps that run `ADCGameMode` (not on the main menu). Nothing inside `WBP_DCHUD` or `DCGameMode` was touched.
+- **Reload key bug fixed:** no key was mapped to `IA_Reload` in any input context (`IMC_Weapons` only maps fire and Left Shift = swap weapon), so pressing R did nothing even though the ammo counter says "R RELOAD"; the gun only reloaded on a click with an empty magazine. `ADCPlayerController::SetupInputComponent` now binds R and gamepad X to `AShooterCharacter::DoReload`.
+- **Checked in play:** card up at start with the five rows, gone after 11 s; the shotgun card appears on `DC.GoToBeat 3`, is gone 7 s later and does not come back when the gun is swapped away and back; `DoReload` starts the drawn reload. **Not checked:** a real R key press (the test calls the same function by code), other aspect ratios, a packaged build.
+- Left Shift is still mapped to "swap weapon" from the template; with one weapon it does nothing visible and is not listed on the card.
+- `DC_Set_Hunt.umap` was saved in this commit at Yair's instruction: one actor's position value changed (about 1915 -> 2385 on one axis) plus the file's save stamps; the change was made in the editor, not by a script.
+- Screenshots: `Docs/Screenshots/ControlsPrompt_Start.png`, `ControlsPrompt_Shotgun.png`.

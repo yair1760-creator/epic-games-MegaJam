@@ -17,6 +17,7 @@
 #include "Components/Widget.h"
 #include "InputCoreTypes.h"
 #include "UI/DCMenuWidgets.h"
+#include "UI/DCControlsHintWidget.h"
 #include "ShooterCharacter.h"
 #include "UObject/ConstructorHelpers.h"
 #include "Widgets/Input/SVirtualJoystick.h"
@@ -53,6 +54,12 @@ void ADCPlayerController::BeginPlay()
 	{
 		SetInputMode(FInputModeGameOnly());
 		bShowMouseCursor = false;
+
+		// controls on screen in the first seconds of the game (only in the game itself, not on other maps)
+		if (GetWorld() && GetWorld()->GetAuthGameMode<ADCGameMode>())
+		{
+			ShowControlsHint(false, StartHintSeconds);
+		}
 	}
 
 	if (IsLocalPlayerController() && ShouldUseTouchControls() && MobileControlsWidgetClass)
@@ -75,6 +82,10 @@ void ADCPlayerController::SetupInputComponent()
 		InputComponent->BindKey(EKeys::Escape, IE_Pressed, this, &ADCPlayerController::TogglePauseMenu).bExecuteWhenPaused = true;
 		InputComponent->BindKey(EKeys::P, IE_Pressed, this, &ADCPlayerController::TogglePauseMenu).bExecuteWhenPaused = true;
 		InputComponent->BindKey(EKeys::Gamepad_Special_Right, IE_Pressed, this, &ADCPlayerController::TogglePauseMenu).bExecuteWhenPaused = true;
+
+		// reload: IA_Reload has no key in IMC_Weapons, so R did nothing; bind it here
+		InputComponent->BindKey(EKeys::R, IE_Pressed, this, &ADCPlayerController::ReloadPressed);
+		InputComponent->BindKey(EKeys::Gamepad_FaceButton_Left, IE_Pressed, this, &ADCPlayerController::ReloadPressed);
 	}
 
 	if (IsLocalPlayerController())
@@ -100,6 +111,43 @@ void ADCPlayerController::SetupInputComponent()
 				}
 			}
 		}
+	}
+}
+
+void ADCPlayerController::ReloadPressed()
+{
+	if (AShooterCharacter* Shooter = Cast<AShooterCharacter>(GetPawn()))
+	{
+		Shooter->DoReload();
+	}
+}
+
+void ADCPlayerController::ShowControlsHint(bool bShotgun, float Seconds)
+{
+	if (!IsLocalPlayerController() || Seconds <= 0.0f)
+	{
+		return;
+	}
+	if (!ControlsHintWidget)
+	{
+		ControlsHintWidget = CreateWidget<UDCControlsHintWidget>(this, UDCControlsHintWidget::StaticClass());
+	}
+	if (ControlsHintWidget)
+	{
+		if (!ControlsHintWidget->IsInViewport())
+		{
+			ControlsHintWidget->AddToViewport(1);          // above the HUD, far below the pause menu (200)
+		}
+		ControlsHintWidget->ShowFor(bShotgun, Seconds);
+	}
+}
+
+void ADCPlayerController::ShowShotgunHintOnce()
+{
+	if (!bShotgunHintShown)
+	{
+		bShotgunHintShown = true;
+		ShowControlsHint(true, ShotgunHintSeconds);
 	}
 }
 
