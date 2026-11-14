@@ -330,6 +330,9 @@ BACKLOG = [
  (17, "Set dressing: notice board", "Design", "The wanted board is only a prop: walking up to it does nothing", "Optional Director line when the player first looks at it", "Low"),
  (17, "Set dressing: well + sword rack", "Design", "The three swords on the rack stay there after the player takes the sword", "Hide one rack sword when the sword pickup is collected", "Low"),
  (17, "Set dressing: well + sword rack", "Code", "The well roof and posts have no collision; only the stone ring blocks", "Fine for a prop; add two thin blockers if players get stuck visually", "Low"),
+ (17, "Set dressing: film cameras + boom mics", "Art", "The cameras and mics keep Meshy's realistic colour picture; not redrawn in the inked comic style", "Repaint or run the colour picture through an ink pass; add an outline shell like the sword", "Medium"),
+ (17, "Set dressing: film cameras + boom mics", "Animation", "Film reels do not turn and cameras never pan to follow the player", "Split the reels in Blender and spin them; optional slow pan", "Low"),
+ (17, "Set dressing: film cameras + boom mics", "Art", "Woodland slide and brick wall picture are imported but not used in the level", "Slide needs about 3x scale to replace the watchtower; wall picture could cover the boundary walls", "Low"),
 ]
 pol = Sheet("Polish backlog")
 pol.set(1, 1, "Polish backlog: what each system still lacks (art, animation, textures, audio, VFX, UI)", S_TITLE)

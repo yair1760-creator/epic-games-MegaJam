@@ -270,7 +270,36 @@ def z_props():
     label_text("P  SET PROPS (Taisho grass + hay) + janitor Princess", (520, -2400, 420), 50, yaw=180, color=(255, 200, 230))
 
 
-ZONES = {"base": z_base, "light": z_light, "combat": z_combat, "boar": z_boar, "sprites": z_sprites, "house": z_house, "props": z_props}
+def z_taisho():
+    """Zone T: Taisho's film-set models after the Blender clean-up (Scripts/Blender_CleanFilmSetModels.py), in a row
+    behind the spawn, with his brick wall picture on a panel behind them. The +X arrow on each disc shows the
+    model's own forward axis."""
+    CURRENT_FOLDER[0] = "Test/T_Taisho"
+    clear_folder("Test/T_Taisho")
+    base = "/Game/DirectorsCut/Environment/FilmSet"
+    row = [("FilmCamera", "Film camera", 900), ("BoomMic", "Boom mic", 0), ("WoodlandSlide", "Woodland slide", -900)]
+    for name, title, y in row:
+        sm_asset = unreal.load_asset("%s/SM_DC_%s" % (base, name))
+        if not sm_asset:
+            continue
+        a = EAS.spawn_actor_from_object(sm_asset, V(-900, y, 0), R())
+        a.static_mesh_component.set_collision_enabled(unreal.CollisionEnabled.NO_COLLISION)
+        _finish(a, "T_" + name)
+        cyl("T_Marker_%s" % name, (-900, y, 0), 130, 3, "White")
+        box("T_Forward_%s" % name, (-770, y - 6, 0), (-640, y + 6, 5), "Dark")      # points along the model's +X
+        label_text(title, (-900, y, 300), 34, yaw=0, color=(255, 230, 150))
+    wall = unreal.load_asset("/Game/DirectorsCut/Environment/Taisho/Wall/MI_Taisho_Wall")
+    if wall:
+        w = EAS.spawn_actor_from_object(unreal.load_asset("/Engine/BasicShapes/Cube"), V(-1430, 0, 200), R())
+        w.set_actor_scale3d(V(0.1, 4.0, 4.0))          # 4 m x 4 m panel (the picture is square)
+        w.static_mesh_component.set_material(0, wall)
+        w.static_mesh_component.set_collision_enabled(unreal.CollisionEnabled.NO_COLLISION)
+        _finish(w, "T_WallTexture_Panel")
+    box("T_HeightPost_180cm", (-620, 420, 0), (-600, 440, 180), "Dark")          # a player-height post for scale
+    label_text("T  TAISHO FILM-SET MODELS", (-900, 0, 460), 50, yaw=0, color=(255, 230, 150))
+
+
+ZONES = {"base": z_base, "light": z_light, "combat": z_combat, "boar": z_boar, "sprites": z_sprites, "house": z_house, "props": z_props, "taisho": z_taisho}
 
 
 def build_test_map(which="all"):

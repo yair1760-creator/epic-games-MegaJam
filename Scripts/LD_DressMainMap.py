@@ -8,11 +8,13 @@
 #   - the village notice board (SM_DC_NoticeBoard: Boar King wanted poster + quest "!") over the greybox board
 #   - the village well (SM_DC_Well) over the greybox cylinder, and in DC_Set_Hunt the sword rack (SM_DC_SwordRack)
 #     with three SM_DC_Sword over the greybox rack
+#   - Taisho's film cameras and boom mics around the level (SM_DC_FilmCamera, SM_DC_BoomMic), and in DC_Set_FilmCrew
+#     the real models over the greybox dolly camera and boom mic
 #   - the butcher stall (SM_DC_ButcherStall) over the greybox stall, and in the DC_Set_NoMeat sublevel the SOLD OUT and
 #     HA HA HA signs (SM_DC_SoldOutSign, SM_DC_LaughSign) over the greybox boards and text
 # Run inside the editor (Lvl_DirectorsCut open):
 #   exec(open(r"D:\EpicGameJam\EpicGameJamGame\EpicGameJamGame\Scripts\LD_DressMainMap.py").read())
-#   dress_main_map()            # or dress_main_map("houses") / ("hunt") / ("props") / ("trees") / ("ground") / ("stage") / ("stall") / ("notice") / ("village")
+#   dress_main_map()            # or dress_main_map("houses") / ("hunt") / ("props") / ("trees") / ("ground") / ("stage") / ("stall") / ("notice") / ("village") / ("filmset")
 # Re-runnable: clears DC/Village_Flats, DC/SetDressing_Props and DC/SetDressing_Trees (persistent level) and the Hunt_HayProp_* actors first.
 # DC_Set_Hunt only gets its greybox hay bales swapped for the real ones and the sword rack; DC_Set_NoMeat only gets the two signs. No other sublevel is touched.
 # Note: re-running LD_BuildDirectorsCut's village / hunt stages would bring the greybox back - run this again afterwards.
@@ -389,6 +391,80 @@ def dress_village(sword_roll=None, sword_flip=True):
     return {"well_at": [round(o.x), round(o.y)], "rack_at": [round(bo.x), round(bo.y)], "swords": len(sticks), "hidden_greybox": sorted(hidden)}
 
 
+FILMSET_DIR = "/Game/DirectorsCut/Environment/FilmSet"
+SET_STAGE = (1000, 0)                  # centre of the round stage "THE SET"
+CAM_YAW_OFFSET = 180.0                   # degrees added so the camera model's lens points at its target
+MIC_YAW_OFFSET = 180.0                   # same for the boom mic (the mic head leans towards its target)
+# film cameras: (name, x, y, what it films). Kept off the six dirt paths and clear of the beat 3 dolly rails.
+FILM_CAMERAS = [("Stage_NE", 1466, 1739, SET_STAGE), ("Stage_NW", -273, 1273, SET_STAGE),
+                ("Stage_SW", -273, -1273, SET_STAGE), ("Stage_SE", 1466, -1739, SET_STAGE),
+                ("Village", -4650, -1150, (-5200, 0)),          # the hero's entrance
+                ("Stall", -1700, 2300, (-2500, 2800)),          # the butcher stall
+                ("Pen", 1900, -2700, (3000, -3200)),            # the King Boar clearing / Princess shed
+                ("Meadow", 4300, 650, SET_STAGE)]               # wide shot from the far meadow
+BOOM_MICS = [("Stage", -480, -430, SET_STAGE), ("Village", -4850, 430, (-5200, 0)),
+             ("Stall", -2050, 2450, (-2500, 2800)), ("Pen", 2300, -2550, (3000, -3200))]
+
+
+def _aim(x, y, target, offset):
+    return math.degrees(math.atan2(target[1] - y, target[0] - x)) + offset
+
+
+def _set_piece(asset, label, x, y, z, yaw, radius, height, folder=None):
+    """One film-set prop: the model (no collision) + an invisible cylinder that blocks the player and boars."""
+    a = EAS.spawn_actor_from_object(asset, V(x, y, z), R(yaw=yaw))
+    _visual_only(a)
+    blocker = EAS.spawn_actor_from_object(unreal.load_asset("/Engine/BasicShapes/Cylinder"), V(x, y, z + height / 2.0), R())
+    blocker.set_actor_scale3d(V(radius / 50.0, radius / 50.0, height / 100.0))
+    blocker.static_mesh_component.set_editor_property("visible", False)
+    blocker.static_mesh_component.set_cast_shadow(False)
+    if folder:                                        # sublevel piece: label + folder by hand
+        a.set_actor_label(label); a.set_folder_path(folder)
+        blocker.set_actor_label(label + "_Blocker"); blocker.set_folder_path(folder)
+    else:
+        _finish(a, label)
+        _finish(blocker, label + "_Blocker")
+    return a
+
+
+def dress_filmset():
+    """Taisho's film camera and boom mic (cleaned by Scripts/Blender_CleanFilmSetModels.py) all over the level, so it
+    reads as a real film set. Persistent level (DC/SetDressing_FilmSet): 8 cameras + 4 boom mics, each aimed at what
+    it films. DC_Set_FilmCrew sublevel (beat 3): the greybox dolly camera and boom mic become the real models."""
+    CURRENT_FOLDER[0] = "DC/SetDressing_FilmSet"
+    clear_folder("DC/SetDressing_FilmSet")
+    cam = unreal.load_asset(FILMSET_DIR + "/SM_DC_FilmCamera")
+    mic = unreal.load_asset(FILMSET_DIR + "/SM_DC_BoomMic")
+    assert cam and mic, "import SM_DC_FilmCamera / SM_DC_BoomMic first"
+    for name, x, y, target in FILM_CAMERAS:
+        _set_piece(cam, "FilmSet_Camera_" + name, x, y, 0, _aim(x, y, target, CAM_YAW_OFFSET), 55, 200)
+    for name, x, y, target in BOOM_MICS:
+        _set_piece(mic, "FilmSet_BoomMic_" + name, x, y, 0, _aim(x, y, target, MIC_YAW_OFFSET), 30, 210)
+
+    # beat 3 film crew: real models over the greybox dolly camera and boom mic
+    acts = EAS.get_all_level_actors()
+    crew = [x for x in acts if x.get_level().get_outer().get_name() == "DC_Set_FilmCrew"]
+    hidden = []
+    stand = next((x for x in crew if x.get_actor_label() == "FilmCamera_Stand"), None)
+    if stand:
+        for x in crew:
+            if x.get_actor_label() in ("FilmCamera_Stand", "FilmCamera_Body", "BoomMic_Pole", "BoomMic_Head"):
+                _hide(x)
+                hidden.append(x.get_actor_label())
+        so, _ = stand.get_actor_bounds(False)
+        LES.set_current_level_by_name("DC_Set_FilmCrew")
+        try:
+            for x in crew:
+                if x.get_actor_label().startswith("FilmCrew_Prop_"):
+                    EAS.destroy_actor(x)
+            _set_piece(cam, "FilmCrew_Prop_Camera", so.x, so.y, 0, _aim(so.x, so.y, SET_STAGE, CAM_YAW_OFFSET), 55, 200, "DC/Set_FilmCrew")
+            mx, my = SET_STAGE[0] - 850, SET_STAGE[1] + 450            # on the stage, by its west edge (stage top = 40 cm)
+            _set_piece(mic, "FilmCrew_Prop_BoomMic", mx, my, 40, _aim(mx, my, SET_STAGE, MIC_YAW_OFFSET), 30, 210, "DC/Set_FilmCrew")
+        finally:
+            LES.set_current_level_by_name(MAIN)
+    return {"cameras": len(FILM_CAMERAS), "boom_mics": len(BOOM_MICS), "filmcrew_hidden_greybox": sorted(hidden)}
+
+
 def dress_main_map(which="all"):
     _check_world()
     # no ensure_materials(): it re-saves the lead's shared MI_LD_* materials; the ones used here already exist
@@ -410,6 +486,8 @@ def dress_main_map(which="all"):
             out["notice"] = dress_notice()
         if which in ("all", "village"):
             out["village"] = dress_village()
+        if which in ("all", "filmset"):
+            out["filmset"] = dress_filmset()
         if which in ("all", "trees"):
             out["apple_trees"] = dress_trees()
     w = UES.get_editor_world()

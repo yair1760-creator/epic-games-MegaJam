@@ -81,3 +81,6 @@ DerivedDataCache/*
 
 # Raw generated audio (imported copies live in Content/DirectorsCut/Audio)
 RawAudio/
+
+# Blender working files of the film-set clean-up (regenerate with Scripts/Blender_CleanFilmSetModels.py)
+Art/Meshy/FilmSet/Export/FilmSet_*.blend

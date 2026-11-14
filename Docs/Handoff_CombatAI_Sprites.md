@@ -343,3 +343,30 @@ Two models in `/Game/DirectorsCut/Environment/Village`, built by `Scripts/Blende
 - Screenshots: `Docs/Screenshots/Village_Well.png`, `Village_SwordRack.png`, `Village_SwordRack_Side.png`.
 
 **Crash note (2026-11-14 19:25):** the editor crashed (`Assertion failed: !bPostTickComponentUpdate`, call stack in the level editor's interactive tools) at the moment a script started Play while the level was being edited by hand in the viewport. Unsaved hand edits to `Lvl_DirectorsCut` and `DC_Set_Hunt` (a group actor, moved backdrop pieces) were recovered from the 19:24 autosave. Avoid starting Play from a script while someone is dragging things in the viewport; editor-view captures (`SceneCaptureToolset`) are safe.
+
+## 16. Film cameras and boom mics around the level (Taisho's Meshy models, cleaned in Blender)
+
+Taisho's film reel camera and boom mic are placed all over the playable level so it reads as a real film set.
+
+**Why they looked torn:** the Meshy files are clean but extremely dense (camera 4.97 million triangles, boom mic 471 thousand, woodland slide 943 thousand). On import Unreal switched Nanite on and the game drew its coarse stand-in mesh (about 10 thousand triangles for the camera), which is what tore.
+
+**Clean-up:** `Scripts/Blender_CleanFilmSetModels.py` (`blender -b --python ... -- preview`, or `-- only=FilmCamera`):
+- reduces each model in Blender (camera 110k, boom mic 30k, slide 40k triangles), with smooth shading and hard edges kept above 40 degrees;
+- cuts the camera's round grass-and-rocks display base away, so the tripod stands on any floor;
+- puts the bottom centre at the origin and scales to level size (camera 2.05 m, boom mic 2.2 m, slide 1.36 m as delivered);
+- writes `Art/Meshy/FilmSet/Export/SM_DC_<Name>.glb` + `T_DC_<Name>.png` (colour picture only, 2048 px).
+
+**In Unreal:** `/Game/DirectorsCut/Environment/FilmSet`: `SM_DC_FilmCamera`, `SM_DC_BoomMic`, `SM_DC_WoodlandSlide`, each with `MI_DC_<Name>` on `M_DC_InkedProp`. **Nanite is switched off on these three meshes** so the cleaned mesh itself is drawn; keep it off if they are re-imported.
+
+**Placement:** `dress_main_map("filmset")` in `Scripts/LD_DressMainMap.py`:
+- persistent level, folder `DC/SetDressing_FilmSet`: 8 cameras (`FilmSet_Camera_*`: four around the stage, the village entrance, the butcher stall, the King Boar pen, a wide shot from the east meadow) and 4 boom mics (`FilmSet_BoomMic_*`: stage, village, stall, pen), each turned to face what it films (`FILM_CAMERAS`, `BOOM_MICS`, `CAM_YAW_OFFSET`, `MIC_YAW_OFFSET` at the top of the function);
+- `DC_Set_FilmCrew` sublevel (beat 3): the greybox dolly camera and boom mic are hidden and replaced by the real models (`FilmCrew_Prop_Camera`, `FilmCrew_Prop_BoomMic`);
+- every piece has an invisible blocking cylinder (`*_Blocker`), so the player and boars walk around it; all pieces are off the six dirt paths.
+
+**Checked (editor view, not in Play):** close-ups show no tearing; nav paths from the spawn to the stage, stall front, pen, east meadow and sword pickup are valid and all 6 boar spawn points are reachable.
+
+- Not used yet: `SM_DC_WoodlandSlide` (only in the test map; it is 1.4 m tall and would need about 3x scale to replace the watchtower) and Taisho's brick wall picture (`/Game/DirectorsCut/Environment/Taisho/Wall`, test map only).
+- Left out on purpose: the modern cine camera from `taisho/3d-cameras` (cannot be used in the game). Do not merge that branch as a whole.
+- Test map: zone T behind the spawn shows the three cleaned models and the wall panel (`build_test_map("taisho")`).
+- Limits: the props are static (reels do not turn); the boom mic's cable lies outside its blocker; the realistic colour pictures are not redrawn in the inked style.
+- Screenshots: `Docs/Screenshots/FilmSet_Camera.png`, `FilmSet_BoomMic.png`, `FilmSet_Stage.png`, `FilmSet_Overview.png`, `FilmSet_Village.png`.
