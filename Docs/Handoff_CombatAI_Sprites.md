@@ -231,3 +231,15 @@ Textures are in `/Game/DirectorsCut/Environment/Props`. The test map has them in
 Re-running the lead's `LD_BuildDirectorsCut.py` village / hunt stages would bring the greybox back; run `dress_main_map()` again afterwards.
 
 Screenshots: `Docs/Screenshots/Sys17_*.png` (`Sys17_Main_*` = the main map).
+
+### 12b. The props in 3D (Blender)
+
+Taisho's three drawings are rebuilt as real 3D models painted with the drawings themselves (Forgive Me Father style, ink lines included), so every side looks right. `Scripts/Blender_BuildProps3D.py` (`blender -b --python Scripts/Blender_BuildProps3D.py -- preview`) builds them, keys out the white sticker card, crops off the wooden stands, exports `Art/Meshy/<Prop>/Export/SM_*.glb` + textures, and renders each prop from 4 sides into `Saved/PropPreview/`.
+
+| Mesh (`/Game/DirectorsCut/Environment/Props/3D`) | Built from the drawing | Size |
+|---|---|---|
+| `SM_DC_HayBale01_3D` | lying round bale (spiral end caps, rolled sides, rounded rims) + square bale + pitchfork | 2.2 x 1.6 x 1.5 m |
+| `SM_DC_Grass01_3D` | 5 crossed cut-out cards of the drawn blades: a full clump from any side | 1.25 m wide |
+| `SM_DC_AppleTree02_3D` | flared trunk + 5 branches (drawn bark), leaf-painted canopy core, 4 crossed cards of the drawn leafy outline, fallen apples, grass skirt | 5.2 m tall |
+
+Materials: `MI_DC_*_3D` on `M_DC_InkedProp` (lit, masked, two-sided). The `DC Prop ...` classes now show the 3D mesh by default (`bUse3DModel`; off = the 2D camera-facing card), so every placed copy (main map, hunt set, test map) switched without re-placing anything. Collision is still the invisible capsule (hay blocks, tree trunk blocks, grass none), so the nav mesh is unchanged.
