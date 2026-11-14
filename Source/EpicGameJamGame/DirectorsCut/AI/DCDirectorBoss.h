@@ -14,6 +14,7 @@ class UTextRenderComponent;
 
 class USoundBase;
 class UNiagaraSystem;
+class ADCSpriteFX;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FDCOnDirectorBossEvent);
 
@@ -57,6 +58,10 @@ public:
 	/** When he is defeated */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Boss|Audio")
 	TObjectPtr<USoundBase> DefeatSound;
+
+	/** Hand-drawn effect when he is defeated (default: big golden poof) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Boss|FX")
+	TSubclassOf<ADCSpriteFX> DefeatSpriteFX;
 
 	/** Effect when he is defeated */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Boss|FX")

@@ -14,6 +14,7 @@ class USoundBase;
 class USoundAttenuation;
 class UNiagaraSystem;
 class UNiagaraComponent;
+class ADCSpriteFX;
 
 /**
  *  Every sound / effect slot in the combat and AI classes goes through here, so:
@@ -40,6 +41,11 @@ public:
 	/** One-shot Niagara effect at a location (nothing happens if FX is empty) */
 	UFUNCTION(BlueprintCallable, Category="DC|FX", meta=(WorldContext="WorldContext"))
 	static UNiagaraComponent* SpawnWorldFX(const UObject* WorldContext, UNiagaraSystem* FX, FVector Location, FRotator Rotation = FRotator::ZeroRotator, float Scale = 1.0f);
+
+	/** Hand-drawn one-shot effect (ADCSpriteFX child) at a location, nudged TowardCamera cm toward the player's view
+	 *  so it draws in front of the sprite it belongs to (a boar card, a hit target). Empty class = nothing. */
+	UFUNCTION(BlueprintCallable, Category="DC|FX", meta=(WorldContext="WorldContext"))
+	static ADCSpriteFX* SpawnSpriteFX(const UObject* WorldContext, TSubclassOf<ADCSpriteFX> FXClass, FVector Location, float Scale = 1.0f, float TowardCamera = 30.0f);
 
 	/** Shared distance falloff: full volume within 3 m, silent past ~40 m */
 	static USoundAttenuation* GetWorldAttenuation();

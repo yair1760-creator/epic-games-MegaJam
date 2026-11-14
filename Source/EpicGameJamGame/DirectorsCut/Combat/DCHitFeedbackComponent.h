@@ -1,4 +1,4 @@
-// Director's Cut - player hit feedback: red screen flash + camera shake (no extra plugins or assets needed).
+// Director's Cut - player hit feedback: red screen flash (UMG overlay) + camera shake (no extra plugins or assets needed).
 
 #pragma once
 
@@ -8,6 +8,7 @@
 #include "DCHitFeedbackComponent.generated.h"
 
 class APlayerController;
+class UDCScreenTintWidget;
 
 /**
  *  Camera modifier that adds a short, decaying rotation shake to whatever the player is looking through.
@@ -36,6 +37,8 @@ private:
 /**
  *  Put on a player pawn. Call PlayHit(Severity) when damaged and PlayDeath() on death.
  *  Only plays when the owner is controlled by a local PlayerController (AI pawns ignore it).
+ *  The flash and the death tint are a UMG overlay (UDCScreenTintWidget), NOT the camera fade, so a Director
+ *  fade ("CUT!", beat transitions) running at the same time is never replaced. The overlay goes away with the pawn.
  */
 UCLASS(ClassGroup=(DirectorsCut), meta=(BlueprintSpawnableComponent), DisplayName="DC Hit Feedback")
 class EPICGAMEJAMGAME_API UDCHitFeedbackComponent : public UActorComponent
@@ -87,6 +90,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Hit Feedback|Death", meta=(ClampMin=0.01, Units="s"))
 	float DeathFadeTime = 1.5f;
 
+	/** Overlay layer: above the 2D sword (-10), below the HUD (0) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Hit Feedback|Flash")
+	int32 OverlayZOrder = -5;
+
 	/** HPFraction = damage / max HP of this hit */
 	UFUNCTION(BlueprintCallable, Category="Hit Feedback")
 	void PlayHit(float HPFraction);
@@ -96,10 +103,20 @@ public:
 
 protected:
 
-	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 private:
 
 	APlayerController* GetLocalPC() const;
-	void ClearLeftoverFade();
+	UDCScreenTintWidget* GetOverlay(APlayerController* PC);
+	void UpdateOverlay();
+
+	UPROPERTY()
+	TObjectPtr<UDCScreenTintWidget> Overlay;
+
+	float FlashStartAlpha = 0.0f;
+	float FlashTime = 0.0f;
+	bool bDying = false;
+	float DeathTime = 0.0f;
 };

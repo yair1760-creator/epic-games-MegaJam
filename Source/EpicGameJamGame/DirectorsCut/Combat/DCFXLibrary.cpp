@@ -5,6 +5,9 @@
 #include "Kismet/GameplayStatics.h"
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraComponent.h"
+#include "DirectorsCut/Rendering/DCSpriteFX.h"
+#include "Engine/World.h"
+#include "GameFramework/PlayerController.h"
 #include "Sound/SoundAttenuation.h"
 #include "Sound/SoundBase.h"
 #include "HAL/PlatformTime.h"
@@ -80,4 +83,26 @@ UNiagaraComponent* UDCFXLibrary::SpawnWorldFX(const UObject* WorldContext, UNiag
 		return nullptr;
 	}
 	return UNiagaraFunctionLibrary::SpawnSystemAtLocation(WorldContext, FX, Location, Rotation, FVector(Scale), true, true);
+}
+
+ADCSpriteFX* UDCFXLibrary::SpawnSpriteFX(const UObject* WorldContext, TSubclassOf<ADCSpriteFX> FXClass, FVector Location, float Scale, float TowardCamera)
+{
+	UWorld* World = (FXClass && WorldContext) ? WorldContext->GetWorld() : nullptr;
+	if (!World)
+	{
+		return nullptr;
+	}
+	if (TowardCamera != 0.0f)
+	{
+		if (const APlayerController* PC = World->GetFirstPlayerController())
+		{
+			FVector CamLoc;
+			FRotator CamRot;
+			PC->GetPlayerViewPoint(CamLoc, CamRot);
+			Location += (CamLoc - Location).GetSafeNormal2D() * TowardCamera * Scale;
+		}
+	}
+	FActorSpawnParameters Params;
+	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	return World->SpawnActor<ADCSpriteFX>(FXClass, FTransform(FRotator::ZeroRotator, Location, FVector(Scale)), Params);
 }

@@ -13,6 +13,7 @@ class UTexture2D;
 class UDCWeaponSpriteWidget;
 class USoundBase;
 class UNiagaraSystem;
+class ADCSpriteFX;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FDCOnSwordHit, AActor*, HitActor, float, Damage);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FDCOnSwordSwing);
@@ -107,6 +108,10 @@ public:
 	/** Effect at the impact point for each actor hit (NS_HitImpact) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Sword|FX")
 	TObjectPtr<UNiagaraSystem> HitFX;
+
+	/** Hand-drawn impact burst for each actor hit (default: comic hit splat) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Sword|FX")
+	TSubclassOf<ADCSpriteFX> HitSpriteFX;
 
 	/** Effect in front of the camera on each swing (NS_SwordTrail) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Sword|FX")

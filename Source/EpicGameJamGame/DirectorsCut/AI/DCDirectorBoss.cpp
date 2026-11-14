@@ -5,6 +5,7 @@
 #include "DirectorsCut/Combat/DCHealthComponent.h"
 #include "DirectorsCut/Combat/DCFloatingHPBar.h"
 #include "DirectorsCut/Combat/DCFXLibrary.h"
+#include "DirectorsCut/Rendering/DCSpriteFX.h"
 #include "Sound/SoundBase.h"
 #include "NiagaraSystem.h"
 #include "Quest/DCQuestSubsystem.h"
@@ -26,6 +27,7 @@ ADCDirectorBoss::ADCDirectorBoss()
 	DC_DEFAULT_SFX(AttackSound, "S_BossShot");
 	DC_DEFAULT_SFX(HitSound, "S_BossHit");
 	DC_DEFAULT_SFX(DefeatSound, "S_BossDefeat");
+	DefeatSpriteFX = ADCFX_BossDefeat::StaticClass();
 	PrimaryActorTick.bCanEverTick = true;
 
 	GetCapsuleComponent()->InitCapsuleSize(65.0f, 130.0f);
@@ -261,6 +263,7 @@ void ADCDirectorBoss::HandleDied(UDCHealthComponent* HealthComponent, AControlle
 
 	UDCFXLibrary::PlayWorldSound(this, DefeatSound, GetActorLocation(), 1.6f, 0.0f, 0.0f);
 	UDCFXLibrary::SpawnWorldFX(this, DefeatFX, GetActorLocation());
+	UDCFXLibrary::SpawnSpriteFX(this, DefeatSpriteFX, GetActorLocation(), 1.0f, 60.0f);
 
 	OnBossDied.Broadcast();
 	SetLifeSpan(5.0f);

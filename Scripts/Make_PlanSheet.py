@@ -220,7 +220,7 @@ rows = [
   "Plug side/back boar frames into the sprite when Designer 1 delivers them. Move the red hit flash from camera fade to a HUD overlay so a Director 'CUT!' fade can't be overridden.",
   "DirectorsCut/Combat, DirectorsCut/AI", "DirectorsCut/Characters/Boar",
   "Walk around a boar: back/side frames show. Get hit during a CUT! fade: both show.",
-  "Correct view per angle; flash never cancels another fade.", "9", 1.5, "Waiting art"),
+  "Correct view per angle; flash never cancels another fade.", "9", 1.5, "In progress"),
 ]
 APPROVED = {1: "Approved", 2: "Approved", 3: "Approved", 4: "Approved", 5: "Approved", 6: "Approved", 7: "Approved", 8: "Approved", 9: "Approved", 10: "Approved", 11: "Approved", 13: "Approved", 14: "Approved", 15: "Approved", 18: "Approved"}   # approvals the user gave in chat (2026-11-13)
 r = HR + 1
@@ -257,7 +257,7 @@ BACKLOG = [
  (1, "Health component", "Audio", "No hurt / death sounds", "Hook OnHealthChanged / OnDied", "Medium"),
  (1, "Health component", "VFX", "No hit effect on the target (ink blood splat, sparks)", "Hook OnHealthChanged; ink style to match the look", "High"),
  (1, "Health component", "Art", "Training dummy is a plain cylinder with floating text", "Test prop only", "Low"),
- (2, "Player HP + hit feedback", "Code", "Hit flash uses the screen-fade effect; a Director fade (e.g. on CUT!) would be replaced if the player is hit during it", "Switch the flash to its own overlay if the Director team uses fades", "Medium"),
+ (2, "Player HP + hit feedback", "Code", "Done 2026-11-14 (system 20b): hit flash + death tint are a UMG overlay, no longer the camera fade, so Director fades are never replaced", "", "Low"),
  (2, "Player HP + hit feedback", "Audio", "No player hurt grunt, heartbeat or death sound", "", "Medium"),
  (2, "Player HP + hit feedback", "VFX", "No low-HP warning (red vignette / ink cracks at the screen edge)", "", "Medium"),
  (2, "Player HP + hit feedback", "Animation", "Death shows the template third-person ragdoll; no first-person death camera", "Comedy beat opportunity (Director: 'cut!')", "Medium"),
@@ -319,7 +319,7 @@ BACKLOG = [
  (14, "Balance + weapon rules", "Design", "King Boar 900 HP and Director 1500 HP are worked out from rifle damage, not from a real run", "Full Level 1 playtest in the main map (PIE, don't save); tune in DCKingBoar.cpp / DCDirectorBoss.cpp", "High"),
  (14, "Balance + weapon rules", "Design", "A weapon pickup touched during a sword-only beat is used up but gives nothing", "Only matters if the main map keeps template rifle pickups in Beats 1-2", "Low"),
 (15, "King Boar visuals", "Art", "Gold is a tint over the normal (red-brown) boar frames, so it reads orange-gold; the crown is a placeholder drawing", "Designer: a gold King Boar frame set and a crown; swap on Sprite / CrownSprite", "Medium"), (15, "King Boar visuals", "Animation", "Crown is fixed to the head position of the idle/charge frames; it doesn't follow hit/hurt frames", "Fine at 2.5x scale; real art could draw the crown into the frames", "Low"),
-(18, "Audio + VFX hooks", "Audio", "All 13 S_* sounds are synthesized placeholders (beeps, noise, buzz)", "System 19: reimport real files over the same S_* assets", "High"), (18, "Audio + VFX hooks", "VFX", "Hit impact, sword trail, boar death poof and boss defeat Niagara slots are empty (no effects in the project)", "Make NS_HitImpact / NS_BoarDeathPoof (ink splat style) and assign", "Medium"), (18, "Audio + VFX hooks", "Repo", "Done 2026-11-13: /Game/DirectorsCut/Audio added to Directories to Always Cook (Config/DefaultGame.ini), so the sounds ship in packaged builds", "Check once in the first packaged build", "Low"), (18, "Audio + VFX hooks", "Audio", "The killing blow on the boss also plays a hit sound under the defeat sound", "Cosmetic", "Low"),
+(18, "Audio + VFX hooks", "Audio", "All 13 S_* sounds are synthesized placeholders (beeps, noise, buzz)", "System 19: reimport real files over the same S_* assets", "High"), (18, "Audio + VFX hooks", "VFX", "Done 2026-11-14: hand-drawn sprite effects (hit splat, boar poof, gold boss poof) via ADCSpriteFX; frames are placeholder drawings; no sword trail", "Artist can redraw T_FX_* frames (same names)", "Low"), (18, "Audio + VFX hooks", "Repo", "Done 2026-11-13: /Game/DirectorsCut/Audio added to Directories to Always Cook (Config/DefaultGame.ini), so the sounds ship in packaged builds", "Check once in the first packaged build", "Low"), (18, "Audio + VFX hooks", "Audio", "The killing blow on the boss also plays a hit sound under the defeat sound", "Cosmetic", "Low"),
 ]
 pol = Sheet("Polish backlog")
 pol.set(1, 1, "Polish backlog: what each system still lacks (art, animation, textures, audio, VFX, UI)", S_TITLE)
