@@ -463,6 +463,15 @@ void AShooterCharacter::Die()
 	// call the BP handler
 	BP_OnDeath();
 
+	// Director's Cut: the player is drawn (UDCPlayerDeathSpriteWidget shows the hero's death poses), so the template
+	// mannequin must never appear: the BP death handler ragdolls the body and makes it visible on the ground. Hide it.
+	GetMesh()->SetVisibility(false, true);
+	GetMesh()->SetOwnerNoSee(true);
+	if (GetFirstPersonMesh())
+	{
+		GetFirstPersonMesh()->SetVisibility(false, true);
+	}
+
 	// Director's Cut: death event + death feedback
 	OnDied.Broadcast(this);
 	if (HitFeedback)

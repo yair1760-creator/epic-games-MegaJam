@@ -608,3 +608,11 @@ The visible sword rack (`Hunt_Rack` + `Hunt_RackSword_0..2`, `DC_Set_Hunt`) was 
 - **Gun shadow:** the template's shotgun meshes (`AShooterWeapon` first- and third-person mesh) are hidden behind the 2D weapon view but still cast a shadow on the ground under the player. Both now have shadows off (in `AShooterWeapon`, so every template-based weapon loses it). The player keeps only the round blob shadow.
 - **Checked in play** (beat 1, shotgun swapped in, two volleys into the path): 16 shells, all simulating, all lying flat and at rest 2 s later; no shadow casters left on the player or the actors attached to it. Not checked: many volleys in the beat 3 swarm (performance), a packaged build.
 - Screenshots: `Docs/Screenshots/ShellPhys_Settled.png`, `ShellPhys_NoGunShadow.png`.
+
+## 35. No template mannequin on death
+
+On death the template's Blueprint death handler (`BP_OnDeath`) ragdolls the player's third-person body, and the Unreal mannequin appeared lying on the ground behind the death slate. `AShooterCharacter::Die` now hides the body mesh (and the first-person mesh) right after that handler; the drawn death poses (section 21) are the only player on screen.
+
+- Checked in play: the body stays hidden at 0.5, 2 and 4 s after death, through to the respawn; it still simulates as a ragdoll, just unseen.
+- Compiled with Live Coding; the next normal build makes it permanent.
+- Screenshot: `Docs/Screenshots/Death_NoMannequin.png`.
