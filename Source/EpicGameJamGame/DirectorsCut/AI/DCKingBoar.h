@@ -7,9 +7,11 @@
 #include "DCKingBoar.generated.h"
 
 class UDCBillboardSprite;
+class UDCBaconBarWidget;
+class UDCHealthComponent;
 
 /**
- *  A boar at 2.5x size with a gold tint and a camera-facing crown sprite on its head.
+ *  Crown King Bacon Jr: a boar at 2.5x size with a gold tint, Taisho's crown on its head and his bacon boss bar on screen.
  *  Same AI as a normal boar, but never flees and gets angry when the player comes within GuardRadius.
  */
 UCLASS(DisplayName="DC King Boar")
@@ -46,12 +48,22 @@ public:
 
 protected:
 
-	/** Placeholder crown picture (T_DC_KingCrown_Placeholder) */
+	/** Taisho's crown picture (T_DC_KingCrown) */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components")
 	TObjectPtr<UDCBillboardSprite> CrownSprite;
 
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaSeconds) override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+
+	UFUNCTION()
+	void HandleBaconBarHealth(UDCHealthComponent* HealthComponent, float CurrentHP, float Delta, AActor* DamageCauser);
+
+	void RemoveBaconBar();
+
+	/** Crown King Bacon Jr's boss bar on screen (Taisho's bacon health bar) */
+	UPROPERTY(Transient)
+	TObjectPtr<UDCBaconBarWidget> BaconBar;
 
 private:
 

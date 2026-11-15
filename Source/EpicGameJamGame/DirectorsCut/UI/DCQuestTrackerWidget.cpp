@@ -15,7 +15,7 @@ UDCQuestTrackerWidget::UDCQuestTrackerWidget(const FObjectInitializer& ObjectIni
 	: Super(ObjectInitializer)
 {
 	DC_DEFAULT_SFX(TickSound, "S_QuestTick");
-	DC_DEFAULT_SFX(CompleteSound, "S_QuestComplete");
+	DC_DEFAULT_SFX(CompleteSound, "S_QuestComplete_Happy");   // ukulele + marimba chime (the old horn S_QuestComplete was too harsh)
 }
 
 void UDCQuestTrackerWidget::NativeConstruct()

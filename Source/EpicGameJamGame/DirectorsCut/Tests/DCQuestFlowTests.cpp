@@ -169,6 +169,7 @@ bool FDCNarratorAuditTest::RunTest(const FString& Parameters)
 		TEXT("/Game/DirectorsCut/Audio/SFX/S_Cut.S_Cut"),
 		TEXT("/Game/DirectorsCut/Audio/SFX/S_QuestTick.S_QuestTick"),
 		TEXT("/Game/DirectorsCut/Audio/SFX/S_QuestComplete.S_QuestComplete"),
+		TEXT("/Game/DirectorsCut/Audio/SFX/S_QuestComplete_Happy.S_QuestComplete_Happy"),
 	};
 	for (const TCHAR* SfxPath : ExpectedSFX)
 	{
@@ -453,7 +454,7 @@ bool FDCRunFullQuestFlowCommand::Update()
 	Test->TestEqual(TEXT("Beat 4 music is M_Romance"), GM->GetActiveMusicAsset() ? GM->GetActiveMusicAsset()->GetFName() : NAME_None, FName("M_Romance"));
 	if (Tracker)
 	{
-		Test->TestEqual(TEXT("HUD QuestTracker shows Defeat the King Boar:"), Tracker->GetDisplayedTitle(), FString(TEXT("Defeat the King Boar:")));
+		Test->TestEqual(TEXT("HUD QuestTracker shows Defeat Crown King Bacon Jr:"), Tracker->GetDisplayedTitle(), FString(TEXT("Defeat Crown King Bacon Jr:")));
 	}
 
 	// the King Boar waits for the Director's intro lines to end; the test does not wait 17 s for them
