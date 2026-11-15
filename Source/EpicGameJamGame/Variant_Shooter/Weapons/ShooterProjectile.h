@@ -111,4 +111,25 @@ public:
 	/** Sets the noise tag to use when generating AI perception noise on impact */
 	void SetNoiseTag(const FName& Tag);
 
+	/** Director's Cut: drop the visible mesh with physics on impact (see bDropMeshOnHit) */
+	void SetDropMeshOnHit(bool bDrop) { bDropMeshOnHit = bDrop; }
+
+protected:
+
+	/** Director's Cut: on impact the projectile's static mesh (the shotgun shell) becomes a physics object that bounces
+	 *  off, tumbles and lies down, instead of stopping where it hit (half in the ground). It ignores pawns and the
+	 *  camera, so it never blocks the player or a boar. Needs simple collision on the mesh. */
+	UPROPERTY(EditAnywhere, Category="Projectile|Hit")
+	bool bDropMeshOnHit = false;
+
+	/** Fraction of the impact speed the dropped mesh keeps as its bounce (capped by DropMaxBounceSpeed) */
+	UPROPERTY(EditAnywhere, Category="Projectile|Hit", meta=(EditCondition="bDropMeshOnHit", ClampMin=0, ClampMax=1))
+	float DropBounceFraction = 0.12f;
+
+	UPROPERTY(EditAnywhere, Category="Projectile|Hit", meta=(EditCondition="bDropMeshOnHit", ClampMin=0, Units="cm/s"))
+	float DropMaxBounceSpeed = 260.0f;
+
+	/** Turns the projectile's static mesh into a falling, tumbling physics body */
+	void DropMesh(const FVector& ImpactVelocity, const FVector& ImpactNormal);
+
 };

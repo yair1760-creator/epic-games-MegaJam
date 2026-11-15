@@ -383,6 +383,7 @@ void ADCShotgunWeapon::FireProjectile(const FVector& TargetLocation)
 		if (Pellet)
 		{
 			Pellet->SetNoiseTag(NoiseOwnerTag);
+			Pellet->SetDropMeshOnHit(true);      // the shell falls and tumbles where it lands
 			SpawnedPellets.Add(Pellet);
 			SpawnTransforms.Add(SpawnTransform);
 		}

@@ -12,6 +12,8 @@
 #include "Engine/OverlapResult.h"
 #include "Engine/World.h"
 #include "TimerManager.h"
+#include "Components/StaticMeshComponent.h"
+#include "Engine/CollisionProfile.h"
 
 AShooterProjectile::AShooterProjectile()
 {
@@ -62,6 +64,9 @@ void AShooterProjectile::NotifyHit(class UPrimitiveComponent* MyComp, AActor* Ot
 
 	bHit = true;
 
+	// Director's Cut: keep the speed at impact for the dropped mesh's bounce
+	const FVector ImpactVelocity = ProjectileMovement ? ProjectileMovement->Velocity : FVector::ZeroVector;
+
 	// disable collision on the projectile
 	CollisionComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
@@ -83,6 +88,12 @@ void AShooterProjectile::NotifyHit(class UPrimitiveComponent* MyComp, AActor* Ot
 
 	// pass control to BP for any extra effects
 	BP_OnProjectileHit(Hit);
+
+	// Director's Cut: the shell falls and tumbles instead of staying stuck where it hit
+	if (bDropMeshOnHit)
+	{
+		DropMesh(ImpactVelocity, Hit.ImpactNormal);
+	}
 
 	// check if we should schedule deferred destruction of the projectile
 	if (DeferredDestructionTime > 0.0f)
@@ -159,6 +170,39 @@ void AShooterProjectile::ProcessHit(AActor* HitActor, UPrimitiveComponent* HitCo
 		// give some physics impulse to the object
 		HitComp->AddImpulseAtLocation(HitDirection * PhysicsForce, HitLocation);
 	}
+}
+
+void AShooterProjectile::DropMesh(const FVector& ImpactVelocity, const FVector& ImpactNormal)
+{
+	UStaticMeshComponent* Mesh = FindComponentByClass<UStaticMeshComponent>();
+	if (!Mesh || !Mesh->GetStaticMesh() || !Mesh->GetBodySetup())
+	{
+		return;      // no mesh or no collision shape to simulate with
+	}
+
+	if (ProjectileMovement)
+	{
+		ProjectileMovement->StopMovementImmediately();
+		ProjectileMovement->Deactivate();
+	}
+
+	// a light physics body that only collides with the world: never with pawns (player, boars) or traces
+	Mesh->SetCollisionProfileName(UCollisionProfile::PhysicsActor_ProfileName);
+	Mesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
+	Mesh->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
+	Mesh->SetCollisionResponseToChannel(ECC_Visibility, ECR_Ignore);
+	Mesh->SetCollisionResponseToChannel(ECC_GameTraceChannel1, ECR_Ignore);
+	Mesh->SetCanEverAffectNavigation(false);
+	Mesh->SetSimulatePhysics(true);           // detaches it from the (now collision-free) sphere
+	Mesh->SetLinearDamping(0.6f);
+	Mesh->SetAngularDamping(1.2f);
+
+	// bounce off the surface it hit, a little upward, spinning
+	const FVector Normal = ImpactNormal.IsNearlyZero() ? FVector::UpVector : ImpactNormal;
+	const FVector Reflected = FMath::GetReflectionVector(ImpactVelocity.GetSafeNormal(), Normal);
+	const float Speed = FMath::Min(ImpactVelocity.Size() * DropBounceFraction, DropMaxBounceSpeed);
+	Mesh->SetPhysicsLinearVelocity(Reflected * Speed + FVector(0.0f, 0.0f, 120.0f));
+	Mesh->SetPhysicsAngularVelocityInDegrees(FMath::VRand() * FMath::FRandRange(240.0f, 720.0f));
 }
 
 void AShooterProjectile::OnDeferredDestruction()
