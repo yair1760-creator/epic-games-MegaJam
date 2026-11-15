@@ -49,9 +49,9 @@ void ADCMainMenuGameMode::BeginPlay()
 	if (bShowIntroScreens && !GDCIntroShownThisLaunch)
 	{
 		GDCIntroShownThisLaunch = true;
-		// load both pictures now, before the splash's first frame, so neither loads in the middle of a fade
+		// load the notice card now, before the splash's first frame, so it does not load in the middle of a fade
 		PreloadedIntroTextures.Reset();
-		for (const TCHAR* Path : { TEXT("/Game/UI/Splash/T_UE_Logo.T_UE_Logo"), TEXT("/Game/UI/Splash/T_UI_ContentNotice_Card.T_UI_ContentNotice_Card") })
+		for (const TCHAR* Path : { TEXT("/Game/UI/Splash/T_UI_ContentNotice_Card.T_UI_ContentNotice_Card") })
 		{
 			if (UObject* Tex = StaticLoadObject(UObject::StaticClass(), nullptr, Path, nullptr, LOAD_NoWarn))
 			{

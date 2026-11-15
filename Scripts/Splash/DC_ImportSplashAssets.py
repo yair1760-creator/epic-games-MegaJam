@@ -4,9 +4,7 @@
 # - T_UI_Button_Quit_Bar : Art/UI/RatedPG/Button_Quit_Bar.png (same texture settings as the START button)
 # - T_UI_ContentNotice_Card : Art/UI/RatedPG/ContentNotice_Card.png (the drawn content notice)
 # - Font_NoticeItalic    : the engine's own Roboto-Italic.ttf (same family as the HUD fonts) for the Director's line
-# - T_UE_Logo            : ONLY if Art/UI/Splash/UE_Logo.png exists. That file must be the official Unreal Engine logo
-#                          downloaded from https://www.unrealengine.com/en-US/branding (version for dark backgrounds).
-#                          It is imported as it is: UserInterface2D, no mipmaps, UI group. Never put anything else there.
+# The Unreal Engine logo picture is not used (removed Nov 15): the splash says "Made with Unreal Engine" in text.
 import os
 import unreal
 
@@ -53,14 +51,4 @@ def import_splash_assets():
     unreal.EditorLoadingAndSavingUtils.save_packages([face.get_outermost(), font.get_outermost()], False)
     out["italic_font"] = font.get_path_name()
 
-    logo_src = os.path.join(PROJECT, "Art", "UI", "Splash", "UE_Logo.png")
-    if os.path.isfile(logo_src):
-        logo = _import(logo_src, "T_UE_Logo")
-        # the file is 2372 x 2880 but drawn about 330 px tall: the game keeps it at most 1024 px (same picture, scaled
-        # down by the engine), so it loads fast and the splash does not hitch. The source file stays untouched.
-        logo.set_editor_property("max_texture_size", 1024)
-        _ui_texture(logo)
-        out["logo"] = [logo.blueprint_get_size_x(), logo.blueprint_get_size_y()]
-    else:
-        out["logo"] = "not imported: put the official file at " + logo_src
     return out

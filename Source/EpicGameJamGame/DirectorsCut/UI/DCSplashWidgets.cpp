@@ -150,45 +150,20 @@ void UDCIntroScreenWidget::Finish()
 	OnFinished.Broadcast();
 }
 
-// ---------------------------------------------------------------- Unreal Engine logo splash
+// ---------------------------------------------------------------- "Made with Unreal Engine" splash
 
 UDCSplashWidget::UDCSplashWidget(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
 	FadeInTime = 0.5f; HoldTime = 1.5f; FadeOutTime = 0.5f;
-	LogoTexture = TSoftObjectPtr<UTexture2D>(FSoftObjectPath(TEXT("/Game/UI/Splash/T_UE_Logo.T_UE_Logo")));
+	MadeWithText = NSLOCTEXT("DirectorsCut", "MadeWithUnrealEngine", "Made with Unreal Engine");
 	TrademarkNotice = NSLOCTEXT("DirectorsCut", "UETrademarkNotice",
 		"Unreal® and Unreal Engine® are trademarks or registered trademarks of Epic Games, Inc. in the United States of America and elsewhere.");
 }
 
 UWidget* UDCSplashWidget::BuildContent(UCanvasPanel* Canvas)
 {
-	LoadedLogo = LogoTexture.LoadSynchronous();
-	if (!LoadedLogo)
-	{
-		return nullptr;          // no official logo file imported: the splash is skipped, nothing is drawn in its place
-	}
-
-	// native aspect ratio, never stretched; no tint, no effects
-	const float W = static_cast<float>(LoadedLogo->GetSizeX());
-	const float H = static_cast<float>(FMath::Max(LoadedLogo->GetSizeY(), 1));
-	const FVector2D Size(LogoHeight * W / H, LogoHeight);
-
-	UImage* Logo = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass(), TEXT("UnrealEngineLogo"));
-	Logo->SetBrushFromTexture(LoadedLogo, /*bMatchSize*/ false);
-	Logo->SetColorAndOpacity(FLinearColor::White);
-	if (UCanvasPanelSlot* LogoSlot = Canvas->AddChildToCanvas(Logo))
-	{
-		LogoSlot->SetAnchors(FAnchors(0.5f, 0.5f));
-		LogoSlot->SetAlignment(FVector2D(0.5f, 0.5f));
-		LogoSlot->SetPosition(FVector2D::ZeroVector);
-		LogoSlot->SetSize(Size);
-		LogoSlot->SetZOrder(1);
-	}
-
-	// Epic's trademark notice, required wherever the Unreal Engine logo is shown (brand.epicgames.com,
-	// "Trademark & attribution requirements": in a reasonable, visible location; wording not to be changed).
-	// It is a child of the logo's fading box, so it fades with the logo.
+	// one fading box: the line in the middle of the screen, Epic's trademark notice at the bottom
 	UVerticalBox* Box = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass(), TEXT("SplashContent"));
 	if (UCanvasPanelSlot* BoxSlot = Canvas->AddChildToCanvas(Box))
 	{
@@ -196,18 +171,21 @@ UWidget* UDCSplashWidget::BuildContent(UCanvasPanel* Canvas)
 		BoxSlot->SetOffsets(FMargin(0.0f));
 		BoxSlot->SetZOrder(1);
 	}
-	Logo->RemoveFromParent();
-	if (UVerticalBoxSlot* S = Box->AddChildToVerticalBox(Logo))
+
+	const FSlateFontInfo Fallback = UTextBlock::StaticClass()->GetDefaultObject<UTextBlock>()->GetFont();
+
+	UTextBlock* MadeWith = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("MadeWithUnrealEngine"));
+	MadeWith->SetText(MadeWithText);
+	MadeWith->SetFont(DCIntroFont(TEXT("/Game/DirectorsCut/UI/Fonts/Font_Display.Font_Display"), 44, Fallback));
+	MadeWith->SetColorAndOpacity(FSlateColor(FLinearColor::White));
+	MadeWith->SetJustification(ETextJustify::Center);
+	if (UVerticalBoxSlot* S = Box->AddChildToVerticalBox(MadeWith))
 	{
 		S->SetHorizontalAlignment(HAlign_Center);
 		S->SetVerticalAlignment(VAlign_Center);
 		S->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
 	}
-	FSlateBrush LogoBrush = Logo->GetBrush();       // the brush's own size is what the box lays out: the logo's size at its native aspect
-	LogoBrush.ImageSize = Size;
-	Logo->SetBrush(LogoBrush);
 
-	const FSlateFontInfo Fallback = UTextBlock::StaticClass()->GetDefaultObject<UTextBlock>()->GetFont();
 	UTextBlock* Notice = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("TrademarkNotice"));
 	Notice->SetText(TrademarkNotice);
 	Notice->SetFont(DCIntroFont(TEXT("/Game/DirectorsCut/UI/Fonts/Font_Body.Font_Body"), 14, Fallback));
@@ -274,7 +252,7 @@ UWidget* UDCContentNoticeWidget::BuildContent(UCanvasPanel* Canvas)
 	const FSlateFontInfo BodyFont = DCIntroFont(TEXT("/Game/DirectorsCut/UI/Fonts/Font_Body.Font_Body"), 28, Fallback);
 	const FSlateFontInfo QuoteFont = DCIntroFont(TEXT("/Game/UI/Splash/Font_NoticeItalic.Font_NoticeItalic"), 22, BodyFont);
 
-	const FLinearColor Cream(0.87f, 0.65f, 0.41f, 1.0f);       // the menu's cream (#F0D3AC in sRGB)
+	const FLinearColor NoticeCream(0.87f, 0.65f, 0.41f, 1.0f);       // the menu's cream (#F0D3AC in sRGB)
 	const FLinearColor Soft(0.80f, 0.80f, 0.80f, 1.0f);
 
 	auto AddLine = [this, Box](FName Name, const FText& Text, const FSlateFontInfo& Font, const FLinearColor& Color, float TopPadding)
@@ -291,7 +269,7 @@ UWidget* UDCContentNoticeWidget::BuildContent(UCanvasPanel* Canvas)
 		}
 	};
 
-	AddLine(TEXT("NoticeHeading"), Heading, HeadFont, Cream, 0.0f);
+	AddLine(TEXT("NoticeHeading"), Heading, HeadFont, NoticeCream, 0.0f);
 	AddLine(TEXT("NoticeLine1"), Line1, BodyFont, FLinearColor::White, 36.0f);
 	AddLine(TEXT("NoticeLine2"), Line2, BodyFont, FLinearColor::White, 10.0f);
 	AddLine(TEXT("NoticeQuote"), Quote, QuoteFont, Soft, 44.0f);

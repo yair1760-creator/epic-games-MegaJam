@@ -60,10 +60,11 @@ public:
 
 	/** Logo size and offset from the screen centre, in 1920 x 1080 reference pixels (the art has a small clear margin) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Menu")
-	FVector2D LogoSize = FVector2D(1026.0f, 385.0f);
+	FVector2D LogoSize = FVector2D(1026.0f, 442.0f);     // the Director's Cut logo is 1600 x 690
 
+	/** Centre offset: the top edge stays where the old logo's was; the banner adds height below */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Menu")
-	FVector2D LogoOffset = FVector2D(0.0f, -150.0f);
+	FVector2D LogoOffset = FVector2D(0.0f, -121.0f);
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Menu")
 	FVector2D StartSize = FVector2D(326.0f, 65.0f);
