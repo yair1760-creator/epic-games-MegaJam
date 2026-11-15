@@ -1,6 +1,8 @@
 // Director's Cut - projectile thrown by the Director boss in Beat 5.
 
 #include "DirectorsCut/AI/DCDirectorProjectile.h"
+#include "DirectorsCut/Rendering/DCBillboardSprite.h"
+#include "Engine/Texture2D.h"
 #include "Components/PointLightComponent.h"
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -36,6 +38,34 @@ ADCDirectorProjectile::ADCDirectorProjectile()
 	if (RedMat.Succeeded())
 	{
 		VisualMesh->SetMaterial(0, RedMat.Object);
+	}
+
+	Sprite = CreateDefaultSubobject<UDCBillboardSprite>(TEXT("Sprite"));
+	Sprite->SetupAttachment(CollisionSphere);
+	Sprite->bPivotAtBottom = false;
+	Sprite->bCastShadow = false;
+	Sprite->FrontSize = FVector2D(78.0f, 78.0f);
+	Sprite->SideSize = Sprite->FrontSize;
+	#define DC_CLAPPER_FRAME(Var, N) static ConstructorHelpers::FObjectFinder<UTexture2D> Var(TEXT("/Game/DirectorsCut/Characters/Director/T_Director_Clapper_" N ".T_Director_Clapper_" N))
+	DC_CLAPPER_FRAME(C1, "01");
+	DC_CLAPPER_FRAME(C2, "02");
+	DC_CLAPPER_FRAME(C3, "03");
+	DC_CLAPPER_FRAME(C4, "04");
+	#undef DC_CLAPPER_FRAME
+	if (C1.Succeeded() && C2.Succeeded() && C3.Succeeded() && C4.Succeeded())
+	{
+		FDCSpriteAnim Spin;
+		Spin.Frames = { C1.Object, C2.Object, C3.Object, C4.Object };
+		Spin.FPS = 14.0f;
+		Spin.bLoop = true;
+		Sprite->Animations.Add(TEXT("Spin"), Spin);
+		Sprite->StartAnimation = TEXT("Spin");
+		Sprite->FrontTexture = C1.Object;
+		VisualMesh->SetVisibility(false);
+	}
+	else
+	{
+		Sprite->SetVisibility(false, true);
 	}
 
 	GlowLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("Glow Light"));
