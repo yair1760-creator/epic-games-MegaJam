@@ -75,4 +75,8 @@ private:
 	float LastShownSeconds = 0.0f;
 	int32 LastFrameSwitches = 0;
 	int32 LastDistinctFrames = 0;
+
+	/** True after the launch load of the main menu (which shows no loading screen) */
+	bool bFirstLoadDone = false;
+	bool bSkippedThisLoad = false;
 };

@@ -637,3 +637,22 @@ The Meshy art in `Art/Meshy/Placeholders` now replaces the greybox in sections A
 - **Flat-back stencil:** `M_DC_PaintTiled` mirrored pictures on faces looking to +X and -Y, so "SET 4 THIS SIDE BACK" read backwards on two of the house flats. The projection now flips U by the face's side; every tiled paint reads correctly from both sides.
 - **Backdrop ground line:** the backdrop picture has a plain olive strip (113 cm) along its bottom that looked like a gap between the grass and the painted hills. `MI_DC_BackdropSky` (MinZ -120) sinks the picture so the strip is under the ground; `LD_DressBackdrop.py` has the same value.
 - Screenshots: `Docs/Screenshots/Placeholders_Windmill.png`, `FlatBack_Stencil.png`, `Backdrop_GroundLine.png`.
+
+## 38. King Boar waits for the Director's beat 4 lines
+
+`ADCGameMode::EnterBeat4` no longer spawns the King Boar at once. A player standing near his spot was attacked and killed during the three intro lines (`B4_Intro_01..03`, about 27 s of audio), and the death cut the lines off.
+
+- The King's place is stored (`PendingKingLoc/Rot`, `bKingBoarPending`) and `SpawnKingBoarNow()` runs from `HandleLineFinished` when `B4_Intro_03` ends.
+- Safety net if the lines are interrupted: `CheckKingBoarFallback` runs every 2 s (from 5 s in) and spawns him once the Director has been silent for two checks in a row. No fixed time, because the recorded lines are much longer than their subtitle durations (10.1 / 6.3 / 10.6 s against 6 / 4.5 / 6.5 s in the table).
+- The quest, princess, shed doors and pink lights still start with the beat. `CleanupBeatActors` clears the pending spawn.
+- `DCQuestFlowTests.cpp` (Saar's beat 4 test) calls `GM->SpawnKingBoarNow()` before it looks for the King. The automated tests were not run.
+- Checked in the packaged build log (`DC.GoToBeat 4`): lines at 0 s, 10.1 s and 16.4 s, "King Boar spawned" at 27.0 s, the moment the third line ended.
+
+## 39. Shotgun kept to the end; King Boar and Director toughened
+
+Yair's call after playtesting: the sword was far too hard against the King Boar and the Director, so the player keeps the shotgun from beat 3 to the end.
+
+- `ADCGameMode::EnterBeat4` and `EnterBeat5` now call `EquipBeatWeapon(true)`; a respawn in beat 3, 4 or 5 gives the shotgun back (`CurrentBeat >= 3`). Beats 1 and 2 are still the sword.
+- A full shotgun blast is 8 pellets x 25 = 200 damage, which would kill the King (350 HP) in two shots and the Director (450 HP) in three. New `UDCHealthComponent::DamageTakenScale` (default 1) multiplies every hit; both bosses use **0.15**, so a full blast does 30: about 12 clean blasts for the King and 15 for the Director, more when pellets miss. `Kill()` ignores the scale. Tune the two values in `DCKingBoar.cpp` and `DCDirectorBoss.cpp`.
+- Tests (`DCQuestFlowTests.cpp`) updated to expect the shotgun in beats 4 and 5 and to scale the boss half-HP hit; **not run**. The respawn check may need a one-tick wait, because the shotgun is given on the tick after the respawn.
+- Checked in the packaged build: screenshots of `DC.GoToBeat 4` and `DC.GoToBeat 5` show the shotgun and the ammo counter. The fights themselves were not played.

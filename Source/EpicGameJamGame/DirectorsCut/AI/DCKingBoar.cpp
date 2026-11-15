@@ -17,7 +17,10 @@ ADCKingBoar::ADCKingBoar()
 {
 	SetActorScale3D(FVector(2.5f));
 
-	Health->MaxHP = 350.0f;   // sword (25 dmg) needs 14 hits
+	Health->MaxHP = 350.0f;
+	// The player keeps the shotgun from beat 3 on. A full blast is 8 pellets x 25 = 200 damage, which would end
+	// this fight in two shots; at 0.15 a full blast does 30, so about 12 clean blasts (more with pellets missing).
+	Health->DamageTakenScale = 0.15f;
 	FleeHPFraction = 0.0f;
 	AngryPause = 0.35f;
 	ChargeSpeed = 740.0f;

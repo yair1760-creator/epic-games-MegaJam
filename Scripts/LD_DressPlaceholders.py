@@ -449,6 +449,7 @@ def ph_dress_C():
     _clear(L, F)
     out = {}
     out["posts"] = _paint(_acts(L, ("Romance_Post",)), "MI_DC_RibbonPost")
+    out["sign_poles"] = _paint(_acts(L, ("PGBoard_Pole",)), "MI_DC_RibbonPost")     # the two poles under the heart PG sign
     _in_level(L)
     try:
         # C1 shed: the facade card stands 26 cm in front of the front wall (outside = the wall's yaw direction)

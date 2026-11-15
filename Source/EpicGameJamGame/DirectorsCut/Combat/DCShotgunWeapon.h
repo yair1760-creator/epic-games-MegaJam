@@ -141,9 +141,15 @@ public:
 	UFUNCTION(BlueprintPure, Category="Shotgun|2D View")
 	float GetShotAnimDuration() const { return float(FlashTicks + RecoilTicks + RecoveryTicks) / FMath::Max(AnimFPS, 1.0f); }
 
-	/** Frame size on screen (1 = a frame fills the screen height) */
+	/** Frame size on screen (1 = a frame fills the screen height). Shrinks toward the bottom-right corner.
+	 *  0.85 (Nov 15): at 1 the muzzle sat right on the crosshair and hid what the player was aiming at. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Shotgun|2D View", meta=(ClampMin=0.2, ClampMax=2))
-	float SpriteScreenScale = 1.0f;
+	float SpriteScreenScale = 0.85f;
+
+	/** Extra push of the gun toward the bottom-right, in screen pixels at 1080p (scales with the UI), so the muzzle
+	 *  stays clear of the crosshair: about 210 px right of and 140 px below it at 1080p with the 0.85 scale */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Shotgun|2D View")
+	FVector2D SpriteScreenOffset = FVector2D(70.0f, 60.0f);
 
 	/** Walk bob in screen pixels at full running speed (0 = off) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Shotgun|2D View", meta=(ClampMin=0))

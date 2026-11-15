@@ -45,7 +45,7 @@ float UDCHealthComponent::ApplyDamage(float Amount, AController* InstigatedBy, A
 		return 0.0f;
 	}
 
-	const float Applied = FMath::Min(Amount, CurrentHP);
+	const float Applied = FMath::Min(Amount * (bIgnoreDamageScale ? 1.0f : DamageTakenScale), CurrentHP);
 	CurrentHP -= Applied;
 
 	if (bLogChanges)
@@ -100,7 +100,9 @@ void UDCHealthComponent::Kill(AController* InstigatedBy, AActor* DamageCauser)
 {
 	const bool bWasInvulnerable = bInvulnerable;
 	bInvulnerable = false;
+	bIgnoreDamageScale = true;                 // a kill is a kill, whatever the owner's toughness
 	ApplyDamage(CurrentHP, InstigatedBy, DamageCauser);
+	bIgnoreDamageScale = false;
 	bInvulnerable = bWasInvulnerable;
 }
 

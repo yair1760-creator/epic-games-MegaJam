@@ -2,6 +2,7 @@
 
 #include "UI/DCMainMenuGameMode.h"
 #include "UI/DCMenuWidgets.h"
+#include "UI/DCSplashWidgets.h"
 #include "Components/Widget.h"
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/SpectatorPawn.h"
@@ -32,12 +33,82 @@ bool ADCMainMenuGameMode::IsMenuMusicPlaying() const
 	return MenuMusicComponent && MenuMusicComponent->IsPlaying();
 }
 
+// the logo splash and the content notice play once per launch of the game, not each time the menu map loads
+static bool GDCIntroShownThisLaunch = false;
+
 void ADCMainMenuGameMode::BeginPlay()
 {
 	Super::BeginPlay();
 
 	APlayerController* PC = UGameplayStatics::GetPlayerController(this, 0);
 	if (!PC || !PC->IsLocalController())
+	{
+		return;
+	}
+
+	if (bShowIntroScreens && !GDCIntroShownThisLaunch)
+	{
+		GDCIntroShownThisLaunch = true;
+		// load both pictures now, before the splash's first frame, so neither loads in the middle of a fade
+		PreloadedIntroTextures.Reset();
+		for (const TCHAR* Path : { TEXT("/Game/UI/Splash/T_UE_Logo.T_UE_Logo"), TEXT("/Game/UI/Splash/T_UI_ContentNotice_Card.T_UI_ContentNotice_Card") })
+		{
+			if (UObject* Tex = StaticLoadObject(UObject::StaticClass(), nullptr, Path, nullptr, LOAD_NoWarn))
+			{
+				PreloadedIntroTextures.Add(Tex);
+			}
+		}
+		ShowIntroScreen(UDCSplashWidget::StaticClass());      // logo -> content notice -> menu
+		return;
+	}
+	ShowMenu();
+}
+
+void ADCMainMenuGameMode::ShowIntroScreen(TSubclassOf<UDCIntroScreenWidget> ScreenClass)
+{
+	APlayerController* PC = UGameplayStatics::GetPlayerController(this, 0);
+	IntroScreen = PC ? CreateWidget<UDCIntroScreenWidget>(PC, ScreenClass) : nullptr;
+	if (!IntroScreen)
+	{
+		ShowMenu();
+		return;
+	}
+	IntroScreen->OnFinished.AddUniqueDynamic(this, &ADCMainMenuGameMode::HandleIntroScreenFinished);
+	IntroScreen->AddToViewport(200);
+
+	// keys, clicks and gamepad buttons go to the screen (any of them skips it); no cursor on the black screen
+	FInputModeUIOnly Mode;
+	Mode.SetWidgetToFocus(IntroScreen->TakeWidget());
+	Mode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+	PC->SetInputMode(Mode);
+	PC->bShowMouseCursor = false;
+	PC->SetIgnoreMoveInput(true);
+	PC->SetIgnoreLookInput(true);
+}
+
+void ADCMainMenuGameMode::HandleIntroScreenFinished()
+{
+	const bool bWasSplash = IntroScreen && IntroScreen->IsA<UDCSplashWidget>();
+	if (IntroScreen)
+	{
+		IntroScreen->OnFinished.RemoveAll(this);
+		IntroScreen->RemoveFromParent();
+		IntroScreen = nullptr;
+	}
+	if (bWasSplash)
+	{
+		ShowIntroScreen(UDCContentNoticeWidget::StaticClass());
+	}
+	else
+	{
+		ShowMenu();
+	}
+}
+
+void ADCMainMenuGameMode::ShowMenu()
+{
+	APlayerController* PC = UGameplayStatics::GetPlayerController(this, 0);
+	if (!PC || MenuWidget)
 	{
 		return;
 	}

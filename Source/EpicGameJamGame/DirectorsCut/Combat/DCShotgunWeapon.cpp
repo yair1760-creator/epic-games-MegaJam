@@ -291,7 +291,7 @@ void ADCShotgunWeapon::UpdateSpriteView(float DeltaSeconds)
 	BobOffset.Y = (FMath::Abs(FMath::Sin(Step)) * WalkBobPixels * 0.6f * Run
 		+ FMath::Sin(BobTime * 2.0f * PI * 0.35f) * IdleSwayPixels * (1.0f - Run)) * Calm;
 
-	SpriteWidget->SetPlacement(BobOffset + AnimOffset + EdgeBleed, AnimScale, AnimAngleDeg);
+	SpriteWidget->SetPlacement(BobOffset + AnimOffset + EdgeBleed + SpriteScreenOffset, AnimScale, AnimAngleDeg);
 }
 
 void ADCShotgunWeapon::Tick(float DeltaSeconds)
