@@ -600,3 +600,11 @@ The visible sword rack (`Hunt_Rack` + `Hunt_RackSword_0..2`, `DC_Set_Hunt`) was 
 
 - Checked in play: walking through the old spot goes straight through; walking into the moved rack stops the player in front of it.
 - Note: `dress_main_map("village")` places the rack on the greybox base, so re-running it would put the rack back at the old spot.
+
+## 34. Shotgun shells drop with physics; no template gun shadow
+
+- **Shells:** `AShooterProjectile` has a new option `bDropMeshOnHit` (with `DropBounceFraction` 0.12 and `DropMaxBounceSpeed` 260 cm/s). On impact the projectile's static mesh becomes a physics body: it bounces off the surface a little, spins, falls over and lies down, instead of staying where it hit (half in the ground). It ignores pawns, the camera, visibility traces and weapon traces, so it never blocks the player or a boar. `ADCShotgunWeapon` switches it on for its pellets; other projectiles are unchanged. The pellet still disappears 6 s after the hit (`DeferredDestructionTime` in `BP_ShooterProjectile_Bullet`).
+- `SM_DC_ShotgunShell` got one simple collision **capsule** along its length (a box let shells land standing on their flat end).
+- **Gun shadow:** the template's shotgun meshes (`AShooterWeapon` first- and third-person mesh) are hidden behind the 2D weapon view but still cast a shadow on the ground under the player. Both now have shadows off (in `AShooterWeapon`, so every template-based weapon loses it). The player keeps only the round blob shadow.
+- **Checked in play** (beat 1, shotgun swapped in, two volleys into the path): 16 shells, all simulating, all lying flat and at rest 2 s later; no shadow casters left on the player or the actors attached to it. Not checked: many volleys in the beat 3 swarm (performance), a packaged build.
+- Screenshots: `Docs/Screenshots/ShellPhys_Settled.png`, `ShellPhys_NoGunShadow.png`.

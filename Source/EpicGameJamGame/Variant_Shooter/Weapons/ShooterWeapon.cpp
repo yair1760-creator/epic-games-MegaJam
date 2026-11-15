@@ -26,6 +26,7 @@ AShooterWeapon::AShooterWeapon()
 	FirstPersonMesh->SetCollisionProfileName(FName("NoCollision"));
 	FirstPersonMesh->SetFirstPersonPrimitiveType(EFirstPersonPrimitiveType::FirstPerson);
 	FirstPersonMesh->bOnlyOwnerSee = true;
+	FirstPersonMesh->SetCastShadow(false);      // Director's Cut: the 2D weapon view has no 3D gun, so no gun shadow
 
 	// create the third person mesh
 	ThirdPersonMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Third Person Mesh"));
@@ -34,6 +35,7 @@ AShooterWeapon::AShooterWeapon()
 	ThirdPersonMesh->SetCollisionProfileName(FName("NoCollision"));
 	ThirdPersonMesh->SetFirstPersonPrimitiveType(EFirstPersonPrimitiveType::WorldSpaceRepresentation);
 	ThirdPersonMesh->bOwnerNoSee = true;
+	ThirdPersonMesh->SetCastShadow(false);      // Director's Cut: the template gun's shadow on the ground under the player
 }
 
 void AShooterWeapon::BeginPlay()
