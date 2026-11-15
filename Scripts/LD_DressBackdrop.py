@@ -12,7 +12,9 @@ import unreal
 
 BD_SRC = r"D:\EpicGameJam\EpicGameJamGame\EpicGameJamGame\Art\Meshy\Backdrop\Export"
 BD_DIR = "/Game/DirectorsCut/Environment/Backdrop"
-FLAT_RECT = (-5000.0, 10000.0, 0.0, 2600.0)          # min Y, width, min Z, height of the flat's front face
+FLAT_RECT = (-5000.0, 10000.0, -120.0, 2720.0)       # min Y, width, min Z, height of the picture; min Z -120 sinks the
+                                                      # picture's plain olive bottom strip (113 cm) under the ground, and
+                                                      # height 2720 keeps its top on the flat's top edge (Z 2600)
 SUN_CENTRE = (5985.0, -700.0, 2100.0)
 SUN_SIZE = 900.0
 MEL = unreal.MaterialEditingLibrary
