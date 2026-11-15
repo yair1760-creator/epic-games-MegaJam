@@ -84,6 +84,16 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Menu")
 	FVector2D OptionsOffset = FVector2D(0.0f, 262.0f);
 
+	/** QUIT button under OPTIONS, same bar style (Art/UI/RatedPG/Button_Quit_Bar.png). Closes the game. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Menu")
+	TObjectPtr<UTexture2D> QuitTexture;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Menu")
+	FVector2D QuitSize = FVector2D(246.0f, 94.0f);      // the art is 1374 x 528
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Menu")
+	FVector2D QuitOffset = FVector2D(0.0f, 361.0f);
+
 	/** "NOT ENOUGH BUDGET FOR THE OPTIONS" card with the crying pig (Art/UI/RatedPG/Options_NoBudget_Panel.png, 1103 x 851).
 	 *  Shown over a dimmed menu; any click, Esc, Enter or Space closes it. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Menu")
@@ -118,6 +128,9 @@ protected:
 	UFUNCTION()
 	void HandleNoBudgetClosed();
 
+	UFUNCTION()
+	void HandleQuitClicked();
+
 	void SetNoBudgetOpen(bool bOpen);
 
 	UPROPERTY(Transient)
@@ -125,6 +138,9 @@ protected:
 
 	UPROPERTY(Transient)
 	TObjectPtr<UButton> OptionsButton;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UButton> QuitButton;
 
 	/** Full-screen dim layer under the card; it is a button so a click anywhere closes the card */
 	UPROPERTY(Transient)

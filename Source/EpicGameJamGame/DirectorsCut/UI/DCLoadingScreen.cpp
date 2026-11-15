@@ -190,6 +190,20 @@ void UDCLoadingScreenSubsystem::HandlePreLoadMap(const FString& MapName)
 		return;
 	}
 
+	// The game's very first map load (the main menu, right after launch) shows no loading screen: the Unreal
+	// Engine logo splash must be the first thing on screen. That load takes about a second; the window is black.
+	// Every later load (menu -> level, restarts) shows the running boar as before.
+	if (!bFirstLoadDone)
+	{
+		bFirstLoadDone = true;
+		if (MapName.Contains(TEXT("Lvl_MainMenu")))
+		{
+			bSkippedThisLoad = true;
+			UE_LOG(LogEpicGameJamGame, Log, TEXT("DCLoadingScreen: first load '%s' (launch): no loading screen, the logo splash comes first"), *MapName);
+			return;
+		}
+	}
+
 	// loading begins: both layers go up together, the boar starts on drawing 01
 	AnimState->Reset(AnimFPS);
 
@@ -208,8 +222,9 @@ void UDCLoadingScreenSubsystem::HandlePreLoadMap(const FString& MapName)
 
 void UDCLoadingScreenSubsystem::HandlePostLoadMap(UWorld* LoadedWorld)
 {
-	if (!AnimState.IsValid())
+	if (!AnimState.IsValid() || bSkippedThisLoad)
 	{
+		bSkippedThisLoad = false;          // no loading screen was shown for this load: nothing to report
 		return;
 	}
 	LastShownSeconds = float(FPlatformTime::Seconds() - AnimState->StartSeconds);

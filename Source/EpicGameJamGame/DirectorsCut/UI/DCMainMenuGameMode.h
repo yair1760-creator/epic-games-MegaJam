@@ -7,6 +7,7 @@
 #include "DCMainMenuGameMode.generated.h"
 
 class UDCMainMenuWidget;
+class UDCIntroScreenWidget;
 class USoundBase;
 class UAudioComponent;
 
@@ -47,9 +48,28 @@ public:
 	UFUNCTION(BlueprintPure, Category="Menu")
 	bool IsMenuShown() const { return MenuWidget != nullptr; }
 
+	/** Unreal Engine logo splash, then the content notice, before the menu the first time it loads in a launch */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Menu|Intro")
+	bool bShowIntroScreens = true;
+
 protected:
 
 	virtual void BeginPlay() override;
+
+	/** Creates the menu, starts its music and gives it the mouse and focus (what BeginPlay did before the intro screens) */
+	void ShowMenu();
+
+	void ShowIntroScreen(TSubclassOf<UDCIntroScreenWidget> ScreenClass);
+
+	UFUNCTION()
+	void HandleIntroScreenFinished();
+
+	UPROPERTY(Transient)
+	TObjectPtr<UDCIntroScreenWidget> IntroScreen;
+
+	/** The splash pictures, loaded before the splash starts and kept in memory while it plays */
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<UObject>> PreloadedIntroTextures;
 
 	UPROPERTY(Transient)
 	TObjectPtr<UDCMainMenuWidget> MenuWidget;

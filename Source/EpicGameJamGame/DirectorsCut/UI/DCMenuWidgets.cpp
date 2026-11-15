@@ -8,6 +8,7 @@
 #include "Components/Image.h"
 #include "Engine/Texture2D.h"
 #include "InputCoreTypes.h"
+#include "Kismet/KismetSystemLibrary.h"
 #include "Styling/SlateTypes.h"
 #include "UObject/ConstructorHelpers.h"
 
@@ -95,6 +96,8 @@ UDCMainMenuWidget::UDCMainMenuWidget(const FObjectInitializer& ObjectInitializer
 	if (Logo.Succeeded())  LogoTexture = Logo.Object;
 	if (Start.Succeeded()) StartTexture = Start.Object;
 	if (Options.Succeeded())  OptionsTexture = Options.Object;
+	// soft-loaded: /Game/UI/Splash holds what was added with the splash screens
+	QuitTexture = Cast<UTexture2D>(StaticLoadObject(UTexture2D::StaticClass(), nullptr, TEXT("/Game/UI/Splash/T_UI_Button_Quit_Bar.T_UI_Button_Quit_Bar"), nullptr, LOAD_NoWarn));
 	if (NoBudget.Succeeded()) NoBudgetTexture = NoBudget.Object;
 }
 
@@ -126,6 +129,11 @@ TSharedRef<SWidget> UDCMainMenuWidget::RebuildWidget()
 		if (OptionsTexture)
 		{
 			OptionsButton = AddPictureButton(Canvas, OptionsTexture, OptionsOffset, OptionsSize, 2, TEXT("OptionsButton"));
+		}
+
+		if (QuitTexture)
+		{
+			QuitButton = AddPictureButton(Canvas, QuitTexture, QuitOffset, QuitSize, 2, TEXT("QuitButton"));
 		}
 
 		// "not enough budget" card, hidden until OPTIONS is clicked: a full-screen dim layer that is itself a button
@@ -169,6 +177,10 @@ void UDCMainMenuWidget::NativeConstruct()
 	if (NoBudgetDim)
 	{
 		NoBudgetDim->OnClicked.AddUniqueDynamic(this, &UDCMainMenuWidget::HandleNoBudgetClosed);
+	}
+	if (QuitButton)
+	{
+		QuitButton->OnClicked.AddUniqueDynamic(this, &UDCMainMenuWidget::HandleQuitClicked);
 	}
 }
 
@@ -216,6 +228,16 @@ void UDCMainMenuWidget::HandleOptionsClicked()
 	SetNoBudgetOpen(true);
 }
 
+void UDCMainMenuWidget::HandleQuitClicked()
+{
+	if (bNoBudgetOpen)
+	{
+		return;
+	}
+	// closes the packaged game (and ends Play in the editor)
+	UKismetSystemLibrary::QuitGame(this, GetOwningPlayer(), EQuitPreference::Quit, /*bIgnorePlatformRestrictions*/ false);
+}
+
 void UDCMainMenuWidget::HandleNoBudgetClosed()
 {
 	SetNoBudgetOpen(false);
@@ -232,6 +254,7 @@ void UDCMainMenuWidget::SetNoBudgetOpen(bool bOpen)
 	NoBudgetPanel->SetVisibility(bOpen ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
 	if (StartButton)   StartButton->SetIsEnabled(!bOpen);
 	if (OptionsButton) OptionsButton->SetIsEnabled(!bOpen);
+	if (QuitButton)    QuitButton->SetIsEnabled(!bOpen);
 
 	// keyboard focus: on the dim layer while the card is up (Enter / Space click it = close), back on OPTIONS after
 	if (UWidget* Focus = bOpen ? static_cast<UWidget*>(NoBudgetDim.Get()) : static_cast<UWidget*>(OptionsButton.Get()))
