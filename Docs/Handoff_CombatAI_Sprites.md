@@ -540,3 +540,56 @@ The main menu has a full-screen picture behind the logo and the START button: a 
 - **Code:** `UDCMainMenuWidget` (`UI/DCMenuWidgets.h/.cpp`) has `BackgroundTexture`; `RebuildWidget` adds it as a stretched full-screen image right after the backdrop, on the same layer, so it draws over the backdrop colour and under the logo (1) and START (2). It lets clicks through. Logo, button, their sizes and offsets and the pause menu are unchanged.
 - **Checked** in a standalone run at 1280x720: picture fills the screen, logo and START as before, Enter starts the game. Not checked: mouse click, Space, gamepad, other aspect ratios (the picture stretches), a packaged build.
 - Screenshot: `Docs/Screenshots/MainMenu_Background.png`.
+
+## 29. Painted backdrop flat and cut-out sun
+
+The 100 m x 26 m backdrop flat behind the meadow (`Backdrop_Flat`, in the `DC_Set_Hunt` sublevel) now shows a hand-inked painted theatre sky (clouds, hills, pine forest, plank seams and drips), and the sun is a flat plywood cut-out with a smug face standing in front of it.
+
+- **Art:** `Art/Meshy/Backdrop` (made in another session with Meshy nano-banana-2, 18 credits): `Export/T_DC_Backdrop_Sky.png` (2752x715, the flat's exact shape), `Export/T_DC_Backdrop_Sun.png` (1024x1024 with alpha), `Preview/Backdrop_WithSun.png`, raw pictures in `Source/`.
+- **In Unreal** (`/Game/DirectorsCut/Environment/Backdrop`): the two textures (clamped, sRGB, never streamed so the sun's face is always sharp), `M_DC_BackdropSky` and `M_DC_BackdropCutout` (masked, two-sided).
+- **How the picture is placed:** both materials map the picture by **world position** (scalar parameters `MinY`, `Width`, `MinZ`, `Height`): the sky covers Y -5000 to 5000 and Z 0 to 2600, so it cannot come out mirrored or stretched whatever the cube's UVs are. Lit, with a `Glow` parameter (0.35) of the picture added as emissive so it stays readable in dark beats; lower it if the flat looks washed out.
+- **Sun:** `Backdrop_Sun` (same actor) is now a 9 m x 9 m plane 15 cm in front of the flat at Y -700, Z 2100, no collision, no shadow. The old yellow disc covered a painted cloud.
+- **Clouds:** `Backdrop_Cloud_0..3` (grey boxes) are invisible, not deleted; they keep their collision. The struts behind the flat are kept.
+- Script: `Scripts/LD_DressBackdrop.py` (`dress_backdrop()`); edits only those actors in `DC_Set_Hunt`. Do not re-run `LD_BuildDirectorsCut.py` (it would rebuild the greybox backdrop).
+- **Checked in play** (beat 1, `DC_Set_Hunt` loaded and visible): from the spawn, from the Set and close to the flat. The back and top faces of the flat cube show a smeared copy of the picture; they are only visible from backstage. Not checked: the other beats' lighting, other resolutions, a packaged build.
+- Screenshots: `Docs/Screenshots/Backdrop_FromSpawn.png`, `Backdrop_FromSet.png`, `Backdrop_Close.png`.
+
+## 30. Brick wall seam fix
+
+The brick boundary walls (section 22) showed a straight cut every 5 m up the wall. Cause: Taisho's picture starts and ends in the middle of a brick row and its bottom is painted darker than its top, so each repeat put half bricks against a brightness step.
+
+- `Scripts/Blender_TileWallTexture.py` crops the picture exactly from the middle of its first mortar line to the middle of its last (rows 36 to 989 of 1024), takes out the slow light/dark drift in rows and columns, blends the left and right edges over 24 px, and saves `Art/Meshy/WallTexture/Export/T_Taisho_Wall_Tiled.png` (1024x1024; the crop is stretched about 7% in height to stay square). With `-- preview` it also writes 2x2 before/after repeats.
+- Reimported over the same asset (`/Game/DirectorsCut/Environment/Taisho/Wall/T_Taisho_Wall`), so the walls and the test-map panel pick it up with no other change.
+- Checked with editor captures: no cut line. Still visible from far away: the picture's ivy and plaster patches repeat every 5 m.
+
+## 31. Main menu music
+
+- **fal, two 60 s takes** of a goofy mock-heroic "film premiere" march (brass fanfare, oom-pah tuba, pizzicato, woodblock, comic trombone slides), about $0.19 in all: Stable Audio 3 medium (`Art/Audio/Music_fal/M_Menu_sa3.wav`) and Sonilo V1.1 (`M_Menu_sonilo.m4a`, converted to `M_Menu_sonilo.wav` with Blender's audio library since Unreal cannot import m4a). Both models are licensed for commercial use.
+- In Unreal: `/Game/DirectorsCut/Audio/Music/M_Menu_Alt_Sonilo` (the Sonilo take, looping) **plays on the menu** (Yair's pick, Nov 15); `M_Menu` (the Stable Audio take, looping) is unused. To switch, change the path in `ADCMainMenuGameMode`'s constructor and rebuild. **Do not re-import over the asset the menu uses while the editor runs:** the menu code keeps it loaded and the editor crashes (`Assertion failed: !IsRooted()`); that happened once on Nov 15, nothing was lost.
+- Code: `ADCMainMenuGameMode` (`UI/DCMainMenuGameMode.h/.cpp`): `MenuMusic` (loads `M_Menu`), `MenuMusicVolume` 0.8, `MenuMusicFade` 0.6 s. It starts with a fade-in when the menu opens and fades out on START; the level load ends it in any case.
+- **Checked** in a standalone run with the engine's sound list on screen: on the menu the only active sound is the menu track (`M_Menu_Alt_Sonilo` after the swap); after START only the level's `M_Heroic` and the Director's line play. Not checked by ear (the assistant cannot listen): the loop point and which take sounds better.
+- Screenshot: `Docs/Screenshots/MainMenu_MusicPlaying.png`.
+
+## 32. Inked REC badge, ammo counter, death card and shotgun shells
+
+Meshy art made in another session (45 credits), `Art/Meshy/HUD` (Export = the pictures, Preview = the intended look, Source = unused).
+
+| Piece | Widget | Art |
+|---|---|---|
+| REC badge | `WBP_DCHUD` `RecBadge_*` | slate plate with ink outline, gold trim and a red drop shadow |
+| Ammo counter | `WBP_AmmoCounter` `AmmoFrame_*` | the same plate |
+| Ammo bar | `WBP_AmmoCounter` `AmmoBar` | the team's HP bar art with the fill recoloured gold (Empty under Full) |
+| Shell icon | `WBP_AmmoCounter` `ShellIcon` (new, in a new `StatusRow` with `StatusText`) | small inked shotgun shell, 44x20 |
+| Death card | `WBP_DeathScreen` `Card_*` | clapperboard card with its striped arm lifted; the old `ClapperTop` strip is removed |
+| Death card icon | `WBP_DeathScreen` `SlateIcon` | clapper icon |
+| Shotgun pellet | `BP_ShooterProjectile_Bullet` mesh | `SM_DC_ShotgunShell` (503 triangles, red paper body, brass cap) |
+
+- `Scripts/DC_ApplyHudArt2.py` (`apply_hud_art2()`) edits the widgets **in place**: it does not rebuild them, so later hand edits stay. Re-running `DC_BuildHUDWidgets.py` brings back the flat borders; run this script (and `DC_ApplyHudPanelArt.py`) again afterwards.
+- **9-slice sizing gotcha:** in game the Box brush corners came out sized from the picture's own pixels, not from the brush's image size: the 614x234 plate's corners did not fit a 40 px badge and the death card's clapper band came out about 270 px instead of 148. `Scripts/Blender_SizeHudArt.py` makes copies at exactly the drawn size (`Art/Meshy/HUD/Sized`: plate 154x58 for the badge, 245x92 for the ammo counter, death card 590x400), and those are the ones used.
+- **Ammo bar:** the progress bar clips the full picture, never scales it. `UDCAmmoCounterWidget::RefreshDisplay` maps bullets onto the drawn inner track (3% to 95.5% of the width; a full magazine shows the whole art). It was compiled with Live Coding; the next normal build makes it permanent.
+- **Pellet:** the shell replaces the foam bullet at the same length (35 cm) and place along the flight direction (scale 0.35, X -14.3), no collision on the mesh; the collision sphere (8.5) is unchanged. The shells stop nose-first, so they stand in the ground rather than lying flat. The imported material and picture were renamed `M_DC_ShotgunShell` and `T_DC_ShotgunShell_BaseColor` (`/Game/DirectorsCut/Combat/Shotgun/Shell`).
+- `T_DC_UI_ClapperBar` and `T_DC_UI_SlateIcon` are kept (the automated tests reference the clapper bar).
+- **Checked in play:** REC badge in scene 1 and in "SCENE 3: ACTION BLOCKBUSTER | TAKE 2/3" (the plate stretches to fit), death card after dying in beat 3, ammo at 8/8, 7/8, 2/8, 0/8 ("EMPTY | PRESS R") and reloading, 13 shells in the world after a volley. Not checked: other resolutions, a packaged build.
+- The hero's death drawing (section 21) lies across the bottom line of the death card ("QUEST PROGRESS PRESERVED").
+- These are Saar's widgets (HUD, ammo counter, death slate); he has not been told yet.
+- Screenshots: `Docs/Screenshots/HudArt2_DeathCard.png`, `HudArt2_Scene3_Ammo2.png`, `HudArt2_Ammo0.png`, `HudArt2_Pellets.png`.

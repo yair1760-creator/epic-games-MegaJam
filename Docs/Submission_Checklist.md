@@ -37,7 +37,7 @@ Someone on the team must read it, especially the eligibility section (age 18+, a
 - **Cursor**: used by Saar (gameplay flow, HUD, death slate, ammo counter) and Taisho (asset commits)
 - **Unreal Engine MCP** (editor automation from the coding agent)
 - **Meshy**: 3D models (film camera, boom mic, woodland slide, first stage floor, cobblestone tile) and text-to-image pictures (ground, planks, stall, signs, wanted poster, stone bricks, four HUD panel frames; model nano-banana-2) and one image-to-image picture (main menu background, from the team's own art as style reference)
-- **fal**: music (Stable Audio 3, Sonilo Music), sound effect takes (Sonilo SFX), Director voice lines (`fal-ai/elevenlabs/tts/eleven-v3`, voice Callum)
+- **fal**: music (Stable Audio 3, Sonilo Music; including the main menu theme), sound effect takes (Sonilo SFX), Director voice lines (`fal-ai/elevenlabs/tts/eleven-v3`, voice Callum)
 - **Blender 5.2**: clean-up and building of all props
 - Hand-drawn art by the team: sword and shotgun frames, boar frames, Princess, bacon, house, grass, hay bale, apple tree, UI (logo, buttons, pause panel, HP bar, loading icon)
 
