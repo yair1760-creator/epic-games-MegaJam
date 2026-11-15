@@ -6,6 +6,9 @@
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/SpectatorPawn.h"
 #include "Kismet/GameplayStatics.h"
+#include "Components/AudioComponent.h"
+#include "Sound/SoundBase.h"
+#include "UObject/ConstructorHelpers.h"
 
 ADCMainMenuGameMode::ADCMainMenuGameMode()
 {
@@ -14,6 +17,19 @@ ADCMainMenuGameMode::ADCMainMenuGameMode()
 	PlayerControllerClass = APlayerController::StaticClass();
 	HUDClass = nullptr;
 	MenuWidgetClass = UDCMainMenuWidget::StaticClass();
+
+	// Sonilo take (picked by Yair, Nov 15). The Stable Audio take is M_Menu. Swap by changing this path: the asset
+	// loaded here stays in memory, so it cannot be re-imported over while the editor runs.
+	static ConstructorHelpers::FObjectFinder<USoundBase> Music(TEXT("/Game/DirectorsCut/Audio/Music/M_Menu_Alt_Sonilo.M_Menu_Alt_Sonilo"));
+	if (Music.Succeeded())
+	{
+		MenuMusic = Music.Object;
+	}
+}
+
+bool ADCMainMenuGameMode::IsMenuMusicPlaying() const
+{
+	return MenuMusicComponent && MenuMusicComponent->IsPlaying();
 }
 
 void ADCMainMenuGameMode::BeginPlay()
@@ -33,6 +49,17 @@ void ADCMainMenuGameMode::BeginPlay()
 		return;
 	}
 	MenuWidget->AddToViewport(100);
+
+	// menu music: a looping 2D sound owned by this map, so loading the level ends it
+	if (MenuMusic && !MenuMusicComponent)
+	{
+		MenuMusicComponent = UGameplayStatics::SpawnSound2D(this, MenuMusic, MenuMusicVolume, 1.0f, 0.0f, nullptr, /*bPersistAcrossLevelTransition*/ false, /*bAutoDestroy*/ false);
+		if (MenuMusicComponent && MenuMusicFade > 0.0f)
+		{
+			MenuMusicComponent->Stop();
+			MenuMusicComponent->FadeIn(MenuMusicFade, MenuMusicVolume);
+		}
+	}
 	MenuWidget->OnStart.AddUniqueDynamic(this, &ADCMainMenuGameMode::StartGame);
 
 	FInputModeUIOnly Mode;
@@ -54,6 +81,11 @@ void ADCMainMenuGameMode::StartGame()
 		return;       // a second click while the map is loading
 	}
 	bStarting = true;
+
+	if (MenuMusicComponent)
+	{
+		MenuMusicComponent->FadeOut(MenuMusicFade, 0.0f);      // the level load cuts it anyway; this softens the cut
+	}
 
 	if (APlayerController* PC = UGameplayStatics::GetPlayerController(this, 0))
 	{

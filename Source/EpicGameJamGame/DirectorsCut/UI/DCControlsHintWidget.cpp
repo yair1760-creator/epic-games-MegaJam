@@ -12,6 +12,8 @@
 #include "Components/VerticalBox.h"
 #include "Components/VerticalBoxSlot.h"
 #include "Engine/Font.h"
+#include "Engine/Texture2D.h"
+#include "Styling/SlateBrush.h"
 
 namespace
 {
@@ -45,8 +47,25 @@ TSharedRef<SWidget> UDCControlsHintWidget::RebuildWidget()
 		WidgetTree->RootWidget = Root;
 
 		UBorder* Card = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("ControlsCard"));
-		Card->SetBrushColor(InkPanel);
-		Card->SetPadding(FMargin(22.0f, 14.0f, 22.0f, 16.0f));
+		// drawn cue-card frame (rope and leather, Art/UI/Panels): a 9-slice box, numbers from Art/UI/Panels/Export/Panels.json.
+		// Falls back to the flat ink panel if the texture is missing.
+		if (UTexture2D* FrameTex = LoadObject<UTexture2D>(nullptr, TEXT("/Game/DirectorsCut/UI/HUD/T_UI_Panel_Controls.T_UI_Panel_Controls")))
+		{
+			FSlateBrush Brush;
+			Brush.SetResourceObject(FrameTex);
+			Brush.DrawAs = ESlateBrushDrawType::Box;
+			Brush.Margin = FMargin(0.3689f, 0.372f, 0.3689f, 0.3791f);
+			Brush.ImageSize = FVector2D(209.0f, 154.0f);
+			Brush.TintColor = FSlateColor(FLinearColor::White);
+			Card->SetBrush(Brush);
+			Card->SetBrushColor(FLinearColor::White);
+			Card->SetPadding(FMargin(46.0f, 40.0f, 46.0f, 40.0f));      // clear of the rope band and its inner shading
+		}
+		else
+		{
+			Card->SetBrushColor(InkPanel);
+			Card->SetPadding(FMargin(22.0f, 14.0f, 22.0f, 16.0f));
+		}
 		if (UCanvasPanelSlot* S = Root->AddChildToCanvas(Card))
 		{
 			S->SetAnchors(FAnchors(1.0f, 0.5f, 1.0f, 0.5f));      // right edge, vertically centred: clear of the HUD corners
@@ -55,8 +74,14 @@ TSharedRef<SWidget> UDCControlsHintWidget::RebuildWidget()
 			S->SetAutoSize(true);
 		}
 
+		// the frame's corner blocks need room: never smaller than they are (2 x 77 wide, 57 + 59 tall on screen)
+		USizeBox* MinBox = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass(), TEXT("ControlsMinSize"));
+		MinBox->SetMinDesiredWidth(150.0f);
+		MinBox->SetMinDesiredHeight(84.0f);
+		Card->SetContent(MinBox);
+
 		Column = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass(), TEXT("ControlsColumn"));
-		Card->SetContent(Column);
+		MinBox->SetContent(Column);
 		BuildRows();
 	}
 	return Super::RebuildWidget();

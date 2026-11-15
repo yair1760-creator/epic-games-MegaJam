@@ -506,3 +506,97 @@ The greybox watchtower at (2800, 3600) now looks like a plank tower: log legs wi
 - Left Shift is still mapped to "swap weapon" from the template; with one weapon it does nothing visible and is not listed on the card.
 - `DC_Set_Hunt.umap` was saved in this commit at Yair's instruction: one actor's position value changed (about 1915 -> 2385 on one axis) plus the file's save stamps; the change was made in the editor, not by a script.
 - Screenshots: `Docs/Screenshots/ControlsPrompt_Start.png`, `ControlsPrompt_Shotgun.png`.
+
+## 26. Drawn HUD panel frames (Meshy pictures)
+
+Four HUD panels got a drawn frame in place of the flat ink / gold / slate borders:
+
+| Panel | Widget | Picture |
+|---|---|---|
+| Health bar ("ACTOR VITALS") | `WBP_HealthBar` | dark wood with iron corner brackets |
+| Director's speech box | `WBP_Subtitles` | painted clapper-slate frame |
+| Script / quest box | `WBP_QuestTracker` | leather script folder with gold corners |
+| Controls card | `UDCControlsHintWidget` (code) | rope and leather cue card |
+
+- **Meshy (24 credits):** four text-to-image pictures (nano-banana-2, transparent background) in `Art/UI/Panels/Source`. All have a dark slate inside so the cream and gold text stays readable.
+- `Scripts/Blender_BuildHudPanels.py` crops each to its frame and writes a 9-slice ("Box") texture: the corner blocks keep their drawing and only the middle strips stretch, so one picture fits any panel size. The health frame is re-composed without the iron bands in the middle of its edges (they would have stretched). Output `Art/UI/Panels/Export/T_UI_Panel_*.png` at 2x the on-screen size, plus `Panels.json` (logical size, margins).
+- `Scripts/DC_ApplyHudPanelArt.py` (`apply_hud_panel_art()`) imports them to `/Game/DirectorsCut/UI/HUD` and, in Saar's three widgets, makes the outer border `<Name>_InkFrame` draw the frame and the two inner borders transparent. **Only the background changed**: layout, texts, fonts, icons and the clapper stripes are his, untouched. The outer padding went from 3 + 2 px to the frame thickness (11 to 14 px), so each panel is about 6 to 9 px bigger on every side.
+- **If `Scripts/DC_BuildHUDWidgets.py` is run again it rebuilds those widgets with the flat colours; run `apply_hud_panel_art()` afterwards.**
+- The controls card loads `T_UI_Panel_Controls` in code and falls back to the flat panel if it is missing.
+- **Checked in play** (beat 1 and beat 3, editor window): all four frames draw, text sits inside them, health bar and subtitles still update. Not checked: other resolutions and aspect ratios, a packaged build, the victory and death screens (not changed).
+- Not changed: the ammo counter, the "REC | SCENE" strip, the death slate and the victory card still have the flat style.
+- Screenshots: `Docs/Screenshots/HudPanels_Beat1.png`, `HudPanels_Beat3.png`.
+
+## 27. Game title
+
+The game is called **Rated PG for Pig** (Yair, Nov 15). `Config/DefaultGame.ini`: `ProjectName` and `ProjectDisplayedTitle` set under `[/Script/EngineSettings.GeneralProjectSettings]` (and the older `[ProjectSettings]` block). The `.uproject`, the module and the code names (`DirectorsCut`, `DC*`) are unchanged on purpose. Checked: a standalone run's window title is "Rated PG for Pig (64-bit Development PCD3D_SM6)"; the bracket is added by non-Shipping builds. Not checked in a packaged build.
+
+## 28. Main menu background
+
+The main menu has a full-screen picture behind the logo and the START button: a dark film-set stage (curtains, spotlight, film camera, the Director's chair with beret and megaphone, two boars) inside a torn comic frame.
+
+- **Art:** `Art/UI/MainMenu/MainMenu_BG_A_Framed.png` (1376x768, 16:9), made in another session with Meshy image-to-image (nano-banana-2, the team's own art as style references; 12 credits for two pictures) and framed locally. `MainMenu_BG_A_Stage.png` and `MainMenu_BG_B_Meadow.png` are unused alternatives; `Preview/` holds mock-ups.
+- **In Unreal:** `/Game/DirectorsCut/UI/Menu/T_UI_MainMenu_BG` (UI group, no mipmaps, sRGB, same settings as the logo).
+- **Code:** `UDCMainMenuWidget` (`UI/DCMenuWidgets.h/.cpp`) has `BackgroundTexture`; `RebuildWidget` adds it as a stretched full-screen image right after the backdrop, on the same layer, so it draws over the backdrop colour and under the logo (1) and START (2). It lets clicks through. Logo, button, their sizes and offsets and the pause menu are unchanged.
+- **Checked** in a standalone run at 1280x720: picture fills the screen, logo and START as before, Enter starts the game. Not checked: mouse click, Space, gamepad, other aspect ratios (the picture stretches), a packaged build.
+- Screenshot: `Docs/Screenshots/MainMenu_Background.png`.
+
+## 29. Painted backdrop flat and cut-out sun
+
+The 100 m x 26 m backdrop flat behind the meadow (`Backdrop_Flat`, in the `DC_Set_Hunt` sublevel) now shows a hand-inked painted theatre sky (clouds, hills, pine forest, plank seams and drips), and the sun is a flat plywood cut-out with a smug face standing in front of it.
+
+- **Art:** `Art/Meshy/Backdrop` (made in another session with Meshy nano-banana-2, 18 credits): `Export/T_DC_Backdrop_Sky.png` (2752x715, the flat's exact shape), `Export/T_DC_Backdrop_Sun.png` (1024x1024 with alpha), `Preview/Backdrop_WithSun.png`, raw pictures in `Source/`.
+- **In Unreal** (`/Game/DirectorsCut/Environment/Backdrop`): the two textures (clamped, sRGB, never streamed so the sun's face is always sharp), `M_DC_BackdropSky` and `M_DC_BackdropCutout` (masked, two-sided).
+- **How the picture is placed:** both materials map the picture by **world position** (scalar parameters `MinY`, `Width`, `MinZ`, `Height`): the sky covers Y -5000 to 5000 and Z 0 to 2600, so it cannot come out mirrored or stretched whatever the cube's UVs are. Lit, with a `Glow` parameter (0.35) of the picture added as emissive so it stays readable in dark beats; lower it if the flat looks washed out.
+- **Sun:** `Backdrop_Sun` (same actor) is now a 9 m x 9 m plane 15 cm in front of the flat at Y -700, Z 2100, no collision, no shadow. The old yellow disc covered a painted cloud.
+- **Clouds:** `Backdrop_Cloud_0..3` (grey boxes) are invisible, not deleted; they keep their collision. The struts behind the flat are kept.
+- Script: `Scripts/LD_DressBackdrop.py` (`dress_backdrop()`); edits only those actors in `DC_Set_Hunt`. Do not re-run `LD_BuildDirectorsCut.py` (it would rebuild the greybox backdrop).
+- **Checked in play** (beat 1, `DC_Set_Hunt` loaded and visible): from the spawn, from the Set and close to the flat. The back and top faces of the flat cube show a smeared copy of the picture; they are only visible from backstage. Not checked: the other beats' lighting, other resolutions, a packaged build.
+- Screenshots: `Docs/Screenshots/Backdrop_FromSpawn.png`, `Backdrop_FromSet.png`, `Backdrop_Close.png`.
+
+## 30. Brick wall seam fix
+
+The brick boundary walls (section 22) showed a straight cut every 5 m up the wall. Cause: Taisho's picture starts and ends in the middle of a brick row and its bottom is painted darker than its top, so each repeat put half bricks against a brightness step.
+
+- `Scripts/Blender_TileWallTexture.py` crops the picture exactly from the middle of its first mortar line to the middle of its last (rows 36 to 989 of 1024), takes out the slow light/dark drift in rows and columns, blends the left and right edges over 24 px, and saves `Art/Meshy/WallTexture/Export/T_Taisho_Wall_Tiled.png` (1024x1024; the crop is stretched about 7% in height to stay square). With `-- preview` it also writes 2x2 before/after repeats.
+- Reimported over the same asset (`/Game/DirectorsCut/Environment/Taisho/Wall/T_Taisho_Wall`), so the walls and the test-map panel pick it up with no other change.
+- Checked with editor captures: no cut line. Still visible from far away: the picture's ivy and plaster patches repeat every 5 m.
+
+## 31. Main menu music
+
+- **fal, two 60 s takes** of a goofy mock-heroic "film premiere" march (brass fanfare, oom-pah tuba, pizzicato, woodblock, comic trombone slides), about $0.19 in all: Stable Audio 3 medium (`Art/Audio/Music_fal/M_Menu_sa3.wav`) and Sonilo V1.1 (`M_Menu_sonilo.m4a`, converted to `M_Menu_sonilo.wav` with Blender's audio library since Unreal cannot import m4a). Both models are licensed for commercial use.
+- In Unreal: `/Game/DirectorsCut/Audio/Music/M_Menu_Alt_Sonilo` (the Sonilo take, looping) **plays on the menu** (Yair's pick, Nov 15); `M_Menu` (the Stable Audio take, looping) is unused. To switch, change the path in `ADCMainMenuGameMode`'s constructor and rebuild. **Do not re-import over the asset the menu uses while the editor runs:** the menu code keeps it loaded and the editor crashes (`Assertion failed: !IsRooted()`); that happened once on Nov 15, nothing was lost.
+- Code: `ADCMainMenuGameMode` (`UI/DCMainMenuGameMode.h/.cpp`): `MenuMusic` (loads `M_Menu`), `MenuMusicVolume` 0.8, `MenuMusicFade` 0.6 s. It starts with a fade-in when the menu opens and fades out on START; the level load ends it in any case.
+- **Checked** in a standalone run with the engine's sound list on screen: on the menu the only active sound is the menu track (`M_Menu_Alt_Sonilo` after the swap); after START only the level's `M_Heroic` and the Director's line play. Not checked by ear (the assistant cannot listen): the loop point and which take sounds better.
+- Screenshot: `Docs/Screenshots/MainMenu_MusicPlaying.png`.
+
+## 32. Inked REC badge, ammo counter, death card and shotgun shells
+
+Meshy art made in another session (45 credits), `Art/Meshy/HUD` (Export = the pictures, Preview = the intended look, Source = unused).
+
+| Piece | Widget | Art |
+|---|---|---|
+| REC badge | `WBP_DCHUD` `RecBadge_*` | slate plate with ink outline, gold trim and a red drop shadow |
+| Ammo counter | `WBP_AmmoCounter` `AmmoFrame_*` | the same plate |
+| Ammo bar | `WBP_AmmoCounter` `AmmoBar` | the team's HP bar art with the fill recoloured gold (Empty under Full) |
+| Shell icon | `WBP_AmmoCounter` `ShellIcon` (new, in a new `StatusRow` with `StatusText`) | small inked shotgun shell, 44x20 |
+| Death card | `WBP_DeathScreen` `Card_*` | clapperboard card with its striped arm lifted; the old `ClapperTop` strip is removed |
+| Death card icon | `WBP_DeathScreen` `SlateIcon` | clapper icon |
+| Shotgun pellet | `BP_ShooterProjectile_Bullet` mesh | `SM_DC_ShotgunShell` (503 triangles, red paper body, brass cap) |
+
+- `Scripts/DC_ApplyHudArt2.py` (`apply_hud_art2()`) edits the widgets **in place**: it does not rebuild them, so later hand edits stay. Re-running `DC_BuildHUDWidgets.py` brings back the flat borders; run this script (and `DC_ApplyHudPanelArt.py`) again afterwards.
+- **9-slice sizing gotcha:** in game the Box brush corners came out sized from the picture's own pixels, not from the brush's image size: the 614x234 plate's corners did not fit a 40 px badge and the death card's clapper band came out about 270 px instead of 148. `Scripts/Blender_SizeHudArt.py` makes copies at exactly the drawn size (`Art/Meshy/HUD/Sized`: plate 154x58 for the badge, 245x92 for the ammo counter, death card 590x400), and those are the ones used.
+- **Ammo bar:** the progress bar clips the full picture, never scales it. `UDCAmmoCounterWidget::RefreshDisplay` maps bullets onto the drawn inner track (3% to 95.5% of the width; a full magazine shows the whole art). It was compiled with Live Coding; the next normal build makes it permanent.
+- **Pellet:** the shell replaces the foam bullet at the same length (35 cm) and place along the flight direction (scale 0.35, X -14.3), no collision on the mesh; the collision sphere (8.5) is unchanged. The shells stop nose-first, so they stand in the ground rather than lying flat. The imported material and picture were renamed `M_DC_ShotgunShell` and `T_DC_ShotgunShell_BaseColor` (`/Game/DirectorsCut/Combat/Shotgun/Shell`).
+- `T_DC_UI_ClapperBar` and `T_DC_UI_SlateIcon` are kept (the automated tests reference the clapper bar).
+- **Checked in play:** REC badge in scene 1 and in "SCENE 3: ACTION BLOCKBUSTER | TAKE 2/3" (the plate stretches to fit), death card after dying in beat 3, ammo at 8/8, 7/8, 2/8, 0/8 ("EMPTY | PRESS R") and reloading, 13 shells in the world after a volley. Not checked: other resolutions, a packaged build.
+- The hero's death drawing (section 21) lies across the bottom line of the death card ("QUEST PROGRESS PRESERVED").
+- These are Saar's widgets (HUD, ammo counter, death slate); he has not been told yet.
+- Screenshots: `Docs/Screenshots/HudArt2_DeathCard.png`, `HudArt2_Scene3_Ammo2.png`, `HudArt2_Ammo0.png`, `HudArt2_Pellets.png`.
+
+## 33. Invisible block where the sword rack used to be
+
+The visible sword rack (`Hunt_Rack` + `Hunt_RackSword_0..2`, `DC_Set_Hunt`) was moved by hand to about (-4400, 700), turned -140 degrees. Its hidden greybox (`SwordRack_Base`, 1 m x 4 m x 1.2 m at (-3680, 700), and three `SwordRack_Sword_*` sticks) stayed behind and still blocked the player: an invisible wall in the village square. Those four hidden pieces now have no collision; the moved rack blocks with its own collision.
+
+- Checked in play: walking through the old spot goes straight through; walking into the moved rack stops the player in front of it.
+- Note: `dress_main_map("village")` places the rack on the greybox base, so re-running it would put the rack back at the old spot.

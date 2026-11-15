@@ -112,8 +112,14 @@ void UDCAmmoCounterWidget::RefreshDisplay(int32 MagazineSize, int32 Bullets, boo
 
 	if (AmmoBar)
 	{
-		const float Pct = static_cast<float>(CachedBullets) / static_cast<float>(CachedMagazineSize);
-		AmmoBar->SetPercent(FMath::Clamp(Pct, 0.0f, 1.0f));
+		const float Pct = FMath::Clamp(static_cast<float>(CachedBullets) / static_cast<float>(CachedMagazineSize), 0.0f, 1.0f);
+		// The bar is the drawn HP-bar art (T_DC_UI_AmmoBar_Empty under _Full, set in WBP_AmmoCounter by
+		// Scripts/DC_ApplyHudArt2.py): the progress bar clips the full picture, so map the bullets onto the drawn
+		// inner track (3% to 95.5% of the width) rather than the whole picture. A full magazine shows the whole art.
+		constexpr float TrackStart = 0.03f;
+		constexpr float TrackEnd = 0.955f;
+		const float Shown = (Pct >= 1.0f) ? 1.0f : (Pct <= 0.0f ? 0.0f : TrackStart + Pct * (TrackEnd - TrackStart));
+		AmmoBar->SetPercent(Shown);
 	}
 
 	if (StatusText)
