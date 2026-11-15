@@ -73,9 +73,9 @@ protected:
 };
 
 /**
- *  The official Unreal Engine logo, unaltered, at its own aspect ratio, centred on black.
- *  The texture is the file from Epic's branding page imported as /Game/UI/Splash/T_UE_Logo.
- *  If that asset does not exist the splash is skipped: no stand-in is ever drawn.
+ *  "Made with Unreal Engine" in plain text, centred on black, with Epic's trademark notice line under it.
+ *  Words only: the Unreal Engine logo picture is not used (Epic's trademark license needs written approval of each
+ *  logo use, which could not come before the jam deadline; Yair, Nov 15).
  */
 UCLASS()
 class EPICGAMEJAMGAME_API UDCSplashWidget : public UDCIntroScreenWidget
@@ -86,25 +86,17 @@ public:
 
 	UDCSplashWidget(const FObjectInitializer& ObjectInitializer);
 
+	/** The line in the middle of the screen */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Splash")
-	TSoftObjectPtr<UTexture2D> LogoTexture;
+	FText MadeWithText;
 
-	/** Logo height on a 1080-high screen. The width follows the picture's own aspect; the rest of the screen
-	 *  around it is empty black, well over the clear space Epic's guidelines ask for. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Splash", meta=(ClampMin=64))
-	float LogoHeight = 320.0f;
-
-	/** Epic's trademark notice, shown under the logo (wording from brand.epicgames.com: do not change it) */
+	/** Epic's trademark notice under it (wording from brand.epicgames.com: do not change it) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Splash")
 	FText TrademarkNotice;
 
 protected:
 
 	virtual UWidget* BuildContent(UCanvasPanel* Canvas) override;
-	virtual bool HasContent() const override { return LoadedLogo != nullptr; }
-
-	UPROPERTY(Transient)
-	TObjectPtr<UTexture2D> LoadedLogo;
 };
 
 /**

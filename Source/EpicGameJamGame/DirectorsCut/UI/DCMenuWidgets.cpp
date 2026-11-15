@@ -87,7 +87,8 @@ UDCMainMenuWidget::UDCMainMenuWidget(const FObjectInitializer& ObjectInitializer
 {
 	SetIsFocusable(true);
 
-	static ConstructorHelpers::FObjectFinder<UTexture2D> Logo(TEXT("/Game/DirectorsCut/UI/Menu/T_UI_Logo_RatedPGForPig.T_UI_Logo_RatedPGForPig"));
+	// the logo with the "DIRECTOR'S CUT" banner under it (Art/UI/RatedPG/Logo_Rated_PG_for_Pig_DirectorsCut.png, Yair Nov 15)
+	static ConstructorHelpers::FObjectFinder<UTexture2D> Logo(TEXT("/Game/DirectorsCut/UI/Menu/T_UI_Logo_RatedPGForPig_DirectorsCut.T_UI_Logo_RatedPGForPig_DirectorsCut"));
 	static ConstructorHelpers::FObjectFinder<UTexture2D> Start(TEXT("/Game/DirectorsCut/UI/Menu/T_UI_Button_Start.T_UI_Button_Start"));
 	static ConstructorHelpers::FObjectFinder<UTexture2D> Background(TEXT("/Game/DirectorsCut/UI/Menu/T_UI_MainMenu_BG.T_UI_MainMenu_BG"));
 	static ConstructorHelpers::FObjectFinder<UTexture2D> Options(TEXT("/Game/DirectorsCut/UI/Menu/T_UI_Button_Options.T_UI_Button_Options"));

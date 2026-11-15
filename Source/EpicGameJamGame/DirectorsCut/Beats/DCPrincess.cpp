@@ -3,6 +3,8 @@
 #include "DirectorsCut/Beats/DCPrincess.h"
 #include "Quest/DCQuestSubsystem.h"
 #include "Components/PointLightComponent.h"
+#include "Components/LightComponent.h"
+#include "EngineUtils.h"
 #include "Components/SphereComponent.h"
 #include "DirectorsCut/Rendering/DCBillboardSprite.h"
 #include "Engine/Texture2D.h"
@@ -68,6 +70,7 @@ void ADCPrincess::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 	BobTime += DeltaSeconds;
+	UpdateShedLights(DeltaSeconds);
 
 	if (PrincessLabel)
 	{
@@ -133,4 +136,69 @@ void ADCPrincess::HandleOverlap(UPrimitiveComponent* OverlappedComp, AActor* Oth
 		Quest->ReportEvent(FName("Rescue.Princess"));
 	}
 	OnPrincessRescued.Broadcast();
+}
+
+void ADCPrincess::GatherShedLights()
+{
+	bShedLightsGathered = true;
+	ShedLights.Reset();
+	ShedLightBaseIntensity.Reset();
+
+	auto Add = [this](ULightComponent* L)
+	{
+		if (L && L->Mobility != EComponentMobility::Static && !ShedLights.Contains(L))
+		{
+			ShedLights.Add(L);
+			ShedLightBaseIntensity.Add(L->Intensity);
+		}
+	};
+	Add(RomanceLight);
+
+	// the shed's own lamp (placed in DC_Set_PG); the shed doors' lock glow and anything further away are left alone
+	const FVector Here = GetActorLocation();
+	for (TActorIterator<AActor> It(GetWorld()); It; ++It)
+	{
+		AActor* A = *It;
+		if (A == this || A->GetClass()->GetName().Contains(TEXT("ShedDoors")))
+		{
+			continue;
+		}
+		TArray<ULightComponent*> Lights;
+		A->GetComponents<ULightComponent>(Lights);
+		for (ULightComponent* L : Lights)
+		{
+			if (FVector::Dist2D(L->GetComponentLocation(), Here) <= ShedLightSearchRadius && FMath::Abs(L->GetComponentLocation().Z - Here.Z) < 800.0f)
+			{
+				Add(L);
+			}
+		}
+	}
+	UE_LOG(LogTemp, Log, TEXT("Princess: %d light(s) fade when the player is inside the shed"), ShedLights.Num());
+}
+
+void ADCPrincess::UpdateShedLights(float DeltaSeconds)
+{
+	if (!bShedLightsGathered)
+	{
+		GatherShedLights();          // first tick: the set's lights are loaded by then
+	}
+
+	const APawn* Player = UGameplayStatics::GetPlayerPawn(this, 0);
+	const bool bInside = Player && FVector::Dist2D(Player->GetActorLocation(), GetActorLocation()) <= InsideRadius;
+	const float Target = bInside ? InsideLightScale : 1.0f;
+	if (FMath::IsNearlyEqual(LightAlpha, Target, 0.001f))
+	{
+		return;
+	}
+	LightAlpha = FMath::FInterpConstantTo(LightAlpha, Target, DeltaSeconds, (1.0f - InsideLightScale) / FMath::Max(LightFadeTime, 0.05f));
+
+	// ease in and out, so the reveal starts and ends softly
+	const float Eased = FMath::SmoothStep(InsideLightScale, 1.0f, LightAlpha) * (1.0f - InsideLightScale) + InsideLightScale;
+	for (int32 i = 0; i < ShedLights.Num(); ++i)
+	{
+		if (ULightComponent* L = ShedLights[i].Get())
+		{
+			L->SetIntensity(ShedLightBaseIntensity[i] * Eased);
+		}
+	}
 }

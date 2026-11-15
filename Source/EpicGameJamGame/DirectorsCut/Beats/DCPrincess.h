@@ -38,6 +38,23 @@ public:
 	UPROPERTY(BlueprintAssignable, Category="Romance")
 	FDCOnPrincessRescued OnPrincessRescued;
 
+	/** The shed glows from outside; when the player is this close to the princess (inside the shed, the doorway is
+	 *  about 330 cm away) the lights around her fade down so she can be seen */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Romance|Light", meta=(ClampMin=0, Units="cm"))
+	float InsideRadius = 300.0f;
+
+	/** Light strength inside the shed, as a share of the outside glow (was 0.12: still too bright, Yair Nov 15) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Romance|Light", meta=(ClampMin=0, ClampMax=1))
+	float InsideLightScale = 0.05f;
+
+	/** Seconds the glow takes to fade down (going in) or back up (going out) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Romance|Light", meta=(ClampMin=0.05, Units="s"))
+	float LightFadeTime = 1.2f;
+
+	/** Other lights within this distance of the princess (the shed's own lamp) fade with her light */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Romance|Light", meta=(ClampMin=0, Units="cm"))
+	float ShedLightSearchRadius = 400.0f;
+
 protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components")
@@ -65,4 +82,12 @@ private:
 	bool bRescued = false;
 	float LastLockedPromptTime = -100.0f;
 	float BobTime = 0.0f;
+
+	void GatherShedLights();
+	void UpdateShedLights(float DeltaSeconds);
+
+	TArray<TWeakObjectPtr<class ULightComponent>> ShedLights;
+	TArray<float> ShedLightBaseIntensity;
+	float LightAlpha = 1.0f;
+	bool bShedLightsGathered = false;
 };
