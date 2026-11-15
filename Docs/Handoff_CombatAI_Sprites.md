@@ -593,3 +593,10 @@ Meshy art made in another session (45 credits), `Art/Meshy/HUD` (Export = the pi
 - The hero's death drawing (section 21) lies across the bottom line of the death card ("QUEST PROGRESS PRESERVED").
 - These are Saar's widgets (HUD, ammo counter, death slate); he has not been told yet.
 - Screenshots: `Docs/Screenshots/HudArt2_DeathCard.png`, `HudArt2_Scene3_Ammo2.png`, `HudArt2_Ammo0.png`, `HudArt2_Pellets.png`.
+
+## 33. Invisible block where the sword rack used to be
+
+The visible sword rack (`Hunt_Rack` + `Hunt_RackSword_0..2`, `DC_Set_Hunt`) was moved by hand to about (-4400, 700), turned -140 degrees. Its hidden greybox (`SwordRack_Base`, 1 m x 4 m x 1.2 m at (-3680, 700), and three `SwordRack_Sword_*` sticks) stayed behind and still blocked the player: an invisible wall in the village square. Those four hidden pieces now have no collision; the moved rack blocks with its own collision.
+
+- Checked in play: walking through the old spot goes straight through; walking into the moved rack stops the player in front of it.
+- Note: `dress_main_map("village")` places the rack on the greybox base, so re-running it would put the rack back at the old spot.
