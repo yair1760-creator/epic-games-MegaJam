@@ -131,6 +131,16 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components")
 	TObjectPtr<UStaticMeshComponent> MegaphoneMesh;
 
+	/** The team's drawn Director (Angry, Run, Throw, Hit, Dying); the block meshes above stay hidden */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components")
+	TObjectPtr<class UDCBillboardSprite> Sprite;
+
+	/** All the Director frames were found (else the block meshes show) */
+	UPROPERTY()
+	bool bHasSprite = false;
+
+	void PlaySprite(FName Anim, bool bOneShot);
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components")
 	TObjectPtr<UPointLightComponent> SpotlightAura;
 

@@ -6,6 +6,8 @@
 #include "DirectorsCut/Combat/DCFloatingHPBar.h"
 #include "DirectorsCut/Combat/DCFXLibrary.h"
 #include "DirectorsCut/Rendering/DCSpriteFX.h"
+#include "DirectorsCut/Rendering/DCBillboardSprite.h"
+#include "Engine/Texture2D.h"
 #include "Sound/SoundBase.h"
 #include "NiagaraSystem.h"
 #include "Quest/DCQuestSubsystem.h"
@@ -84,6 +86,42 @@ ADCDirectorBoss::ADCDirectorBoss()
 	if (Cyl.Succeeded()) MegaphoneMesh->SetStaticMesh(Cyl.Object);
 	if (GoldMat.Succeeded()) MegaphoneMesh->SetMaterial(0, GoldMat.Object);
 
+	// The team's drawn Director (Art/Director): a camera-facing card; the block meshes are only a fallback
+	Sprite = CreateDefaultSubobject<UDCBillboardSprite>(TEXT("Sprite"));
+	Sprite->SetupAttachment(GetCapsuleComponent());
+	Sprite->SetRelativeLocation(FVector(0.0f, 0.0f, -130.0f));         // feet on the capsule's bottom
+	Sprite->FrontSize = FVector2D(290.0f, 307.0f);                     // the frames are 911 x 966
+	Sprite->SideSize = Sprite->FrontSize;
+	#define DC_DIRECTOR_FRAME(Var, Name) static ConstructorHelpers::FObjectFinder<UTexture2D> Var(TEXT("/Game/DirectorsCut/Characters/Director/T_Director_" Name ".T_Director_" Name))
+	DC_DIRECTOR_FRAME(FAngry, "Angry");
+	DC_DIRECTOR_FRAME(FRun1, "Run_1");
+	DC_DIRECTOR_FRAME(FRun2, "Run_2");
+	DC_DIRECTOR_FRAME(FThrow1, "Throw_1");
+	DC_DIRECTOR_FRAME(FThrow2, "Throw_2");
+	DC_DIRECTOR_FRAME(FHit, "Hit");
+	DC_DIRECTOR_FRAME(FDying, "Dying");
+	DC_DIRECTOR_FRAME(FDead, "Dead");
+	#undef DC_DIRECTOR_FRAME
+	if (FAngry.Succeeded() && FRun1.Succeeded() && FRun2.Succeeded() && FThrow1.Succeeded() && FThrow2.Succeeded()
+		&& FHit.Succeeded() && FDying.Succeeded() && FDead.Succeeded())
+	{
+		auto MakeAnim = [](TArray<UTexture2D*> Frames, float FPS, bool bLoop, TArray<float> Durations = {})
+		{
+			FDCSpriteAnim A;
+			for (UTexture2D* T : Frames) { A.Frames.Add(T); }
+			A.FPS = FPS; A.bLoop = bLoop; A.FrameDurations = Durations;
+			return A;
+		};
+		Sprite->Animations.Add(TEXT("Angry"), MakeAnim({ FAngry.Object }, 1.0f, true));
+		Sprite->Animations.Add(TEXT("Run"),   MakeAnim({ FRun1.Object, FRun2.Object }, 5.0f, true));
+		Sprite->Animations.Add(TEXT("Throw"), MakeAnim({ FThrow1.Object, FThrow2.Object }, 6.0f, false));
+		Sprite->Animations.Add(TEXT("Hit"),   MakeAnim({ FHit.Object }, 4.0f, false));
+		Sprite->Animations.Add(TEXT("Dying"), MakeAnim({ FDying.Object, FDead.Object }, 1.0f, false, { 0.7f, 60.0f }));
+		Sprite->StartAnimation = TEXT("Angry");
+		Sprite->FrontTexture = FAngry.Object;
+		bHasSprite = true;
+	}
+
 	SpotlightAura = CreateDefaultSubobject<UPointLightComponent>(TEXT("Spotlight Aura"));
 	SpotlightAura->SetupAttachment(GetCapsuleComponent());
 	SpotlightAura->SetRelativeLocation(FVector(0.0f, 0.0f, 150.0f));
@@ -93,12 +131,12 @@ ADCDirectorBoss::ADCDirectorBoss()
 
 	HPBar = CreateDefaultSubobject<UDCFloatingHPBar>(TEXT("HP Bar"));
 	HPBar->SetupAttachment(GetCapsuleComponent());
-	HPBar->SetRelativeLocation(FVector(0.0f, 0.0f, 175.0f));
+	HPBar->SetRelativeLocation(FVector(0.0f, 0.0f, 200.0f));
 	HPBar->bShowWhenFull = true;
 
 	NameText = CreateDefaultSubobject<UTextRenderComponent>(TEXT("Name Text"));
 	NameText->SetupAttachment(GetCapsuleComponent());
-	NameText->SetRelativeLocation(FVector(0.0f, 0.0f, 215.0f));
+	NameText->SetRelativeLocation(FVector(0.0f, 0.0f, 240.0f));
 	NameText->SetHorizontalAlignment(EHTA_Center);
 	NameText->SetWorldSize(44.0f);
 	NameText->SetText(FText::FromString(TEXT("THE DIRECTOR")));
@@ -117,6 +155,33 @@ void ADCDirectorBoss::BeginPlay()
 
 	const FVector Delta = GetActorLocation() - ArenaCenter;
 	OrbitAngle = FMath::Atan2(Delta.Y, Delta.X);
+
+	// drawn Director: hide the block stand-in
+	if (Sprite)
+	{
+		Sprite->SetVisibility(bHasSprite, true);
+		Sprite->SetComponentTickEnabled(bHasSprite);
+	}
+	for (UStaticMeshComponent* M : { CoatMesh.Get(), HeadMesh.Get(), BeretMesh.Get(), MegaphoneMesh.Get() })
+	{
+		if (M) { M->SetVisibility(!bHasSprite); }
+	}
+}
+
+void ADCDirectorBoss::PlaySprite(FName Anim, bool bOneShot)
+{
+	if (!bHasSprite || !Sprite)
+	{
+		return;
+	}
+	if (bOneShot)
+	{
+		Sprite->PlayOneShot(Anim, bReloading ? FName(TEXT("Angry")) : FName(TEXT("Run")));
+	}
+	else
+	{
+		Sprite->PlayAnimation(Anim, 1.0f, true);
+	}
 }
 
 void ADCDirectorBoss::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -138,6 +203,7 @@ void ADCDirectorBoss::StartFight()
 	ReloadElapsed = 0.0f;
 	ShotsRemaining = FMath::Max(1, ShotsBeforeReload);
 	Health->bInvulnerable = bInvulnerableWhileFiring;
+	PlaySprite(TEXT("Run"), false);
 
 	GetWorldTimerManager().SetTimer(FireTimer, this, &ADCDirectorBoss::FireAtPlayer, FireInterval, true, 0.6f);
 	GetWorldTimerManager().SetTimer(TauntTimer, this, &ADCDirectorBoss::TriggerTaunt, TauntInterval, true, 5.0f);
@@ -216,6 +282,7 @@ void ADCDirectorBoss::FireAtPlayer()
 
 	const FVector TargetLoc = Player->GetActorLocation() + FVector(0.0f, 0.0f, 40.0f);
 	UDCFXLibrary::PlayWorldSound(this, AttackSound, GetActorLocation(), 1.4f);
+	PlaySprite(TEXT("Throw"), true);
 	SpawnProjectileTowards(TargetLoc, 0.0f);
 
 	// Enraged phase under 50% HP: 3-shot dramatic fan + flip strafe direction occasionally
@@ -249,6 +316,7 @@ void ADCDirectorBoss::StartReload()
 	GetCharacterMovement()->StopMovementImmediately();
 
 	Health->bInvulnerable = false;
+	PlaySprite(TEXT("Angry"), false);
 
 	if (NameText)
 	{
@@ -277,6 +345,7 @@ void ADCDirectorBoss::FinishReload()
 	ReloadElapsed = 0.0f;
 	ShotsRemaining = FMath::Max(1, ShotsBeforeReload);
 	Health->bInvulnerable = bInvulnerableWhileFiring;
+	PlaySprite(TEXT("Run"), false);
 
 	if (MegaphoneMesh)
 	{
@@ -326,6 +395,10 @@ void ADCDirectorBoss::HandleHealthChanged(UDCHealthComponent* HealthComponent, f
 	if (Delta < 0.0f && !HealthComponent->IsDead())
 	{
 		UDCFXLibrary::PlayWorldSound(this, HitSound, GetActorLocation(), 1.2f, 0.08f, 0.15f);
+		if (bHasSprite && Sprite && Sprite->GetCurrentAnimation() != TEXT("Throw"))
+		{
+			PlaySprite(TEXT("Hit"), true);
+		}
 	}
 	if (!bHalfHPTriggered && Delta < 0.0f && HealthComponent->GetHPPercent() <= 0.5f && !HealthComponent->IsDead())
 	{
@@ -352,6 +425,7 @@ void ADCDirectorBoss::HandleDied(UDCHealthComponent* HealthComponent, AControlle
 	GetCharacterMovement()->DisableMovement();
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	Tags.Add(TEXT("Dead"));
+	PlaySprite(TEXT("Dying"), false);
 
 	if (NameText)
 	{

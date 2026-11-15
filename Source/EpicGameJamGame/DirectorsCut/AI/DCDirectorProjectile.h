@@ -31,6 +31,10 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components")
 	TObjectPtr<UStaticMeshComponent> VisualMesh;
 
+	/** The thrown clapperboard: a camera-facing card tumbling through 4 turned frames (the cube above is the fallback) */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components")
+	TObjectPtr<class UDCBillboardSprite> Sprite;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components")
 	TObjectPtr<UPointLightComponent> GlowLight;
 
