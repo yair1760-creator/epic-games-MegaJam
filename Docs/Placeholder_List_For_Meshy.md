@@ -14,6 +14,8 @@ The persistent level (village, boundary, tower, watchtower) is visible in every 
 
 Cost guide (Meshy): a picture (nano-banana-2) = **6 credits**; a 3D model with texture for a game prop (meshy-t2 smart topology) = **15 credits**. Balance on Nov 15: about 1,155 credits. "Picture + Blender" is the method used for the stall, notice board, well, watchtower: one Meshy picture as the texture, the shape built in Blender to the greybox's exact size so collision still matches.
 
+**Status (Nov 15):** A1 to A6, B2 to B5, C1 to C5 and D1 to D6 are done: the art is in the game, wired by `Scripts/LD_DressPlaceholders.py` (handoff section 36). Still open: A7 (no Meshy needed), B1 (the Director) and section E.
+
 ## A. Seen by every player, in every beat (do first)
 
 | # | What | Where | Now | Suggested Meshy job | Credits |

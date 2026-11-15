@@ -616,3 +616,24 @@ On death the template's Blueprint death handler (`BP_OnDeath`) ragdolls the play
 - Checked in play: the body stays hidden at 0.5, 2 and 4 s after death, through to the respawn; it still simulates as a ragdoll, just unseen.
 - Compiled with Live Coding; the next normal build makes it permanent.
 - Screenshot: `Docs/Screenshots/Death_NoMannequin.png`.
+
+## 36. Placeholder art wired in (sections A to D of the placeholder list)
+
+The Meshy art in `Art/Meshy/Placeholders` now replaces the greybox in sections A to D of `Docs/Placeholder_List_For_Meshy.md`. Script: `Scripts/LD_DressPlaceholders.py` (run `ph_setup()` once for textures, materials and models, then `ph_dress_A()` … `ph_dress_D()`; each one first removes the `PH_*` actors it made before, so it can be run again).
+
+- **Greybox kept.** Every greybox actor stays where it was with its size and collision; it is either repainted (new material) or made invisible with a new `PH_*` piece on top that has no collision. Saar's shed doors are untouched. `LD_BuildDirectorsCut.py` was not re-run. Section E and the Director boss (B1) were not touched.
+- **Materials** (`Environment/Placeholders/Materials`): `M_DC_PaintTiled` (picture tiled by world size, for walls, pipes, posts, rails, plywood, sandbags) and `M_DC_PaintCard` (masked, two-sided cut-out on a flat card; `Swap`/`FlipU`/`FlipV` turn the picture on upright cards). Road cases and the props table use the existing `M_DC_InkedProp`.
+- **A, every beat:** 120 3D pines (`PH_Pine_*`, model `SM_DC_PineTree` made in Meshy from the pine picture, 15 credits, about 3,300 triangles; each turned and sized a little differently; `ph_pines_3d()` swapped the first cut-outs for it in place); tower shaft in scaffold paint with Taisho's film camera on top; windmill walls painted and the blades turned into sail cards; scaffold, plywood flat backs and sandbags painted; burrow cards flat on the ground.
+- **B, beat 5:** arena walls padded-stage paint, cover as road cases, the 3 light rigs as the studio spotlight model (turned like their lights), the crane as the camera crane model.
+- **C, beat 4:** shed facade card with the doorway cut out so Saar's doors show through; 30 flower cut-outs; one rainbow card over the 125 blocks; heart PG sign on the poles; ribbon-post paint.
+- **D, beats 2 and 3:** 5 meat-hook cut-outs and a plate card; director's chair model; clapperboard card (the old "SCENE 3 TAKE 2" text is hidden because the picture has its own slate); dolly track paint; 4 light stands as the spotlight model; the weapon pedestal as the "PROPS" table.
+- **Checked:** editor captures of each set and a Play run through beats 1 to 5 with `DC.GoToBeat` (the flower and hook cut-outs only turn to the camera in Play).
+- Screenshots: `Docs/Screenshots/Placeholders_*.png`.
+
+## 37. 3D pines, windmill art 2, flat-back stencil, backdrop ground line
+
+- **Pines:** the 120 pine cut-outs are now one 3D model, `SM_DC_PineTree` (Meshy image-to-3D from the pine picture, meshy-t2 + meshy-n1, 15 credits, about 3,300 triangles). Each stands where its cut-out stood, turned and sized a little differently. `ph_pines_3d()` did the swap; `ph_dress_A()` now places the model directly. The hidden greybox trunks and crowns still do the blocking.
+- **Windmill:** grouped as `Windmill_Group` (`DC/Village`) so it moves in one piece (the hidden greybox blades are in the group too, so their collision follows). New art made with Meshy nano-banana-2 from the village house picture (3 pictures, 18 credits): `T_DC_Windmill_Wall2` (plaster and timber, stones at the foot; one picture per tower height, tile 1300), `T_DC_Windmill_Roof` (red tiles on the cap) and `T_DC_WindmillSail2` (canvas sail; the background removal had cut out the canvas, so `Scripts/Blender_Windmill2.py` paints it back in and trims the margins). The sail cards use `Swap = 1` and each sits 6 cm in front of the last, so the crossing sails no longer flicker at the hub.
+- **Flat-back stencil:** `M_DC_PaintTiled` mirrored pictures on faces looking to +X and -Y, so "SET 4 THIS SIDE BACK" read backwards on two of the house flats. The projection now flips U by the face's side; every tiled paint reads correctly from both sides.
+- **Backdrop ground line:** the backdrop picture has a plain olive strip (113 cm) along its bottom that looked like a gap between the grass and the painted hills. `MI_DC_BackdropSky` (MinZ -120) sinks the picture so the strip is under the ground; `LD_DressBackdrop.py` has the same value.
+- Screenshots: `Docs/Screenshots/Placeholders_Windmill.png`, `FlatBack_Stencil.png`, `Backdrop_GroundLine.png`.
