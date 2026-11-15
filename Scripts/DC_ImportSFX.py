@@ -29,7 +29,8 @@ PICKS = {
     "S_BossDefeat":    3,
     "S_Cut":           1,
     "S_QuestTick":     2,
-    "S_QuestComplete": 1,
+    "S_QuestComplete": 1,            # old horn, no longer used
+    "S_QuestComplete_Happy": 2,      # quest-complete chime in use (volume 0.7, set by hand)
 }
 
 

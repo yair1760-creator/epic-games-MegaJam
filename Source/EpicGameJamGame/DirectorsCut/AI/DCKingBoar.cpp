@@ -6,6 +6,9 @@
 #include "DirectorsCut/Combat/DCFXLibrary.h"
 #include "DirectorsCut/Combat/DCHealthComponent.h"
 #include "DirectorsCut/Rendering/DCBillboardSprite.h"
+#include "DirectorsCut/UI/DCBaconBarWidget.h"
+#include "GameFramework/PlayerController.h"
+#include "TimerManager.h"
 #include "Components/TextRenderComponent.h"
 #include "Engine/Texture2D.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -17,10 +20,11 @@ ADCKingBoar::ADCKingBoar()
 {
 	SetActorScale3D(FVector(2.5f));
 
-	Health->MaxHP = 350.0f;
-	// The player keeps the shotgun from beat 3 on. A full blast is 8 pellets x 25 = 200 damage, which would end
-	// this fight in two shots; at 0.15 a full blast does 30, so about 12 clean blasts (more with pellets missing).
-	Health->DamageTakenScale = 0.15f;
+	// Crown King Bacon Jr. 120 HP, because Taisho's bacon boss bar has "HP n/120" drawn on it. The player keeps the
+	// shotgun from beat 3 on: a full blast is 8 pellets x 25 = 200; at 0.05 it does 10, so about 12 clean blasts
+	// (the same fight length as before, when he had 350 HP and took 15%).
+	Health->MaxHP = 120.0f;
+	Health->DamageTakenScale = 0.05f;
 	FleeHPFraction = 0.0f;
 	AngryPause = 0.35f;
 	ChargeSpeed = 740.0f;
@@ -35,12 +39,11 @@ ADCKingBoar::ADCKingBoar()
 	SoundVolume = 0.25f;   // same boar sounds, bigger and deeper
 	SoundPitch = 0.7f;
 
+	// no small floating bar over him: his health is the bacon boss bar on screen (UDCBaconBarWidget)
 	if (HPBar)
 	{
-		HPBar->bShowWhenFull = true;
-		HPBar->Width = 110.0f;
-		HPBar->Height = 12.0f;
-		HPBar->SetRelativeLocation(FVector(0.0f, 0.0f, 118.0f));
+		HPBar->bShowWhenFull = false;
+		HPBar->SetAutoActivate(false);
 	}
 
 	// gold boar
@@ -56,7 +59,8 @@ ADCKingBoar::ADCKingBoar()
 	CrownSprite->SetRelativeLocation(CrownOffset);
 	CrownSprite->FrontSize = FVector2D(52.0f, 39.0f);
 	CrownSprite->bPivotAtBottom = true;
-	static ConstructorHelpers::FObjectFinder<UTexture2D> CrownArt(TEXT("/Game/DirectorsCut/Characters/Boar/Sprites/T_DC_KingCrown_Placeholder.T_DC_KingCrown_Placeholder"));
+	// Taisho's crown ("Just The Crown King Bacon Jr", Art/Meshy/JustTheCrown)
+	static ConstructorHelpers::FObjectFinder<UTexture2D> CrownArt(TEXT("/Game/DirectorsCut/Characters/Boar/Sprites/T_DC_KingCrown.T_DC_KingCrown"));
 	if (CrownArt.Succeeded())
 	{
 		CrownSprite->FrontTexture = CrownArt.Object;
@@ -82,6 +86,56 @@ void ADCKingBoar::BeginPlay()
 	{
 		CrownSprite->SetRelativeLocation(CrownOffset);
 	}
+
+	if (HPBar)
+	{
+		HPBar->DestroyComponent();          // the bacon boss bar replaces it
+		HPBar = nullptr;
+	}
+
+	// the bacon boss bar, top centre, while he is around
+	if (APlayerController* PC = UGameplayStatics::GetPlayerController(this, 0))
+	{
+		BaconBar = CreateWidget<UDCBaconBarWidget>(PC, UDCBaconBarWidget::StaticClass());
+		if (BaconBar)
+		{
+			BaconBar->AddToViewport(5);
+			if (Health)
+			{
+				BaconBar->SetHP(Health->GetCurrentHP(), Health->MaxHP);
+				Health->OnHealthChanged.AddUniqueDynamic(this, &ADCKingBoar::HandleBaconBarHealth);
+			}
+		}
+	}
+}
+
+void ADCKingBoar::HandleBaconBarHealth(UDCHealthComponent* HealthComponent, float CurrentHP, float Delta, AActor* DamageCauser)
+{
+	if (BaconBar && HealthComponent)
+	{
+		BaconBar->SetHP(CurrentHP, HealthComponent->MaxHP);
+		if (CurrentHP <= 0.0f)
+		{
+			// leave the empty bar up a moment, then take it away
+			FTimerHandle T;
+			GetWorldTimerManager().SetTimer(T, FTimerDelegate::CreateWeakLambda(this, [this]() { RemoveBaconBar(); }), 2.0f, false);
+		}
+	}
+}
+
+void ADCKingBoar::RemoveBaconBar()
+{
+	if (BaconBar)
+	{
+		BaconBar->RemoveFromParent();
+		BaconBar = nullptr;
+	}
+}
+
+void ADCKingBoar::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	RemoveBaconBar();
+	Super::EndPlay(EndPlayReason);
 }
 
 void ADCKingBoar::Tick(float DeltaSeconds)

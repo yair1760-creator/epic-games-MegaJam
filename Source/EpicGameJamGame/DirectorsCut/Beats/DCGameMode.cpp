@@ -387,7 +387,7 @@ void ADCGameMode::EnterBeat4()
 	{
 		Quest->ReplaceQuest(
 			FName("Q_DefeatKingBoar"),
-			NSLOCTEXT("DirectorsCut", "KingBoarTitle", "Defeat the King Boar"),
+			NSLOCTEXT("DirectorsCut", "KingBoarTitle", "Defeat Crown King Bacon Jr"),
 			1,
 			FName("Kill.KingBoar"),
 			false);
