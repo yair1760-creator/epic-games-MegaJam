@@ -173,6 +173,12 @@ void ADCGameMode::HandleLineFinished(FName RowId)
 		return;
 	}
 
+	if (CurrentBeat == 4 && bKingBoarPending && RowId == FName("B4_Intro_03"))
+	{
+		SpawnKingBoarNow();
+		return;
+	}
+
 	if (CurrentBeat == 5 && RowId == FName("B5_Intro_03"))
 	{
 		StartBossFightNow();
@@ -308,7 +314,7 @@ void ADCGameMode::EnterBeat4()
 	}
 
 	GoToBeat(4);
-	EquipBeatWeapon(false);
+	EquipBeatWeapon(true);       // the shotgun stays from beat 3 to the end: the sword was too hard against the King Boar and the Director
 
 	// Use an already-placed ADCPrincess in the level (e.g. inside a shed or tower), or a TargetPoint tagged "PrincessSpawn",
 	// falling back to the default clearing location if neither is placed yet.
@@ -360,13 +366,16 @@ void ADCGameMode::EnterBeat4()
 		KingRot = KingMarkers[0]->GetActorRotation();
 	}
 
-	FActorSpawnParameters KingParams;
-	KingParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
-	ADCKingBoar* King = GetWorld()->SpawnActor<ADCKingBoar>(ADCKingBoar::StaticClass(), KingLoc, KingRot, KingParams);
-	if (King)
-	{
-		ActiveKingBoar = King;
-	}
+	// The King Boar only appears once the Director has finished his three intro lines (HandleLineFinished on
+	// B4_Intro_03): spawned at once, he could kill a player standing nearby and the death line cut the intro off.
+	// Safety net in case the lines are interrupted and B4_Intro_03 never finishes: every 2 s (from 5 s in) check
+	// whether the Director is still talking, and bring the King in once he has been silent for two checks in a row.
+	// (No fixed time: the recorded lines run about 27 s, much longer than their subtitle durations.)
+	PendingKingLoc = KingLoc;
+	PendingKingRot = KingRot;
+	bKingBoarPending = true;
+	KingBoarSilentChecks = 0;
+	GetWorldTimerManager().SetTimer(KingBoarFallbackTimer, this, &ADCGameMode::CheckKingBoarFallback, 2.0f, true, 5.0f);
 
 	if (UDCNarratorSubsystem* Narrator = GetWorld()->GetSubsystem<UDCNarratorSubsystem>())
 	{
@@ -382,6 +391,38 @@ void ADCGameMode::EnterBeat4()
 			1,
 			FName("Kill.KingBoar"),
 			false);
+	}
+}
+
+void ADCGameMode::CheckKingBoarFallback()
+{
+	const UDCNarratorSubsystem* Narrator = GetWorld() ? GetWorld()->GetSubsystem<UDCNarratorSubsystem>() : nullptr;
+	if (Narrator && Narrator->IsPlaying())
+	{
+		KingBoarSilentChecks = 0;
+		return;
+	}
+	if (++KingBoarSilentChecks >= 2)
+	{
+		SpawnKingBoarNow();
+	}
+}
+
+void ADCGameMode::SpawnKingBoarNow()
+{
+	GetWorldTimerManager().ClearTimer(KingBoarFallbackTimer);
+	if (!bKingBoarPending || CurrentBeat != 4 || ActiveKingBoar.IsValid())
+	{
+		return;
+	}
+	bKingBoarPending = false;
+
+	FActorSpawnParameters KingParams;
+	KingParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+	if (ADCKingBoar* King = GetWorld()->SpawnActor<ADCKingBoar>(ADCKingBoar::StaticClass(), PendingKingLoc, PendingKingRot, KingParams))
+	{
+		ActiveKingBoar = King;
+		UE_LOG(LogEpicGameJamGame, Log, TEXT("Beat 4: King Boar spawned (after the Director's intro lines)"));
 	}
 }
 
@@ -404,7 +445,7 @@ void ADCGameMode::EnterBeat5()
 	}
 
 	GoToBeat(5);
-	EquipBeatWeapon(false);
+	EquipBeatWeapon(true);       // shotgun for the boss fight too
 
 	// Place player cleanly inside the Beat 5 arena facing The Director
 	FTransform ArenaSpawn;
@@ -464,6 +505,8 @@ void ADCGameMode::CleanupBeatActors()
 	}
 	ActivePrincess.Reset();
 
+	bKingBoarPending = false;
+	GetWorldTimerManager().ClearTimer(KingBoarFallbackTimer);
 	if (ADCKingBoar* King = ActiveKingBoar.Get())
 	{
 		King->Destroy();
@@ -758,12 +801,12 @@ void ADCGameMode::HandlePossessedPawnChanged(APawn* OldPawn, APawn* NewPawn)
 			NewChar->SetCanBeDamaged(false);
 		}
 
-		if (CurrentBeat == 3)
+		if (CurrentBeat >= 3)
 		{
 			// Apply on next tick so AShooterCharacter::BeginPlay's default sword doesn't override the shotgun
 			GetWorldTimerManager().SetTimerForNextTick(FTimerDelegate::CreateWeakLambda(this, [this]()
 			{
-				EquipBeatWeapon(CurrentBeat == 3);
+				EquipBeatWeapon(CurrentBeat >= 3);
 			}));
 		}
 	}

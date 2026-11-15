@@ -37,7 +37,10 @@ ADCDirectorBoss::ADCDirectorBoss()
 	Move->GravityScale = 1.0f;
 
 	Health = CreateDefaultSubobject<UDCHealthComponent>(TEXT("Health"));
-	Health->MaxHP = 450.0f;   // sword (25 dmg) needs 18 hits
+	Health->MaxHP = 450.0f;
+	// Fought with the shotgun (kept from beat 3). A full blast is 8 pellets x 25 = 200 damage; at 0.15 it does 30,
+	// so about 15 clean blasts (more at range, where pellets miss).
+	Health->DamageTakenScale = 0.15f;
 	Health->bInvulnerable = true;   // unlocked when StartFight() runs after his intro monologue
 
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> Cube(TEXT("/Game/LevelPrototyping/Meshes/SM_ChamferCube.SM_ChamferCube"));

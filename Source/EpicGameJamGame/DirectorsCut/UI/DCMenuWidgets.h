@@ -74,10 +74,34 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Menu")
 	FLinearColor BackdropColor = FLinearColor(0.035f, 0.025f, 0.02f, 1.0f);
 
+	/** OPTIONS button under START (Art/UI/RatedPG/Button_Options.png, 1313 x 439). It only opens the joke card below. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Menu")
+	TObjectPtr<UTexture2D> OptionsTexture;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Menu")
+	FVector2D OptionsSize = FVector2D(246.0f, 82.0f);
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Menu")
+	FVector2D OptionsOffset = FVector2D(0.0f, 262.0f);
+
+	/** "NOT ENOUGH BUDGET FOR THE OPTIONS" card with the crying pig (Art/UI/RatedPG/Options_NoBudget_Panel.png, 1103 x 851).
+	 *  Shown over a dimmed menu; any click, Esc, Enter or Space closes it. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Menu")
+	TObjectPtr<UTexture2D> NoBudgetTexture;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Menu")
+	FVector2D NoBudgetSize = FVector2D(700.0f, 540.0f);
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Menu", meta=(ClampMin=0, ClampMax=1))
+	float NoBudgetDimAmount = 0.6f;
+
 	UPROPERTY(BlueprintAssignable, Category="Menu")
 	FDCOnMenuButton OnStart;
 
 	UWidget* GetInitialFocusWidget() const;
+
+	/** True while the "not enough budget" card is up */
+	bool IsNoBudgetOpen() const { return bNoBudgetOpen; }
 
 protected:
 
@@ -88,8 +112,28 @@ protected:
 	UFUNCTION()
 	void HandleStartClicked();
 
+	UFUNCTION()
+	void HandleOptionsClicked();
+
+	UFUNCTION()
+	void HandleNoBudgetClosed();
+
+	void SetNoBudgetOpen(bool bOpen);
+
 	UPROPERTY(Transient)
 	TObjectPtr<UButton> StartButton;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UButton> OptionsButton;
+
+	/** Full-screen dim layer under the card; it is a button so a click anywhere closes the card */
+	UPROPERTY(Transient)
+	TObjectPtr<UButton> NoBudgetDim;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UImage> NoBudgetPanel;
+
+	bool bNoBudgetOpen = false;
 };
 
 /**

@@ -17,12 +17,15 @@ Someone on the team must read it, especially the eligibility section (age 18+, a
 | Custom gameplay beyond Epic's starter templates | OK | Sword, boar AI, King Boar, Director boss, 5 story beats, quests, narrator; built on the First Person / Shooter template |
 | Assets you didn't make need a licence and must be listed | OK, **list them** | No Fab or marketplace packs. Only Epic template content (mannequin, template weapon mesh and blast sound). AI-generated content is listed under Tools |
 | No other people's IP, no inappropriate content | OK, see notes | See "Content notes" below |
-| Submit a packaged build, not the project | **NOT DONE** | No packaged build has been made yet |
+| Submit a packaged build, not the project | Test build made | Development test build packaged Nov 15 (see below); the final submission build is still to make |
 | Theme: DIRECTOR'S CUT | OK | A meddling Director narrates and re-cuts the game beat by beat |
 
 ## What to submit (Unreal Engine teams, on itch.io)
 
 - [ ] Packaged build. Windows 10/11, development build recommended (Shipping also accepted)
+  - Test build Nov 15: `D:\EpicGameJam\Builds\RatedPGForPig_Test_20261115` (Development, from `main` 0b952fc), zipped 631 MB (519 MB without `EpicGameJamGame.pdb`, the debug symbols players don't need).
+  - **After every package, rename the launcher** `EpicGameJamGame.exe` (top of the build folder) to `Rated PG for Pig.exe`. Unreal names it after the project each time. Only that top file: leave `EpicGameJamGame/Binaries/Win64/EpicGameJamGame.exe` as it is; the launcher finds it on its own (checked Nov 15).
+  - Packaging with the editor open: add `-nocompileeditor` (Unreal refuses to rebuild the editor while Live Coding is active). Leave out the build's `EpicGameJamGame/Saved` folder when zipping.
 - [ ] Zip named `TeamName_GameName.zip`, under 1 GB (project content is about 280 MB, so size is not a problem)
 - [ ] Uploaded to the team's own itch.io account, then submitted to the jam
 - [ ] Team name, each member's name and the email linked to their Epic Games account
@@ -53,7 +56,7 @@ Confirm with Saar and Taisho whether any other tool was used (for example an Ope
 
 ## Known risks before the deadline
 
-1. **No packaged build exists.** The start map and packaging settings changed on Nov 14 (main menu map, `MapsToCook`, always-cook folders). Package and play it end to end.
+1. ~~No packaged build exists.~~ A Development test build exists (Nov 15): it opens the main menu and loads the level with no log errors. **Still to do: play it end to end** (beats 1 to 5 and the boss).
 2. **Menus and loading screen are untested with real input** and in a packaged build.
 3. **Level 1 has never been played from start to finish** in one run.
 4. ~~Project name was "First Person Template"~~ Fixed Nov 15: the window title reads "Rated PG for Pig" (seen in a standalone run; a Development build adds "(64-bit Development ...)" after it, a Shipping build does not).

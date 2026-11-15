@@ -41,6 +41,11 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Health")
 	bool bListenToActorDamage = true;
 
+	/** Every hit is multiplied by this before it is taken off (1 = normal, 0.15 = takes 15% of each hit).
+	 *  Used to make the King Boar and the Director tough against the shotgun. Kill() ignores it. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Health", meta=(ClampMin=0.01, ClampMax=10))
+	float DamageTakenScale = 1.0f;
+
 	/** If true, damage is ignored (cutscenes, the Director's whims) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Health")
 	bool bInvulnerable = false;
@@ -102,4 +107,5 @@ private:
 
 	UPROPERTY(VisibleInstanceOnly, Category="Health")
 	bool bDead = false;
+	bool bIgnoreDamageScale = false;      // set only inside Kill()
 };

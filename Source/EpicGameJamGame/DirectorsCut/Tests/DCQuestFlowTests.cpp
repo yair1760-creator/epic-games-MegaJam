@@ -445,12 +445,9 @@ bool FDCRunFullQuestFlowCommand::Update()
 	Test->TestEqual(TEXT("100/100 boars triggers Beat 4"), GM->GetCurrentBeat(), 4);
 	Test->TestTrue(TEXT("Beat 4 loads DC_Light_PG"), DCFlowTestInternal::IsSublevelActive(World, FName("DC_Light_PG")));
 	Test->TestTrue(TEXT("Beat 4 loads DC_Set_PG"), DCFlowTestInternal::IsSublevelActive(World, FName("DC_Set_PG")));
-	Test->TestTrue(TEXT("Beat 4 swaps back to ADCSwordWeapon"),
-		Player->GetCurrentWeapon() && Player->GetCurrentWeapon()->IsA<ADCSwordWeapon>());
-	if (Ammo)
-	{
-		Test->TestEqual(TEXT("AmmoCounter collapses again on Beat 4 Sword"), Ammo->GetVisibility(), ESlateVisibility::Collapsed);
-	}
+	// the shotgun stays from beat 3 to the end (Nov 15)
+	Test->TestTrue(TEXT("Beat 4 keeps ADCShotgunWeapon"),
+		Player->GetCurrentWeapon() && Player->GetCurrentWeapon()->IsA<ADCShotgunWeapon>());
 	Test->TestEqual(TEXT("Beat 4a quest is Q_DefeatKingBoar"), Quest->GetActiveQuestId(), FName("Q_DefeatKingBoar"));
 	Test->TestEqual(TEXT("Beat 4a quest target is 1"), Quest->GetTarget(), 1);
 	Test->TestEqual(TEXT("Beat 4 music is M_Romance"), GM->GetActiveMusicAsset() ? GM->GetActiveMusicAsset()->GetFName() : NAME_None, FName("M_Romance"));
@@ -459,6 +456,8 @@ bool FDCRunFullQuestFlowCommand::Update()
 		Test->TestEqual(TEXT("HUD QuestTracker shows Defeat the King Boar:"), Tracker->GetDisplayedTitle(), FString(TEXT("Defeat the King Boar:")));
 	}
 
+	// the King Boar waits for the Director's intro lines to end; the test does not wait 17 s for them
+	GM->SpawnKingBoarNow();
 	ADCKingBoar* KingBoar = nullptr;
 	for (TActorIterator<ADCKingBoar> It(World); It; ++It) { KingBoar = *It; break; }
 	ADCPrincess* Princess = nullptr;
@@ -505,8 +504,8 @@ bool FDCRunFullQuestFlowCommand::Update()
 	Test->TestEqual(TEXT("Beat 5 active"), GM->GetCurrentBeat(), 5);
 	Test->TestTrue(TEXT("Beat 5 loads DC_Light_Boss"), DCFlowTestInternal::IsSublevelActive(World, FName("DC_Light_Boss")));
 	Test->TestTrue(TEXT("Beat 5 loads DC_Set_Boss"), DCFlowTestInternal::IsSublevelActive(World, FName("DC_Set_Boss")));
-	Test->TestTrue(TEXT("Beat 5 keeps ADCSwordWeapon"),
-		Player->GetCurrentWeapon() && Player->GetCurrentWeapon()->IsA<ADCSwordWeapon>());
+	Test->TestTrue(TEXT("Beat 5 keeps ADCShotgunWeapon"),
+		Player->GetCurrentWeapon() && Player->GetCurrentWeapon()->IsA<ADCShotgunWeapon>());
 	Test->TestEqual(TEXT("Beat 5 quest is Q_DefeatDirector"), Quest->GetActiveQuestId(), FName("Q_DefeatDirector"));
 	Test->TestEqual(TEXT("Beat 5 quest target is 1"), Quest->GetTarget(), 1);
 	Test->TestEqual(TEXT("Beat 5 music is M_Boss"), GM->GetActiveMusicAsset() ? GM->GetActiveMusicAsset()->GetFName() : NAME_None, FName("M_Boss"));
@@ -526,8 +525,8 @@ bool FDCRunFullQuestFlowCommand::Update()
 	{
 		Test->TestTrue(TEXT("Respawned Beat 5 player spawns in arena instead of village (-5200)"),
 			FVector::Dist2D(RespawnedBeat5Player->GetActorLocation(), Beat5Respawn.GetLocation()) < 150.0f);
-		Test->TestTrue(TEXT("Respawned Beat 5 player holds ADCSwordWeapon"),
-			RespawnedBeat5Player->GetCurrentWeapon() && RespawnedBeat5Player->GetCurrentWeapon()->IsA<ADCSwordWeapon>());
+		Test->TestTrue(TEXT("Respawned Beat 5 player holds ADCShotgunWeapon"),
+			RespawnedBeat5Player->GetCurrentWeapon() && RespawnedBeat5Player->GetCurrentWeapon()->IsA<ADCShotgunWeapon>());
 		Player = RespawnedBeat5Player;
 	}
 
@@ -543,7 +542,7 @@ bool FDCRunFullQuestFlowCommand::Update()
 		Test->TestEqual(TEXT("Director Boss starts with full clip"), Boss->GetShotsRemaining(), Boss->ShotsBeforeReload);
 
 		Narrator->Interrupt();
-		Boss->GetHealth()->ApplyDamage(Boss->GetHealth()->GetMaxHP() * 0.6f, Player->GetController(), Player);
+		Boss->GetHealth()->ApplyDamage(Boss->GetHealth()->GetMaxHP() * 0.6f / Boss->GetHealth()->DamageTakenScale, Player->GetController(), Player);   // 60% of his HP after his toughness
 		Test->TestEqual(TEXT("Boss at <=50% HP triggers B5_BossHalfHP"), Narrator->GetCurrentLineId(), FName("B5_BossHalfHP"));
 
 		Boss->GetHealth()->Kill(Player->GetController(), Player);

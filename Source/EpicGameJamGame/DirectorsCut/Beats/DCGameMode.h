@@ -280,6 +280,12 @@ protected:
 	void HandleIdleTimeout();
 	void StartBossFightNow();
 
+public:
+	/** Beat 4: brings the King Boar in. Called when the Director's intro lines end (or by the safety check / tests). */
+	void SpawnKingBoarNow();
+protected:
+	void CheckKingBoarFallback();
+
 	USoundBase* ResolveMusicForBeat(int32 Beat) const;
 	void UpdateMusicForBeat(int32 Beat);
 	void StopBeatMusic(float FadeOutSeconds);
@@ -302,6 +308,10 @@ private:
 
 	TWeakObjectPtr<ADCPrincess> ActivePrincess;
 	TWeakObjectPtr<ADCKingBoar> ActiveKingBoar;
+	bool bKingBoarPending = false;
+	int32 KingBoarSilentChecks = 0;
+	FVector PendingKingLoc = FVector::ZeroVector;
+	FRotator PendingKingRot = FRotator::ZeroRotator;
 	TWeakObjectPtr<ADCDirectorBoss> ActiveDirectorBoss;
 	TWeakObjectPtr<AShooterCharacter> BoundPlayerCharacter;
 
@@ -318,6 +328,7 @@ private:
 	FTimerHandle IdleTimer;
 	FTimerHandle BossStartFallbackTimer;
 	FTimerHandle Beat5FallbackTimer;
+	FTimerHandle KingBoarFallbackTimer;
 	FTimerHandle VictoryFallbackTimer;
 	FTimerHandle MusicUnduckTimer;
 };
